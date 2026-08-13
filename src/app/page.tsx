@@ -11,6 +11,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item";
 import { formatMonthly } from "@/lib/configurator";
 import {
   PLACEHOLDER_NAME,
@@ -44,57 +54,58 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-dvh bg-[var(--background)]">
+    <main className="min-h-dvh bg-background">
       <div className="mx-auto max-w-3xl px-8 py-12">
         <header className="mb-8 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold">Elevators</h1>
-            <p className="text-sm text-[var(--muted-foreground)]">
+            <p className="text-sm text-muted-foreground">
               One living service agreement per installation — open one to
               review or revise it, in conversation or directly.
             </p>
           </div>
-          <button
-            onClick={create}
-            disabled={creating}
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--border)] px-3 py-2 text-sm transition-colors hover:border-[var(--primary)] disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" />
+          <Button variant="outline" onClick={create} disabled={creating}>
+            <Plus />
             New elevator
-          </button>
+          </Button>
         </header>
 
         {error && (
-          <p className="text-sm text-[var(--muted-foreground)]">
+          <p className="text-sm text-muted-foreground">
             Could not reach the workspace store — is the agent running? (
             <code>npm run dev</code>)
           </p>
         )}
         {workspaces && workspaces.length === 0 && !error && (
-          <p className="rounded-lg border border-dashed border-[var(--border)] p-4 text-sm text-[var(--muted-foreground)]">
-            No elevators yet — start one and just describe your building; it
-            names itself as you talk.
-          </p>
+          <Empty className="border p-6 md:p-6">
+            <EmptyDescription>
+              No elevators yet — start one and just describe your building; it
+              names itself as you talk.
+            </EmptyDescription>
+          </Empty>
         )}
 
-        <ul className="space-y-2">
+        <ItemGroup className="gap-2">
           {workspaces?.map((workspace) => (
-            <li key={workspace.id}>
-              <Link
-                href={`/workspaces/${workspace.id}`}
-                className="flex items-baseline justify-between gap-4 rounded-lg border border-[var(--border)] px-4 py-3 transition-colors hover:border-[var(--primary)]"
-              >
-                <div className="min-w-0">
+            <Item
+              key={workspace.id}
+              asChild
+              variant="outline"
+              size="sm"
+              className="items-baseline hover:border-primary"
+            >
+              <Link href={`/workspaces/${workspace.id}`}>
+                <ItemContent className="min-w-0 gap-0.5">
                   {workspace.name ? (
-                    <div className="truncate text-sm font-medium">
+                    <ItemTitle className="max-w-full truncate">
                       {workspace.name}
-                    </div>
+                    </ItemTitle>
                   ) : (
-                    <div className="truncate text-sm italic text-[var(--muted-foreground)]">
+                    <ItemTitle className="max-w-full truncate font-normal italic text-muted-foreground">
                       {PLACEHOLDER_NAME}
-                    </div>
+                    </ItemTitle>
                   )}
-                  <div className="text-xs text-[var(--muted-foreground)]">
+                  <ItemDescription className="text-xs">
                     {workspace.threads.length === 1
                       ? "1 conversation"
                       : `${workspace.threads.length} conversations`}
@@ -104,23 +115,23 @@ export default function HomePage() {
                       month: "short",
                       year: "numeric",
                     })}
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
                   {workspace.configuration.candidate ? (
                     <span className="text-sm font-semibold tabular-nums">
                       {formatMonthly(workspace.configuration.candidate.price)}
                     </span>
                   ) : (
-                    <span className="text-xs text-[var(--muted-foreground)]">
+                    <span className="text-xs text-muted-foreground">
                       no proposal yet
                     </span>
                   )}
-                </div>
+                </ItemActions>
               </Link>
-            </li>
+            </Item>
           ))}
-        </ul>
+        </ItemGroup>
       </div>
     </main>
   );

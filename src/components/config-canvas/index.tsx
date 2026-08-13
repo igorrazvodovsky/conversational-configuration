@@ -12,6 +12,26 @@
 import { useAgent } from "@copilotkit/react-core/v2";
 import { useState } from "react";
 import { Bookmark, Check, Lock, Sparkles, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Candidate,
   Configuration,
@@ -51,14 +71,12 @@ export function ConfigCanvas() {
     dispatch(choiceMessage([{ variable, value }]));
 
   return (
-    <div className="h-full overflow-y-auto bg-[var(--background)]">
+    <ScrollArea className="h-full bg-background">
       <div className="max-w-3xl mx-auto px-8 py-8">
         <header className="mb-6 flex items-end justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold">Service agreement</h1>
-            <p className="text-sm text-[var(--muted-foreground)]">
-              {productModel.name}
-            </p>
+            <p className="text-sm text-muted-foreground">{productModel.name}</p>
           </div>
           <div className="text-right">
             {config.candidate ? (
@@ -66,7 +84,7 @@ export function ConfigCanvas() {
                 <div className="text-2xl font-semibold tabular-nums">
                   {formatMonthly(config.candidate.price)}
                 </div>
-                <div className="text-xs text-[var(--muted-foreground)]">
+                <div className="text-xs text-muted-foreground">
                   {config.candidate.objective === "co2"
                     ? "lowest-footprint completion"
                     : "cheapest completion"}
@@ -74,7 +92,7 @@ export function ConfigCanvas() {
                 <FootprintSummary config={config} />
               </>
             ) : (
-              <div className="text-xs text-[var(--muted-foreground)] max-w-[10rem]">
+              <div className="text-xs text-muted-foreground max-w-[10rem]">
                 no proposal yet — ask for one in chat
               </div>
             )}
@@ -83,62 +101,73 @@ export function ConfigCanvas() {
 
         {frames.length > 0 && (
           <div className="mb-6 flex flex-wrap items-center gap-1.5">
-            <Bookmark className="h-3 w-3 text-[var(--muted-foreground)]" />
+            <Bookmark className="h-3 w-3 text-muted-foreground" />
             {frames.map((frame) => (
-              <button
-                key={frame.name}
-                disabled={isRunning}
-                title="click to compare with the current configuration"
-                onClick={() =>
-                  dispatch(
-                    `Compare frame "${frame.name}" with the current configuration`,
-                  )
-                }
-                className="rounded-full border border-[var(--border)] px-2.5 py-0.5 text-xs transition-colors hover:border-[var(--primary)] disabled:opacity-50"
-              >
-                {frame.name}
-                <span className="ml-1 tabular-nums text-[var(--muted-foreground)]">
-                  {formatMonthly(frame.price)}
-                </span>
-              </button>
+              <Tooltip key={frame.name}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    disabled={isRunning}
+                    onClick={() =>
+                      dispatch(
+                        `Compare frame "${frame.name}" with the current configuration`,
+                      )
+                    }
+                    className="font-normal hover:border-primary"
+                  >
+                    {frame.name}
+                    <span className="tabular-nums text-muted-foreground">
+                      {formatMonthly(frame.price)}
+                    </span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  click to compare with the current configuration
+                </TooltipContent>
+              </Tooltip>
             ))}
           </div>
         )}
 
         {!hasAnything && (
-          <p className="mb-6 rounded-lg border border-dashed border-[var(--border)] p-4 text-sm text-[var(--muted-foreground)]">
-            Nothing decided yet. Describe your project in the chat — building,
-            location, floors, traffic — and the spec sheet fills in here.
-          </p>
+          <Empty className="mb-6 border p-4 md:p-4">
+            <EmptyDescription>
+              Nothing decided yet. Describe your project in the chat — building,
+              location, floors, traffic — and the spec sheet fills in here.
+            </EmptyDescription>
+          </Empty>
         )}
 
         {modelGroups.map((group) => (
           <section key={group.name} className="mb-6">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {group.name}
             </h2>
-            <div className="rounded-lg border border-[var(--border)] divide-y divide-[var(--border)]">
-              {group.variables.map((variable) => (
-                <VariableRow
-                  key={variable.name}
-                  variable={variable}
-                  config={config}
-                  termMonths={termMonthsInEffect(config)}
-                  disabled={isRunning}
-                  onSelect={dispatchChoice}
-                />
-              ))}
-            </div>
+            <Card className="gap-0 py-0 shadow-none">
+              <CardContent className="divide-y px-0">
+                {group.variables.map((variable) => (
+                  <VariableRow
+                    key={variable.name}
+                    variable={variable}
+                    config={config}
+                    termMonths={termMonthsInEffect(config)}
+                    disabled={isRunning}
+                    onSelect={dispatchChoice}
+                  />
+                ))}
+              </CardContent>
+            </Card>
           </section>
         ))}
 
         {isRunning && (
-          <p className="text-xs text-[var(--muted-foreground)] animate-pulse">
+          <p className="text-xs text-muted-foreground animate-pulse">
             agent is working — editing re-enables when it finishes
           </p>
         )}
       </div>
-    </div>
+    </ScrollArea>
   );
 }
 
@@ -150,7 +179,6 @@ export function ConfigCanvas() {
  * the model JSON; nothing is derived here.
  */
 function FootprintSummary({ config }: { config: Configuration }) {
-  const [open, setOpen] = useState(false);
   const footprint = config.candidate?.footprint;
   if (!footprint) return null; // candidate persisted before the footprint feature
 
@@ -159,54 +187,53 @@ function FootprintSummary({ config }: { config: Configuration }) {
     config.candidate?.assignment["usage_profile"];
 
   return (
-    <div className="relative mt-1">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="text-xs text-[var(--muted-foreground)] underline decoration-dotted underline-offset-2 hover:text-[var(--foreground)]"
-        title="modelled estimate — click for the assumptions behind it"
-      >
-        ≈ {formatCO2(footprint.total)} over {footprintBlock.service_life_years}{" "}
-        years (modelled)
-      </button>
-      {open && (
-        <div className="absolute right-0 z-10 mt-1 w-72 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 text-left text-xs shadow-md">
-          <dl className="space-y-1">
-            <div className="flex justify-between gap-2">
-              <dt className="text-[var(--muted-foreground)]">embodied</dt>
-              <dd className="tabular-nums">{formatCO2(footprint.embodied)}</dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-[var(--muted-foreground)]">use-phase</dt>
-              <dd className="tabular-nums">{formatCO2(footprint.use_phase)}</dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-[var(--muted-foreground)]">service life</dt>
-              <dd>
-                {footprintBlock.service_life_years} years,{" "}
-                {footprintBlock.operating_days} days/year
-              </dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-[var(--muted-foreground)]">usage profile</dt>
-              <dd>
-                {usageProfile ? optionLabel("usage_profile", usageProfile) : "—"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-[var(--muted-foreground)]">grid factor</dt>
-              <dd>
-                {footprintBlock.grid_factor} kg CO₂e/kWh (
-                {footprintBlock.grid_factor_decarbonising} if the grid
-                decarbonises)
-              </dd>
-            </div>
-          </dl>
-          <p className="mt-2 text-[var(--muted-foreground)]">
-            {footprintBlock.module_scope}
-          </p>
-        </div>
-      )}
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className="mt-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+          title="modelled estimate — click for the assumptions behind it"
+        >
+          ≈ {formatCO2(footprint.total)} over{" "}
+          {footprintBlock.service_life_years} years (modelled)
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="p-3 text-left text-xs">
+        <dl className="space-y-1">
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">embodied</dt>
+            <dd className="tabular-nums">{formatCO2(footprint.embodied)}</dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">use-phase</dt>
+            <dd className="tabular-nums">{formatCO2(footprint.use_phase)}</dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">service life</dt>
+            <dd>
+              {footprintBlock.service_life_years} years,{" "}
+              {footprintBlock.operating_days} days/year
+            </dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">usage profile</dt>
+            <dd>
+              {usageProfile ? optionLabel("usage_profile", usageProfile) : "—"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted-foreground">grid factor</dt>
+            <dd>
+              {footprintBlock.grid_factor} kg CO₂e/kWh (
+              {footprintBlock.grid_factor_decarbonising} if the grid
+              decarbonises)
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-2 text-muted-foreground">
+          {footprintBlock.module_scope}
+        </p>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -227,9 +254,9 @@ function currentDisplay(
 }
 
 const KIND_BADGE: Record<string, { label: string; icon?: React.ReactNode }> = {
-  user: { label: "you", icon: <User className="h-3 w-3" /> },
-  agent: { label: "agent", icon: <Sparkles className="h-3 w-3" /> },
-  forced: { label: "auto", icon: <Lock className="h-3 w-3" /> },
+  user: { label: "you", icon: <User /> },
+  agent: { label: "agent", icon: <Sparkles /> },
+  forced: { label: "auto", icon: <Lock /> },
   proposed: { label: "proposed" },
 };
 
@@ -253,72 +280,79 @@ function VariableRow({
   const editable = display.kind !== "forced";
 
   return (
-    <div className="px-3 py-2">
-      <button
-        className="w-full flex items-center gap-3 text-left disabled:cursor-default"
-        onClick={() => editable && setOpen((o) => !o)}
-        disabled={disabled || !editable}
-      >
+    <Collapsible
+      open={open && !disabled && editable}
+      onOpenChange={setOpen}
+      disabled={disabled || !editable}
+      className="px-3 py-2"
+    >
+      <CollapsibleTrigger className="flex w-full items-center gap-3 text-left disabled:cursor-default">
         <span className="flex-1 text-sm">{variable.label}</span>
         <span
-          className={`text-sm ${
+          className={
             display.kind === "proposed"
-              ? "italic text-[var(--muted-foreground)]"
+              ? "text-sm italic text-muted-foreground"
               : display.value
-                ? "font-medium"
-                : "text-[var(--muted-foreground)]"
-          }`}
+                ? "text-sm font-medium"
+                : "text-sm text-muted-foreground"
+          }
         >
           {display.value
             ? variable.options.find((o) => o.value === display.value)?.label
             : "—"}
         </span>
         {badge && (
-          <span className="flex items-center gap-1 rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] text-[var(--muted-foreground)]">
+          <Badge
+            variant="secondary"
+            className="gap-1 px-2 py-0.5 text-[10px] font-normal text-muted-foreground"
+          >
             {badge.icon}
             {badge.label}
-          </span>
+          </Badge>
         )}
-      </button>
+      </CollapsibleTrigger>
 
-      {open && !disabled && editable && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {variable.options.map((option) => {
-            const status = statuses[option.value] ?? "open";
-            const isCurrent = display.value === option.value;
-            const invalid = status === "invalid";
-            const delta = monthlyDelta(option, termMonths);
-            return (
-              <button
-                key={option.value}
-                disabled={invalid}
-                title={
-                  invalid
-                    ? "ruled out by your other choices — ask why in chat"
-                    : undefined
-                }
-                onClick={() => {
-                  setOpen(false);
-                  onSelect(variable.name, option.value);
-                }}
-                className={`rounded-md border px-2 py-1 text-xs transition-colors ${
-                  isCurrent
-                    ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                    : invalid
-                      ? "border-[var(--border)] text-[var(--muted-foreground)] opacity-40 line-through cursor-not-allowed"
-                      : "border-[var(--border)] hover:border-[var(--primary)]"
-                }`}
-              >
-                {isCurrent && <Check className="mr-1 inline h-3 w-3" />}
-                {option.label}
-                {delta ? (
-                  <span className="ml-1 opacity-70">+{formatMonthly(delta)}</span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+      <CollapsibleContent className="mt-2 flex flex-wrap gap-1.5">
+        {variable.options.map((option) => {
+          const status = statuses[option.value] ?? "open";
+          const isCurrent = display.value === option.value;
+          const invalid = status === "invalid";
+          const delta = monthlyDelta(option, termMonths);
+          return (
+            <Button
+              key={option.value}
+              size="xs"
+              variant={isCurrent ? "default" : "outline"}
+              disabled={invalid}
+              title={
+                invalid
+                  ? "ruled out by your other choices — ask why in chat"
+                  : undefined
+              }
+              onClick={() => {
+                setOpen(false);
+                onSelect(variable.name, option.value);
+              }}
+              // pointer-events-auto: Button disables them, which would suppress
+              // the native title — and with it the option's reason for being
+              // unavailable (docs/specs/ui-component-library, decision 4).
+              className={
+                invalid
+                  ? "cursor-not-allowed line-through opacity-40 disabled:pointer-events-auto"
+                  : isCurrent
+                    ? ""
+                    : "font-normal hover:border-primary"
+              }
+            >
+              {isCurrent && <Check />}
+              {option.label}
+              {delta ? (
+                <span className="opacity-70">+{formatMonthly(delta)}</span>
+              ) : null}
+            </Button>
+          );
+        })}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

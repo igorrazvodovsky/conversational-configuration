@@ -125,7 +125,7 @@ export function MeetingTimePicker({
 
         {status === "inProgress" && (
           <div className="flex justify-center py-6">
-            <Spinner size="lg" />
+            <Spinner className="size-8" />
           </div>
         )}
 

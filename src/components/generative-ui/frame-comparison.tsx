@@ -9,6 +9,8 @@
  * onto adopt_frame.
  */
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Footprint, adoptMessage, formatCO2, formatMonthly } from "@/lib/configurator";
 import { useCardDispatch } from "./card-dispatch";
@@ -44,8 +46,8 @@ export function FrameComparison({
 
   if (status !== "complete" || !result) {
     return (
-      <div className="my-2 flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
-        <Spinner size="sm" className="h-3 w-3" /> comparing…
+      <div className="my-2 flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner className="size-3" /> comparing…
       </div>
     );
   }
@@ -77,86 +79,86 @@ export function FrameComparison({
   const footprintDelta = payload.footprintDelta ?? 0;
 
   return (
-    <div
-      className={`my-2 rounded-lg border border-[var(--border)] p-3 ${
-        inert ? "opacity-60" : ""
-      }`}
+    <Card
+      className={`my-2 gap-0 py-0 shadow-none ${inert ? "opacity-60" : ""}`}
     >
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left">
-            <th className="pb-2 font-normal text-xs text-[var(--muted-foreground)]">
-              {payload.differences.length} difference
-              {payload.differences.length === 1 ? "" : "s"}
-            </th>
-            {sides.map((s) => (
-              <th key={s.key} className="pb-2 font-medium">
-                {s.isCurrent ? "current" : s.name}
+      <CardContent className="p-3">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left">
+              <th className="pb-2 font-normal text-xs text-muted-foreground">
+                {payload.differences.length} difference
+                {payload.differences.length === 1 ? "" : "s"}
               </th>
+              {sides.map((s) => (
+                <th key={s.key} className="pb-2 font-medium">
+                  {s.isCurrent ? "current" : s.name}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="align-top">
+            {payload.differences.map((d) => (
+              <tr key={d.variable} className="border-t">
+                <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+                  {d.label}
+                </td>
+                {(["a", "b"] as const).map((k) => (
+                  <td key={k} className="py-1.5 pr-2">
+                    {d[k].label}
+                    {d[k].price > 0 && (
+                      <span className="ml-1 text-xs tabular-nums text-muted-foreground">
+                        +{formatMonthly(d[k].price)}
+                      </span>
+                    )}
+                  </td>
+                ))}
+              </tr>
             ))}
-          </tr>
-        </thead>
-        <tbody className="align-top">
-          {payload.differences.map((d) => (
-            <tr key={d.variable} className="border-t border-[var(--border)]">
-              <td className="py-1.5 pr-2 text-xs text-[var(--muted-foreground)]">
-                {d.label}
+            <tr className="border-t font-medium">
+              <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+                total
               </td>
-              {(["a", "b"] as const).map((k) => (
-                <td key={k} className="py-1.5 pr-2">
-                  {d[k].label}
-                  {d[k].price > 0 && (
-                    <span className="ml-1 text-xs tabular-nums text-[var(--muted-foreground)]">
-                      +{formatMonthly(d[k].price)}
-                    </span>
-                  )}
+              {sides.map((s) => (
+                <td key={s.key} className="py-1.5 pr-2 tabular-nums">
+                  {formatMonthly(s.price)}
                 </td>
               ))}
             </tr>
-          ))}
-          <tr className="border-t border-[var(--border)] font-medium">
-            <td className="py-1.5 pr-2 text-xs text-[var(--muted-foreground)]">
-              total
-            </td>
-            {sides.map((s) => (
-              <td key={s.key} className="py-1.5 pr-2 tabular-nums">
-                {formatMonthly(s.price)}
+            <tr className="border-t">
+              <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+                footprint (modelled)
               </td>
+              {sides.map((s) => (
+                <td key={s.key} className="py-1.5 pr-2 tabular-nums">
+                  {s.footprint ? formatCO2(s.footprint.total) : "—"}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+        <div className="mt-2 flex gap-2">
+          <span className="flex-1 self-center text-xs text-muted-foreground">
+            {payload.priceDelta === 0
+              ? "same monthly price"
+              : `${payload.b.isCurrent ? "current" : payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
+            {footprintDelta !== 0 &&
+              ` · ${formatCO2(Math.abs(footprintDelta))} ${footprintDelta > 0 ? "more" : "less"}`}
+          </span>
+          {sides
+            .filter((s) => !s.isCurrent)
+            .map((s) => (
+              <Button
+                key={s.key}
+                size="sm"
+                disabled={inert}
+                onClick={() => dispatch(adoptMessage(s.name))}
+              >
+                Adopt {s.name}
+              </Button>
             ))}
-          </tr>
-          <tr className="border-t border-[var(--border)]">
-            <td className="py-1.5 pr-2 text-xs text-[var(--muted-foreground)]">
-              footprint (modelled)
-            </td>
-            {sides.map((s) => (
-              <td key={s.key} className="py-1.5 pr-2 tabular-nums">
-                {s.footprint ? formatCO2(s.footprint.total) : "—"}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
-      <div className="mt-2 flex gap-2">
-        <span className="flex-1 self-center text-xs text-[var(--muted-foreground)]">
-          {payload.priceDelta === 0
-            ? "same monthly price"
-            : `${payload.b.isCurrent ? "current" : payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
-          {footprintDelta !== 0 &&
-            ` · ${formatCO2(Math.abs(footprintDelta))} ${footprintDelta > 0 ? "more" : "less"}`}
-        </span>
-        {sides
-          .filter((s) => !s.isCurrent)
-          .map((s) => (
-            <button
-              key={s.key}
-              disabled={inert}
-              onClick={() => dispatch(adoptMessage(s.name))}
-              className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-sm text-[var(--primary-foreground)] disabled:opacity-40"
-            >
-              Adopt {s.name}
-            </button>
-          ))}
-      </div>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

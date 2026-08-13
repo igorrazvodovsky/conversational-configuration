@@ -183,6 +183,10 @@
   },
   "active": "0a96195340f5dc8d",
   "lastOpenFiles": [
+    "specs/ui-component-library/tasks.md",
+    "specs/ui-component-library/design.md",
+    "specs/ui-component-library/requirements.md",
+    "specs/ui-component-library",
     "specs/agreement-workspace/tasks.md",
     "specs/agreement-workspace/design.md",
     "specs/agreement-workspace/requirements.md",
@@ -213,11 +217,7 @@
     "specs/configuration-canvas",
     "specs/agent-tools/tasks.md",
     "specs/agent-tools/requirements.md",
-    "specs/agent-tools/design.md",
     "specs/agent-tools",
-    "specs/solver-service/tasks.md",
-    "specs/solver-service/requirements.md",
-    "specs/solver-service",
-    "specs/product-model"
+    "specs/solver-service"
   ]
 }

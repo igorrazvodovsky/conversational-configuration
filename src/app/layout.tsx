@@ -5,6 +5,7 @@ import "@copilotkit/react-core/v2/styles.css";
 
 import { CopilotKit } from "@copilotkit/react-core/v2";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { TooltipProvider } from "@/components/ui/tooltip";
 // A2UI catalog: definitions + renderers in ./declarative-generative-ui/
 import { demonstrationCatalog } from "./declarative-generative-ui/renderers";
 
@@ -37,15 +38,17 @@ export default function RootLayout({
       */}
       <body className={`antialiased`} suppressHydrationWarning>
         <ThemeProvider>
-          <CopilotKit
-            runtimeUrl="/api/copilotkit"
-            inspectorDefaultAnchor={{ horizontal: "right", vertical: "top" }}
-            a2ui={{ catalog: demonstrationCatalog }}
-            openGenerativeUI={{}}
-            useSingleEndpoint={false}
-          >
-            {children}
-          </CopilotKit>
+          <TooltipProvider delayDuration={300}>
+            <CopilotKit
+              runtimeUrl="/api/copilotkit"
+              inspectorDefaultAnchor={{ horizontal: "right", vertical: "top" }}
+              a2ui={{ catalog: demonstrationCatalog }}
+              openGenerativeUI={{}}
+              useSingleEndpoint={false}
+            >
+              {children}
+            </CopilotKit>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

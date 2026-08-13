@@ -60,7 +60,7 @@ export function ExampleLayout({ chatContent, appContent }: ExampleLayoutProps) {
       <div
         className={`h-full overflow-hidden ${
           mode === "app"
-            ? "w-1/2 max-lg:w-full border-l border-[var(--border)] max-lg:border-l-0" // Half/half with the chat; full width on mobile
+            ? "w-1/2 max-lg:w-full border-l max-lg:border-l-0" // Half/half with the chat; full width on mobile
             : "w-0 border-l-0"
         }`}
       >

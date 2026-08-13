@@ -11,7 +11,11 @@
 
 import { useState } from "react";
 import { BadgePercent } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
 import { Spinner } from "@/components/ui/spinner";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { choiceMessage, formatMonthly } from "@/lib/configurator";
 import { useCardDispatch } from "./card-dispatch";
 
@@ -48,8 +52,8 @@ export function AskChoices({ toolCallId, status, result }: AskChoicesProps) {
 
   if (status !== "complete" || !result) {
     return (
-      <div className="my-2 flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
-        <Spinner size="sm" className="h-3 w-3" /> preparing options…
+      <div className="my-2 flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner className="size-3" /> preparing options…
       </div>
     );
   }
@@ -75,43 +79,43 @@ export function AskChoices({ toolCallId, status, result }: AskChoicesProps) {
   };
 
   return (
-    <div
-      className={`my-2 rounded-lg border border-[var(--border)] p-3 space-y-3 ${
-        inert ? "opacity-60" : ""
-      }`}
+    <Card
+      className={`my-2 gap-0 py-0 shadow-none ${inert ? "opacity-60" : ""}`}
     >
-      {payload.prompt && <p className="text-sm">{payload.prompt}</p>}
-      {payload.variables.map((variable) => (
-        <div key={variable.name}>
-          <div className="mb-1 text-xs font-medium text-[var(--muted-foreground)]">
-            {variable.label}
+      <CardContent className="space-y-3 p-3">
+        {payload.prompt && <p className="text-sm">{payload.prompt}</p>}
+        {payload.variables.map((variable) => (
+          <div key={variable.name}>
+            <div className="mb-1 text-xs font-medium text-muted-foreground">
+              {variable.label}
+            </div>
+            <Control
+              variable={variable}
+              selected={selections[variable.name]}
+              inert={inert}
+              onSelect={select}
+            />
           </div>
-          <Control
-            variable={variable}
-            selected={selections[variable.name]}
-            inert={inert}
-            onSelect={select}
-          />
-        </div>
-      ))}
-      {multi && (
-        <button
-          disabled={inert || Object.keys(selections).length === 0}
-          onClick={() =>
-            dispatch(
-              Object.entries(selections).map(([variable, value]) => ({
-                variable,
-                value,
-              })),
-            )
-          }
-          className="rounded-md bg-[var(--primary)] px-3 py-1.5 text-sm text-[var(--primary-foreground)] disabled:opacity-40"
-        >
-          Apply {Object.keys(selections).length || ""} choice
-          {Object.keys(selections).length === 1 ? "" : "s"}
-        </button>
-      )}
-    </div>
+        ))}
+        {multi && (
+          <Button
+            size="sm"
+            disabled={inert || Object.keys(selections).length === 0}
+            onClick={() =>
+              dispatch(
+                Object.entries(selections).map(([variable, value]) => ({
+                  variable,
+                  value,
+                })),
+              )
+            }
+          >
+            Apply {Object.keys(selections).length || ""} choice
+            {Object.keys(selections).length === 1 ? "" : "s"}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -146,11 +150,20 @@ function optionState(o: PayloadOption, selected?: string) {
 function CheapestMark() {
   return (
     <BadgePercent
-      className="inline h-3 w-3 text-emerald-600"
+      className="inline size-3 text-emerald-600"
       aria-label="cheapest valid option"
     />
   );
 }
+
+/**
+ * Disabled shadcn controls set `pointer-events: none`, which suppresses the
+ * native `title` — and every explanation of why an option is unavailable lives
+ * on one (docs/specs/ui-component-library, decision 4). Restoring pointer
+ * events keeps the reason reachable; a disabled control still cannot be
+ * clicked.
+ */
+const KEEP_TITLE = "disabled:pointer-events-auto";
 
 function ChipRow({
   variable,
@@ -168,24 +181,28 @@ function ChipRow({
       {variable.options.map((o) => {
         const { active, disabled } = optionState(o, selected);
         return (
-          <button
+          <Button
             key={o.value}
+            size="sm"
+            variant={active ? "default" : "outline"}
             disabled={disabled || inert}
             onClick={() => onSelect(variable.name, o.value)}
             title={disabled ? "ruled out by your other choices" : undefined}
-            className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-              active
-                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                : disabled
-                  ? "border-[var(--border)] opacity-40 line-through cursor-not-allowed"
-                  : "border-[var(--border)] hover:border-[var(--primary)]"
+            className={`font-normal ${
+              disabled
+                ? `cursor-not-allowed line-through opacity-40 ${KEEP_TITLE}`
+                : active
+                  ? ""
+                  : "hover:border-primary"
             }`}
           >
             {o.label} {o.cheapest && <CheapestMark />}
             {o.price > 0 && (
-              <span className="ml-1 text-xs opacity-70">+{formatMonthly(o.price)}</span>
+              <span className="text-xs opacity-70">
+                +{formatMonthly(o.price)}
+              </span>
             )}
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -203,16 +220,30 @@ function ScaleControl({
   inert: boolean;
   onSelect: (variable: string, value: string) => void;
 }) {
+  const active = variable.options.find(
+    (o) => optionState(o, selected).active,
+  )?.value;
+
   return (
     <div>
-      <div className="flex overflow-hidden rounded-md border border-[var(--border)]">
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        // Joined, not gapped: this control is a range, and separated cells
+        // read as independent options. Lyra's default spacing is 2.
+        spacing={0}
+        value={active ?? ""}
+        onValueChange={(value) => value && onSelect(variable.name, value)}
+        className="w-full"
+      >
         {variable.options.map((o) => {
-          const { active, disabled } = optionState(o, selected);
+          const { disabled } = optionState(o, selected);
           return (
-            <button
+            <ToggleGroupItem
               key={o.value}
+              value={o.value}
               disabled={disabled || inert}
-              onClick={() => onSelect(variable.name, o.value)}
               title={
                 disabled
                   ? "outside the valid range for your other choices"
@@ -220,20 +251,19 @@ function ScaleControl({
                     ? `+${formatMonthly(o.price)}`
                     : undefined
               }
-              className={`flex-1 border-r border-[var(--border)] px-1 py-1.5 text-xs last:border-r-0 transition-colors ${
-                active
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                  : disabled
-                    ? "bg-[var(--secondary)] text-[var(--muted-foreground)] opacity-40 cursor-not-allowed"
-                    : "hover:bg-[var(--secondary)]"
+              // h-auto + whitespace-normal: toggle items are nowrap and fixed
+              // height by default, which makes long scale labels ("630 kg /
+              // 8 persons") overlap their neighbours instead of wrapping.
+              className={`h-auto min-w-0 flex-1 px-1 py-1.5 text-xs leading-tight whitespace-normal data-[state=on]:bg-primary data-[state=on]:text-primary-foreground ${
+                disabled ? `bg-secondary opacity-40 ${KEEP_TITLE}` : ""
               }`}
             >
               {o.label} {o.cheapest && <CheapestMark />}
-            </button>
+            </ToggleGroupItem>
           );
         })}
-      </div>
-      <div className="mt-0.5 text-[10px] text-[var(--muted-foreground)]">
+      </ToggleGroup>
+      <div className="mt-0.5 text-[10px] text-muted-foreground">
         greyed segments are outside the currently valid range
       </div>
     </div>
@@ -252,35 +282,46 @@ function OptionList({
   onSelect: (variable: string, value: string) => void;
 }) {
   return (
-    <div className="divide-y divide-[var(--border)] rounded-md border border-[var(--border)]">
+    <div className="divide-y border">
       {variable.options.map((o) => {
         const { active, disabled } = optionState(o, selected);
         return (
-          <button
+          <Item
             key={o.value}
-            disabled={disabled || inert}
-            onClick={() => onSelect(variable.name, o.value)}
-            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+            asChild
+            size="sm"
+            className={`px-3 py-2 ${
               active
-                ? "bg-[var(--secondary)] font-medium"
+                ? "bg-secondary font-medium"
                 : disabled
-                  ? "opacity-40 cursor-not-allowed"
-                  : "hover:bg-[var(--secondary)]"
+                  ? "opacity-40"
+                  : "hover:bg-secondary"
             }`}
           >
-            <span className={`flex-1 ${disabled ? "line-through" : ""}`}>
-              {o.label} {o.cheapest && <CheapestMark />}
-            </span>
-            {disabled ? (
-              <span className="text-xs text-[var(--muted-foreground)]">
-                unavailable
-              </span>
-            ) : (
-              <span className="text-xs tabular-nums text-[var(--muted-foreground)]">
-                {o.price > 0 ? `+${formatMonthly(o.price)}` : "included"}
-              </span>
-            )}
-          </button>
+            <button
+              type="button"
+              disabled={disabled || inert}
+              onClick={() => onSelect(variable.name, o.value)}
+              className="w-full text-left disabled:cursor-not-allowed"
+            >
+              <ItemContent>
+                <ItemTitle
+                  className={`font-[inherit] ${disabled ? "line-through" : ""}`}
+                >
+                  {o.label} {o.cheapest && <CheapestMark />}
+                </ItemTitle>
+              </ItemContent>
+              <ItemActions className="text-xs text-muted-foreground">
+                {disabled ? (
+                  <span>unavailable</span>
+                ) : (
+                  <span className="tabular-nums">
+                    {o.price > 0 ? `+${formatMonthly(o.price)}` : "included"}
+                  </span>
+                )}
+              </ItemActions>
+            </button>
+          </Item>
         );
       })}
     </div>

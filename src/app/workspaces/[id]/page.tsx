@@ -15,6 +15,13 @@ import {
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+} from "@/components/ui/empty";
 import { ExampleLayout } from "@/components/example-layout";
 import { ConfigCanvas } from "@/components/config-canvas";
 import { ConversationSidebar } from "@/components/workspace/conversation-sidebar";
@@ -54,18 +61,26 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
 
   if (notFound) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-2 bg-[var(--background)] text-sm">
-        <p>This elevator does not exist (or the agent is not running).</p>
-        <Link href="/" className="underline underline-offset-2">
-          Back to all elevators
-        </Link>
+      <main className="flex min-h-dvh flex-col items-center justify-center bg-background">
+        <Empty>
+          <EmptyHeader>
+            <EmptyDescription>
+              This elevator does not exist (or the agent is not running).
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button asChild variant="link">
+              <Link href="/">Back to all elevators</Link>
+            </Button>
+          </EmptyContent>
+        </Empty>
       </main>
     );
   }
 
   return (
     <StaleThreadContext.Provider value={staleThread}>
-      <div className="flex h-dvh w-full overflow-hidden bg-[var(--background)]">
+      <div className="flex h-dvh w-full overflow-hidden bg-background">
         <ConversationSidebar
           workspace={workspace}
           workspaceName={workspaceName}

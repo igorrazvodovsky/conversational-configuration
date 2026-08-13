@@ -1,90 +1,149 @@
-/* CopilotKit brand fonts */
+/* Body and code faces (kept from the CopilotKit starter; the palette is not) */
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300..800&family=Spline+Sans+Mono:wght@400;500;600&display=swap");
 
 @import "tailwindcss";
+/* Enter/exit keyframes the shadcn overlay components (popover, tooltip) use. */
+@import "tw-animate-css";
+/* Custom variants (data-open, data-checked, data-vertical…) and utilities the
+   Lyra-style components are written against. Required, not optional. */
+@import "shadcn/tailwind.css";
 
+/*
+ * Defined AFTER the imports so it wins. Deliberately broader than shadcn's
+ * default `&:is(.dark *)`: ThemeProvider stamps `.dark` on <html> itself, and
+ * the default form does not match the element carrying the class.
+ */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #010507;
+  /* shadcn zinc, oklch (docs/specs/ui-component-library/design.md, decision 2) */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
 
-  /* Semantic tokens — CopilotKit brand */
-  --card: #ffffff;
-  --card-foreground: #010507;
-  --primary: #010507;
-  --primary-foreground: #ffffff;
-  --secondary: #ededf5;
-  --secondary-foreground: #010507;
-  --muted: #ededf5;
-  --muted-foreground: #57575b;
-  --accent: #eee6fe;
-  --accent-foreground: #010507;
-  --destructive: #fa5f67;
-  --destructive-foreground: #ffffff;
-  --border: #dbdbe5;
-  --input: #dbdbe5;
-  --ring: #bec2ff;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
 
-  /* Chart tokens */
-  --chart-tooltip-bg: #ffffff;
-  --chart-tooltip-border: #dbdbe5;
-  --chart-axis: #57575b;
+  /* Lyra is square: every corner, everywhere. The ramp below is pinned rather
+     than derived, so this only feeds the stray `rounded-[var(--radius)]` in the
+     starter code. */
+  --radius: 0rem;
 
-  --radius: 0.75rem;
+  /* Recharts reads these directly rather than through a utility class. */
+  --chart-tooltip-bg: var(--popover);
+  --chart-tooltip-border: var(--border);
+  --chart-axis: var(--muted-foreground);
 
-  /* Override CopilotKit font */
+  /* Override CopilotKit's own font */
   --cpk-default-font-family: var(--font-body);
 
-  /* Fonts */
   --font-body: "Plus Jakarta Sans", "DM Sans", "Segoe UI", sans-serif;
   --font-code:
     "Spline Sans Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
 
-  /* Brand accent colors */
+  /* The only brand accents still referenced — by the showcase pill rules below */
   --cpk-mint-400: #85ecce;
-  --cpk-mint-800: #189370;
   --cpk-lilac-400: #bec2ff;
-  --cpk-orange-400: #ffac4d;
-  --cpk-yellow-400: #fff388;
-  --cpk-ambient-gradient: linear-gradient(
-    90deg,
-    #bec2ff 0%,
-    #85ecce 45.673%,
-    #ffac4d 100%
-  );
 }
 
 :root.dark,
 .dark {
-  --background: #010507;
-  --foreground: #ffffff;
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.92 0.004 286.32);
+  --primary-foreground: oklch(0.21 0.006 285.885);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.552 0.016 285.938);
 
-  --card: #191a1e;
-  --card-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #010507;
-  --secondary: #242529;
-  --secondary-foreground: #ffffff;
-  --muted: #242529;
-  --muted-foreground: #adadb2;
-  --accent: #303136;
-  --accent-foreground: #ffffff;
-  --destructive: #fa5f67;
-  --destructive-foreground: #ffffff;
-  --border: #303136;
-  --input: #303136;
-  --ring: #bec2ff;
-
-  --chart-tooltip-bg: #191a1e;
-  --chart-tooltip-border: #303136;
-  --chart-axis: #adadb2;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-body);
+/*
+ * Bridge to Tailwind v4's utility namespace, so that `bg-background`,
+ * `text-muted-foreground`, `border-input` are utilities at all. Without this
+ * block those class names resolve to nothing — no error, just unstyled
+ * elements (docs/specs/ui-component-library/design.md, decision 2).
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-code);
+
+  /* Every step is pinned to zero rather than derived from --radius, so a stray
+     `rounded-md` cannot reintroduce a corner. Literal classes (`rounded-full`,
+     `rounded-[4px]`) bypass the ramp entirely and were removed at the call
+     sites instead; the surviving ones are all in dead starter code. */
+  --radius-sm: 0rem;
+  --radius-md: 0rem;
+  --radius-lg: 0rem;
+  --radius-xl: 0rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
 }
 
 body,
@@ -95,8 +154,7 @@ html {
 /*
  * Showcase highlight for suggestion pills.
  * Applied via className in use-example-suggestions.tsx when showcase.json
- * is set to a non-default mode (e.g. "a2ui", "opengenui"). Uses CopilotKit
- * brand colors with a subtle tinted background.
+ * is set to a non-default mode (e.g. "a2ui", "opengenui").
  * Add new showcase variants here following the same pattern.
  */
 [data-copilotkit] button[data-slot="suggestion-pill"].a2ui-highlight {
