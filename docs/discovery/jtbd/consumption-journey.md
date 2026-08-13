@@ -8,7 +8,7 @@ realize need → explore options → configure & negotiate → commit → instal
 
 Under the product frame the supplier's journey effectively ends at *commit*; everything after is a different department and a different contract. Under the service frame the configuration becomes the living core of the agreement: the configured outcome terms (handling capacity, uptime level, response time, term, monthly price) persist through operate/adjust/renew, and mid-contract reconfiguration is a normal event rather than a sales exception.
 
-Journey stages the pivot newly makes configurable: *adjust* (change the outcome terms, see the ripple) and *renew* (resume the live configuration and revise it against actual usage). This is why the living-document concept has no "start" and no "finish" ([../direction.md](../direction.md) §1) — joining a document already in some state is what mid-contract revision and renewal already are.
+Journey stages the service frame makes configurable: *adjust* (change the outcome terms, see the ripple) and *renew* (resume the live configuration and revise it against actual usage). This is why the living-document concept has no "start" and no "finish" ([../direction.md](../direction.md) §1) — joining a document already in some state is what mid-contract revision and renewal already are.
 
 ## Hypothesized friction worth designing for
 

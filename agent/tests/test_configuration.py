@@ -65,15 +65,13 @@ def test_apply_unknown_variable_and_value(empty):
         apply_choices(empty, {"building_type": "airport"}, "user")
 
 
-def test_candidate_extends_and_prices(empty):
+def test_candidate_extends_and_prices_monthly(empty):
     config, _ = apply_choices(empty, {"building_type": "hotel", "travel": "tower_75_100"}, "user")
     config = make_candidate(config)
     cand = config["candidate"]
     assert cand["assignment"]["building_type"] == "hotel"
     assert SOLVER.check(cand["assignment"])
-    assert cand["price"] == sum(
-        SOLVER.model.price_of(v, val) for v, val in cand["assignment"].items()
-    )
+    assert cand["price"] == SOLVER.model.monthly(cand["assignment"])
 
 
 def test_candidate_dropped_when_overridden(empty):
@@ -123,6 +121,18 @@ def test_payload_control_heuristic(empty):
         "car_size": "list",         # forced list despite dimensions group
         "wall_finish": "list",      # forced list
     }
+
+
+def test_payload_prices_are_monthly_deltas_at_term_in_effect(empty):
+    from src.configuration import MODEL, build_ask_payload
+    config, _ = apply_choices(empty, {"contract_term": "y10"}, "user")
+    payload = build_ask_payload(config, ["door_width", "service_level"])
+    by_var = {v["name"]: {o["value"]: o for o in v["options"]} for v in payload["variables"]}
+    # hardware: cost basis amortized at the chosen 120-month term
+    factor = MODEL.pricing.financing_factor
+    assert by_var["door_width"]["d1000"]["price"] == int(600 * factor / 120 + 0.5)
+    # agreement: the recurring fee passes through unamortized
+    assert by_var["service_level"]["premium"]["price"] == 550
 
 
 def test_payload_statuses_and_cheapest(empty):
@@ -234,6 +244,28 @@ def test_compare_against_current_candidate(with_candidate):
     # only differing variables appear
     for d in payload["differences"]:
         assert d["a"]["value"] != d["b"]["value"]
+
+
+def test_compare_across_terms_uses_each_sides_own_term(empty):
+    """Two agreements differing in term (and a hardware option): per-side
+    hardware deltas are amortized at each side's own term, and the price
+    delta is the monthly difference."""
+    from src.configuration import MODEL
+    config, _ = apply_choices(
+        empty, {"building_type": "hotel", "contract_term": "y5", "cop": "standard"}, "user"
+    )
+    config = save_frame(make_candidate(config), "short")
+    config, _ = revise(config, {"contract_term": "y15", "cop": "touch_premium"}, [], "user")
+    config = make_candidate(config)
+
+    payload = frame_comparison(config, "short")
+    diffs = {d["variable"]: d for d in payload["differences"]}
+    assert set(diffs) >= {"contract_term", "cop"}
+    factor = MODEL.pricing.financing_factor
+    cop_price = MODEL.price_of("cop", "touch_premium")
+    assert diffs["cop"]["a"]["price"] == 0  # standard, no cost basis
+    assert diffs["cop"]["b"]["price"] == int(cop_price * factor / 180 + 0.5)
+    assert payload["priceDelta"] == payload["b"]["price"] - payload["a"]["price"]
 
 
 def test_compare_unknown_frame(with_candidate):

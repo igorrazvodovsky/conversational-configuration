@@ -12,13 +12,13 @@
 
 - `set_choices(choices: dict[str, str], source: "user" | "agent")` → on success, `Command(update={"configuration": ...})` with a ToolMessage listing newly forced values; on conflict, no state update, ToolMessage carries `Conflict.describe()` plus the structured ids so the LLM can negotiate.
 - `clear_choices(variables: list[str])`
-- `propose_completion()` → stores `{assignment, price}` as candidate, returns it.
+- `propose_completion()` → stores `{assignment, price}` as candidate, returns it. Per the [service-agreement spec](../service-agreement/design.md), `price` means EUR/month (key name kept for thread-resumption compatibility) and the message presents a service agreement over its term.
 - `get_configuration()` → read-only echo of state for the LLM (statuses summarized: only non-open facts, to keep tokens down).
-- `describe_product()` → variables, groups, option labels and prices from the model, so the LLM never invents the catalog.
+- `describe_product()` → variables, groups, option labels and prices from the model, so the LLM never invents the catalog. All prices it prints are EUR/month — agreement fees directly, hardware as amortized deltas at the default term — so the LLM never sees a capex figure it could leak.
 
 ## System prompt
 
-Rewritten around the elicitation strategy: needs-first questions, record commitments via `set_choices`, announce forced values, surface conflicts with the rule labels verbatim, offer a priced candidate early and refine by critique. Explicit prohibition: never claim feasibility/infeasibility without a tool result.
+Rewritten around the elicitation strategy: needs-first questions, record commitments via `set_choices`, announce forced values, surface conflicts with the rule labels verbatim, offer a priced candidate early and refine by critique. Explicit prohibition: never claim feasibility/infeasibility without a tool result. Per the [service-agreement spec](../service-agreement/design.md) the frame is a service agreement: elicitation targets the building and its outcomes (traffic, budget per month, uptime, commitment length), candidates are presented as "€X/month over the N-year term", and a second prohibition applies — never quote a one-off capex figure.
 
 ## State streaming
 

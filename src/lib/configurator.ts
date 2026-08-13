@@ -35,7 +35,8 @@ export interface Configuration {
 export interface ModelOption {
   value: string;
   label: string;
-  price?: number;
+  price?: number; // cost basis (EUR), amortized into the monthly fee — never shown raw
+  monthly_price?: number; // recurring fee (EUR/month)
 }
 
 export interface ModelVariable {
@@ -45,11 +46,20 @@ export interface ModelVariable {
   options: ModelOption[];
 }
 
+export interface Pricing {
+  financing_factor: number;
+  term_months: Record<string, number>;
+  default_term: string;
+}
+
 export const productModel = rawModel as unknown as {
   product: string;
   name: string;
+  pricing: Pricing;
   variables: ModelVariable[];
 };
+
+export const pricing = productModel.pricing;
 
 export const variablesByName: Map<string, ModelVariable> = new Map(
   productModel.variables.map((v) => [v.name, v]),
@@ -75,6 +85,32 @@ export function optionLabel(variable: string, value: string): string {
 
 export function formatPrice(eur: number): string {
   return `€${eur.toLocaleString("en-IE")}`;
+}
+
+export function formatMonthly(eurPerMonth: number): string {
+  return `${formatPrice(eurPerMonth)}/mo`;
+}
+
+/**
+ * An option's contribution to the monthly fee: its recurring fee, or its cost
+ * basis amortized over `termMonths` (docs/specs/service-agreement). Mirrors the
+ * agent's half-up rounding (Math.round rounds half up for positive values) —
+ * the single place the frontend re-derives money, from the same imported JSON
+ * the agent reads.
+ */
+export function monthlyDelta(option: ModelOption, termMonths: number): number {
+  if (option.monthly_price) return option.monthly_price;
+  if (!option.price) return 0;
+  return Math.round((option.price * pricing.financing_factor) / termMonths);
+}
+
+/** Amortization months for display: the chosen term, else the candidate's, else the default. */
+export function termMonthsInEffect(config: Configuration): number {
+  const term =
+    config.choices["contract_term"]?.value ??
+    config.candidate?.assignment["contract_term"] ??
+    pricing.default_term;
+  return pricing.term_months[term] ?? pricing.term_months[pricing.default_term];
 }
 
 /**

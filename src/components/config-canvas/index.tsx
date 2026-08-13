@@ -17,9 +17,11 @@ import {
   Configuration,
   ModelVariable,
   choiceMessage,
-  formatPrice,
+  formatMonthly,
   modelGroups,
+  monthlyDelta,
   productModel,
+  termMonthsInEffect,
 } from "@/lib/configurator";
 
 const EMPTY: Configuration = {
@@ -50,7 +52,7 @@ export function ConfigCanvas() {
       <div className="max-w-3xl mx-auto px-8 py-8">
         <header className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold">Elevator specification</h1>
+            <h1 className="text-xl font-semibold">Service agreement</h1>
             <p className="text-sm text-[var(--muted-foreground)]">
               {productModel.name}
             </p>
@@ -59,10 +61,10 @@ export function ConfigCanvas() {
             {config.candidate ? (
               <>
                 <div className="text-2xl font-semibold tabular-nums">
-                  {formatPrice(config.candidate.price)}
+                  {formatMonthly(config.candidate.price)}
                 </div>
                 <div className="text-xs text-[var(--muted-foreground)]">
-                  current proposal
+                  cheapest completion
                 </div>
               </>
             ) : (
@@ -90,7 +92,7 @@ export function ConfigCanvas() {
               >
                 {frame.name}
                 <span className="ml-1 tabular-nums text-[var(--muted-foreground)]">
-                  {formatPrice(frame.price)}
+                  {formatMonthly(frame.price)}
                 </span>
               </button>
             ))}
@@ -115,6 +117,7 @@ export function ConfigCanvas() {
                   key={variable.name}
                   variable={variable}
                   config={config}
+                  termMonths={termMonthsInEffect(config)}
                   disabled={isRunning}
                   onSelect={dispatchChoice}
                 />
@@ -159,11 +162,13 @@ const KIND_BADGE: Record<string, { label: string; icon?: React.ReactNode }> = {
 function VariableRow({
   variable,
   config,
+  termMonths,
   disabled,
   onSelect,
 }: {
   variable: ModelVariable;
   config: Configuration;
+  termMonths: number;
   disabled: boolean;
   onSelect: (variable: string, value: string) => void;
 }) {
@@ -208,6 +213,7 @@ function VariableRow({
             const status = statuses[option.value] ?? "open";
             const isCurrent = display.value === option.value;
             const invalid = status === "invalid";
+            const delta = monthlyDelta(option, termMonths);
             return (
               <button
                 key={option.value}
@@ -231,8 +237,8 @@ function VariableRow({
               >
                 {isCurrent && <Check className="mr-1 inline h-3 w-3" />}
                 {option.label}
-                {option.price ? (
-                  <span className="ml-1 opacity-70">+{formatPrice(option.price)}</span>
+                {delta ? (
+                  <span className="ml-1 opacity-70">+{formatMonthly(delta)}</span>
                 ) : null}
               </button>
             );

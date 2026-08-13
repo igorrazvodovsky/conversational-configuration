@@ -2,7 +2,51 @@
   "product": "elevator",
   "name": "EP-3000 Elevator platform",
   "currency": "EUR",
+  "pricing": {
+    "financing_factor": 1.25,
+    "term_months": { "y5": 60, "y10": 120, "y15": 180 },
+    "default_term": "y10"
+  },
   "variables": [
+    {
+      "name": "service_level",
+      "label": "Service level",
+      "group": "agreement",
+      "options": [
+        { "value": "basic", "label": "Business-hours support, next-day response", "monthly_price": 150 },
+        { "value": "standard", "label": "24/7 call-out, 8 h response, 99.5 % uptime", "monthly_price": 300 },
+        { "value": "premium", "label": "99.9 % uptime, 4 h response, remote diagnostics", "monthly_price": 550 }
+      ]
+    },
+    {
+      "name": "contract_term",
+      "label": "Contract term",
+      "group": "agreement",
+      "options": [
+        { "value": "y5", "label": "5 years" },
+        { "value": "y10", "label": "10 years" },
+        { "value": "y15", "label": "15 years" }
+      ]
+    },
+    {
+      "name": "usage_profile",
+      "label": "Usage profile",
+      "group": "agreement",
+      "options": [
+        { "value": "low", "label": "A few trips an hour", "monthly_price": 50 },
+        { "value": "medium", "label": "Steady traffic through the day", "monthly_price": 120 },
+        { "value": "heavy", "label": "Near-continuous traffic", "monthly_price": 260 }
+      ]
+    },
+    {
+      "name": "connectivity_package",
+      "label": "Connectivity package",
+      "group": "agreement",
+      "options": [
+        { "value": "none", "label": "Not connected" },
+        { "value": "connected", "label": "Remote monitoring and diagnostics", "monthly_price": 80 }
+      ]
+    },
     {
       "name": "building_type",
       "label": "Building type",
@@ -560,6 +604,40 @@
       "type": "implication",
       "if_all": [{ "var": "door_type", "in": ["center_4"] }],
       "then": { "var": "shaft", "in": ["t4_2500x2200", "t5_2700x2900", "t6_3000x3000"] }
+    },
+    {
+      "id": "R31",
+      "label": "The 99.9 % uptime promise requires remote monitoring",
+      "type": "implication",
+      "if_all": [{ "var": "service_level", "in": ["premium"] }],
+      "then": { "var": "connectivity_package", "in": ["connected"] }
+    },
+    {
+      "id": "R32",
+      "label": "Near-continuous traffic exceeds the hydraulic drive's duty cycle",
+      "type": "implication",
+      "if_all": [{ "var": "usage_profile", "in": ["heavy"] }],
+      "then": { "var": "drive", "in": ["gearless_mrl", "gearless_mr"] }
+    },
+    {
+      "id": "R33",
+      "label": "Building type bounds the plausible usage profile",
+      "type": "table",
+      "vars": ["building_type", "usage_profile"],
+      "allowed": [
+        ["residential", "low"], ["residential", "medium"],
+        ["hotel", "medium"],
+        ["office", "medium"], ["office", "heavy"],
+        ["retail", "medium"], ["retail", "heavy"],
+        ["hospital", "heavy"]
+      ]
+    },
+    {
+      "id": "R34",
+      "label": "Hospitals require at least the standard service level",
+      "type": "implication",
+      "if_all": [{ "var": "building_type", "in": ["hospital"] }],
+      "then": { "var": "service_level", "in": ["standard", "premium"] }
     }
   ]
 }

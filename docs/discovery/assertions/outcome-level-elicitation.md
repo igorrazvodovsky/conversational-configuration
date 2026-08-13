@@ -2,7 +2,7 @@
 
 People can specify an agreement in outcome terms — handling capacity, uptime, response time, term, monthly price — and let hardware derive beneath.
 
-*Evidence today.* Tacton's needs-based practice ([../../research/configuration-field.md](../../research/configuration-field.md)), plus the [service frame](../../specs/eaas-pivot/requirements.md), which gives elicitation a natural top layer the product frame lacked.
+*Evidence today.* Tacton's needs-based practice ([../../research/configuration-field.md](../../research/configuration-field.md)), plus the [service frame](../../specs/service-agreement/requirements.md), which gives elicitation a natural top layer the product frame lacked.
 
 *How we would know it is wrong.* Users insist on specifying hardware directly, or cannot judge outcome terms without seeing hardware first.
 

@@ -10,7 +10,7 @@ Standing summary of the interaction-design discovery for the conversational conf
 
 *The direction.* One concept — *a negotiation over a living document* — with eight principles that make it decidable. The canvas holds the agreement; the chat holds the negotiation; the solver sits at the table as a third party that checks every draft and never bluffs.
 
-*What is settled and out of frame.* The service business model (the [service pivot](../specs/eaas-pivot/requirements.md)), footprint as a decision dimension (the [footprint spec](../specs/environmental-footprint/requirements.md)), and the solver-as-source-of-truth architecture are fixed. Discovery covers only their interaction consequences.
+*What is settled and out of frame.* The service business model (the [service-agreement spec](../specs/service-agreement/requirements.md)), footprint as a decision dimension (the [footprint spec](../specs/environmental-footprint/requirements.md)), and the solver-as-source-of-truth architecture are fixed. Discovery covers only their interaction consequences.
 
 ## 2. The problem, elaborated
 
@@ -51,4 +51,4 @@ The configuration literature settled the architecture question a decade before L
 
 Industry practice converged independently on the same interaction shape: needs-based entry, continuous validity, entry from any angle, propose-check-repair rather than a wizard. Elevators are the founding benchmark of the field, and the original 1988 system was already propose-and-revise. The prototype is not inventing a flow; it is giving a known flow a conversational surface.
 
-The user's job outlasts the purchase. [Laddering](jtbd/job-ladder.md) from "configure an elevator" reaches "keep people and goods moving through a building over its life". A product configurator serves define-through-confirm and exits precisely where the operator's struggle begins. That is the argument the service pivot rests on, and it is also what makes revision the primary interaction rather than an edge case.
+The user's job outlasts the purchase. [Laddering](jtbd/job-ladder.md) from "configure an elevator" reaches "keep people and goods moving through a building over its life". A product configurator serves define-through-confirm and exits precisely where the operator's struggle begins. That is the argument the service frame rests on, and it is also what makes revision the primary interaction rather than an edge case.

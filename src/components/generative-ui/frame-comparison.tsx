@@ -1,18 +1,20 @@
 "use client";
 
 /**
- * Side-by-side frame comparison for the agent's compare_frames tool
- * (docs/specs/nonlinear-interaction): only the differing variables, both values, and the price
- * delta — computed backend-side, valid by construction. Adopting a side
- * dispatches a structured message the agent maps onto adopt_frame.
+ * Side-by-side agreement comparison for the agent's compare_frames tool
+ * (docs/specs/nonlinear-interaction; monthly semantics from docs/specs/service-agreement):
+ * only the differing variables, both values with monthly deltas at each side's
+ * own term, and the monthly-price delta — computed backend-side, valid by
+ * construction. Adopting a side dispatches a structured message the agent maps
+ * onto adopt_frame.
  */
 
 import { Spinner } from "@/components/ui/spinner";
-import { adoptMessage, formatPrice } from "@/lib/configurator";
+import { adoptMessage, formatMonthly } from "@/lib/configurator";
 import { useCardDispatch } from "./card-dispatch";
 
 interface SideValue {
-  value: string;
+  value: string | null; // null when a frame persisted before the service frame lacks an agreement variable
   label: string;
   price: number;
 }
@@ -90,7 +92,7 @@ export function FrameComparison({
                   {d[k].label}
                   {d[k].price > 0 && (
                     <span className="ml-1 text-xs tabular-nums text-[var(--muted-foreground)]">
-                      +{formatPrice(d[k].price)}
+                      +{formatMonthly(d[k].price)}
                     </span>
                   )}
                 </td>
@@ -103,7 +105,7 @@ export function FrameComparison({
             </td>
             {sides.map((s) => (
               <td key={s.key} className="py-1.5 pr-2 tabular-nums">
-                {formatPrice(s.price)}
+                {formatMonthly(s.price)}
               </td>
             ))}
           </tr>
@@ -112,8 +114,8 @@ export function FrameComparison({
       <div className="mt-2 flex gap-2">
         <span className="flex-1 self-center text-xs text-[var(--muted-foreground)]">
           {payload.priceDelta === 0
-            ? "same price"
-            : `${payload.b.isCurrent ? "current" : payload.b.name} is ${formatPrice(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
+            ? "same monthly price"
+            : `${payload.b.isCurrent ? "current" : payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
         </span>
         {sides
           .filter((s) => !s.isCurrent)

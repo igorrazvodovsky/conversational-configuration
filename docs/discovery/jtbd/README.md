@@ -9,7 +9,7 @@ Method: plays from the JTBD Playbook set — *Scope the JTBD Domain*, *Expand Ma
 | Note | What it holds |
 |---|---|
 | [domain.md](domain.md) | Main job statement, job performer, buyers and influencers |
-| [job-ladder.md](job-ladder.md) | The why-ladder from "configure an elevator" upward — the argument the service pivot rests on |
+| [job-ladder.md](job-ladder.md) | The why-ladder from "configure an elevator" upward — the argument the service frame rests on |
 | [job-map.md](job-map.md) | The main job as eight stages, and where a product configurator exits |
 | [persona-delivery-lead.md](persona-delivery-lead.md) | Developer's/GC's project lead on a new build |
 | [persona-design-specifier.md](persona-design-specifier.md) | The architect — the articulation barrier made flesh |
@@ -17,4 +17,4 @@ Method: plays from the JTBD Playbook set — *Scope the JTBD Domain*, *Expand Ma
 | [consumption-journey.md](consumption-journey.md) | How the offering is bought, used, adjusted, renewed — product frame vs service frame |
 | [job-stories.md](job-stories.md) | Four stories aligned to the [demo scenarios](../../specs/demo-scenarios/requirements.md) |
 
-The original document's implications section is not a note: its content was absorbed into [problem-framing.md](../problem-framing.md), [direction.md](../direction.md), and spec [007](../../specs/eaas-pivot/requirements.md).
+The original document's implications section is not a note: its content was absorbed into [problem-framing.md](../problem-framing.md), [direction.md](../direction.md), and the [service-agreement spec](../../specs/service-agreement/requirements.md).

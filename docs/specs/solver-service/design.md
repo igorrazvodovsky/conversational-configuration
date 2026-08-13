@@ -4,7 +4,7 @@
 
 `agent/src/solver/` package:
 
-- `model.py` — load and validate a 001-schema JSON model into typed structures.
+- `model.py` — load and validate a product-model JSON file into typed structures; per the [service-agreement spec](../service-agreement/design.md) it also parses `monthly_price` and the `pricing` block, and owns the monthly-fee arithmetic (`ProductModel.monthly`, `monthly_option_delta`) with half-up rounding mirrored by the frontend.
 - `service.py` — `ConfigSolver` class; one instance per model, holding a persistent `z3.Solver`.
 
 ## Encoding
@@ -16,7 +16,7 @@ One Bool per (variable, value) — `sel[var][val]` — with exactly-one constrai
 - `check(choices)` — `solver.check(assumptions)` where assumptions are the choices' `sel` literals. Incremental: learned clauses persist across calls.
 - `valid_options(choices)` — one `Solver.consequences(assumptions, all_sel_literals)` call; a value is invalid iff its literal is a negative consequence, forced iff positive. Returns `{var: {value: "open" | "forced" | "invalid"}}` plus the chosen values.
 - `explain(choices)` — on unsat, `unsat_core()` over choice literals, deletion-shrunk to a true MUS; each core element mapped back to (variable, value). Rule attribution: business rules are asserted via `assert_and_track` with their R-ids, so the core also yields the violated rule ids/labels.
-- `complete(choices, objective="price")` — `z3.Optimize` seeded with the same constraints plus choice assertions, minimizing the sum of option price deltas; returns full assignment + total price. A separate Optimize instance per call (Optimize is not assumption-incremental); acceptable at this scale.
+- `complete(choices, objective="price")` — cheapest-*monthly* completion per the [service-agreement spec](../service-agreement/design.md): for each contract term not ruled out (one solve when the term is chosen), a `z3.Optimize` minimizes the linear objective Σ cost basis × financing_factor + months × Σ monthly_price (integer-scaled); the lowest monthly wins, ties to the shorter term. Returns full assignment + monthly fee (EUR/month). A separate Optimize instance per term per call (Optimize is not assumption-incremental); acceptable at this scale.
 - `repairs(choices, changes, limit=3)` (added by [nonlinear interaction](../nonlinear-interaction/design.md)) — the changes asserted hard, each existing choice a weight-1 soft constraint on a per-call `Optimize`; the first optimum is the max-retention repair, then a blocking clause (`Or` of the dropped literals) forces each next solution to retain something previously dropped, yielding distinct alternatives in non-increasing retention order. Each `Repair` carries dropped/kept/changes pairs, the forced ripple (via `valid_options` on the repaired set), and rule attribution (via `explain` on kept + changes + dropped, which is unsat by construction).
 
 ## Testing

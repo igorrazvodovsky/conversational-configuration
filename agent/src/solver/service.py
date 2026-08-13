@@ -11,7 +11,7 @@ from typing import Literal
 
 from z3 import And, Bool, BoolRef, If, Implies, Not, Optimize, Or, Solver, is_true, sat, unsat
 
-from .model import Constraint, ProductModel
+from .model import TERM_VAR, Constraint, ProductModel
 
 Status = Literal["chosen", "forced", "open", "invalid"]
 
@@ -228,30 +228,60 @@ class ConfigSolver:
         return out
 
     def complete(self, choices: dict[str, str], objective: str = "price") -> tuple[dict[str, str], int]:
-        """Cheapest full valid configuration extending `choices`. Returns (assignment, total price)."""
+        """Cheapest-monthly full valid configuration extending `choices`.
+        Returns (assignment, monthly fee in EUR/month).
+
+        For a fixed contract term, minimizing the monthly fee is the linear
+        objective Σ cost_basis × financing_factor + months × Σ monthly_price
+        (scaled to integers). When the term is unchosen, each term the solver
+        hasn't ruled out is solved separately (≤ len(domain) Optimize calls)
+        and the lowest monthly wins; ties go to the shorter term.
+        """
         if objective != "price":
             raise ValueError(f"unknown objective {objective!r}")
+        pricing = self.model.pricing
+        if pricing is None:
+            raise ValueError("model has no pricing block — cannot derive a monthly fee")
         conflict = self.explain(choices)
         if conflict is not None:
             raise ConflictError(conflict, conflict.describe(self.model))
 
-        opt = Optimize()
-        self._add_structure(opt)
-        self._add_rules(opt, tracked=False)
-        for var, val in choices.items():
-            opt.add(self.sel[(var, val)])
-        total = sum(
-            If(self.sel[(var.name, o.value)], o.price, 0)
-            for var in self.model.variables.values()
-            for o in var.options
-        )
-        opt.minimize(total)
-        assert opt.check() == sat
-        m = opt.model()
+        if TERM_VAR in choices:
+            terms = [choices[TERM_VAR]]
+        else:
+            terms = [
+                t for t in self.model.variable(TERM_VAR).values
+                if self.check({**choices, TERM_VAR: t})
+            ]
+        terms.sort(key=lambda t: pricing.term_months[t])
 
-        assignment = {
-            var.name: next(v for v in var.values if is_true(m.evaluate(self.sel[(var.name, v)], model_completion=True)))
-            for var in self.model.variables.values()
-        }
-        price = sum(self.model.price_of(var, val) for var, val in assignment.items())
-        return assignment, price
+        factor_scaled = round(pricing.financing_factor * 100)
+        best: tuple[dict[str, str], int] | None = None
+        for term in terms:
+            opt = Optimize()
+            self._add_structure(opt)
+            self._add_rules(opt, tracked=False)
+            for var, val in choices.items():
+                opt.add(self.sel[(var, val)])
+            opt.add(self.sel[(TERM_VAR, term)])
+            total = sum(
+                If(
+                    self.sel[(var.name, o.value)],
+                    o.price * factor_scaled + o.monthly_price * 100 * pricing.term_months[term],
+                    0,
+                )
+                for var in self.model.variables.values()
+                for o in var.options
+            )
+            opt.minimize(total)
+            assert opt.check() == sat
+            m = opt.model()
+            assignment = {
+                var.name: next(v for v in var.values if is_true(m.evaluate(self.sel[(var.name, v)], model_completion=True)))
+                for var in self.model.variables.values()
+            }
+            monthly = self.model.monthly(assignment)
+            if best is None or monthly < best[1]:  # strict: ties keep the shorter term
+                best = (assignment, monthly)
+        assert best is not None
+        return best

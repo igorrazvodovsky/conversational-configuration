@@ -93,6 +93,31 @@ def main():
         {"building_type": "hotel", "travel": "tower_75_100",
          "rated_speed": "mps2_5", "rated_load": "kg1600"}, "sat")
 
+    # Agreement couplings (docs/specs/service-agreement)
+    conn = solver.valid_options({"service_level": "premium"})["connectivity_package"]
+    ok = conn["connected"] == "forced" and conn["none"] == "invalid"
+    print(f"  [{'ok' if ok else 'FAIL'}] Premium service forces the connectivity package (R31)")
+    failures += not ok
+
+    failures += not scenario(
+        solver, "Heavy usage + hydraulic drive (duty cycle) — conflict",
+        {"usage_profile": "heavy", "drive": "hydraulic"}, "unsat")
+
+    failures += not scenario(
+        solver, "Hospital + basic service level — conflict",
+        {"building_type": "hospital", "service_level": "basic"}, "unsat")
+
+    print("4. Pricing sanity (longest term yields the lowest monthly):")
+    choices = {"building_type": "office", "travel": "mid_15_30", "usage_profile": "medium"}
+    monthlies = []
+    for term in solver.model.variable("contract_term").values:
+        _, monthly = solver.complete({**choices, "contract_term": term})
+        monthlies.append(monthly)
+        print(f"     {term}: {monthly} EUR/month")
+    ok = monthlies == sorted(monthlies, reverse=True)
+    print(f"  [{'ok' if ok else 'FAIL'}] monthly fee decreases with term length")
+    failures += not ok
+
     if dead or failures:
         print(f"\nvalidation FAILED ({len(dead)} dead options, {failures} scenario failures)")
         sys.exit(1)

@@ -5,9 +5,50 @@ from pathlib import Path
 
 import pytest
 
-from src.solver import ConfigSolver, ConflictError, load_model
+from src.solver import ConfigSolver, ConflictError, ModelError, load_model
 
 MODEL_PATH = Path(__file__).parent.parent / "src" / "product_model" / "elevator.json"
+
+
+# -- loader (pricing block, docs/specs/service-agreement) -------------------------
+
+def _write_model(tmp_path, **overrides):
+    import json
+    base = {
+        "product": "t", "name": "t",
+        "pricing": {"financing_factor": 1.25,
+                    "term_months": {"y5": 60}, "default_term": "y5"},
+        "variables": [
+            {"name": "contract_term", "label": "Term", "group": "agreement",
+             "options": [{"value": "y5", "label": "5 years"}]},
+        ],
+        "constraints": [],
+    }
+    base.update(overrides)
+    path = tmp_path / "m.json"
+    path.write_text(json.dumps(base))
+    return path
+
+
+def test_loader_rejects_option_with_both_price_kinds(tmp_path):
+    path = _write_model(tmp_path, variables=[
+        {"name": "contract_term", "label": "Term", "group": "agreement",
+         "options": [{"value": "y5", "label": "5 years"}]},
+        {"name": "x", "label": "X", "group": "g",
+         "options": [{"value": "a", "label": "A", "price": 100, "monthly_price": 10}]},
+    ])
+    with pytest.raises(ModelError, match="both"):
+        load_model(path)
+
+
+def test_loader_rejects_incomplete_term_months(tmp_path):
+    path = _write_model(tmp_path, variables=[
+        {"name": "contract_term", "label": "Term", "group": "agreement",
+         "options": [{"value": "y5", "label": "5 years"},
+                     {"value": "y10", "label": "10 years"}]},
+    ])
+    with pytest.raises(ModelError, match="term_months"):
+        load_model(path)
 
 
 @pytest.fixture(scope="module")
@@ -181,28 +222,80 @@ def test_repairs_override_same_variable(solver):
     assert repairs == []  # nothing else recorded → nothing to repair
 
 
-# -- complete -------------------------------------------------------------
+# -- complete (monthly objective, docs/specs/service-agreement) -------------------
 
 def test_complete_extends_choices_validly(solver):
     choices = {"building_type": "hotel", "travel": "tower_75_100", "rated_load": "kg1600"}
-    assignment, price = solver.complete(choices)
+    assignment, monthly = solver.complete(choices)
     assert {k: assignment[k] for k in choices} == choices
     assert set(assignment) == set(solver.model.variables)
     assert solver.check(assignment)
-    assert price == sum(solver.model.price_of(v, val) for v, val in assignment.items())
+    assert monthly == solver.model.monthly(assignment)
 
 
 def test_complete_is_minimal_within_samples(solver):
     _, best = solver.complete({})
     # any additional commitment can only keep or raise the minimum
     for extra in [{"platform": "highrise_h900"}, {"cop": "touch_premium"}, {"rated_load": "kg2500"}]:
-        _, price = solver.complete(extra)
-        assert price >= best
+        _, monthly = solver.complete(extra)
+        assert monthly >= best
 
 
 def test_complete_unsat_raises(solver):
     with pytest.raises(ConflictError):
         solver.complete({"accessibility": "ada", "cop": "touch_premium"})
+
+
+def test_complete_iterates_open_terms(solver):
+    """With the term unchosen, the result must be at least as cheap as every
+    per-term completion — and identical to the best of them."""
+    choices = {"building_type": "residential", "travel": "low_0_15"}
+    _, best = solver.complete(choices)
+    per_term = [
+        solver.complete({**choices, "contract_term": t})[1]
+        for t in solver.model.variable("contract_term").values
+    ]
+    assert best == min(per_term)
+
+
+def test_complete_respects_chosen_term(solver):
+    assignment, monthly = solver.complete({"contract_term": "y5"})
+    assert assignment["contract_term"] == "y5"
+    assert monthly == solver.model.monthly(assignment)
+
+
+def test_complete_monthly_arithmetic(solver):
+    assignment, monthly = solver.complete({"contract_term": "y10", "usage_profile": "heavy"})
+    pricing = solver.model.pricing
+    hardware = sum(solver.model.price_of(v, val) for v, val in assignment.items())
+    recurring = sum(solver.model.option(v, val).monthly_price for v, val in assignment.items())
+    assert monthly == int(hardware * pricing.financing_factor / 120 + 0.5) + recurring
+
+
+def test_complete_tiebreak_prefers_shorter_term(tmp_path):
+    """With no hardware to amortize, every term yields the same monthly fee —
+    the tie must go to the shortest commitment."""
+    import json
+    tiny = {
+        "product": "tiny",
+        "name": "Tiny",
+        "pricing": {"financing_factor": 1.25,
+                    "term_months": {"y5": 60, "y10": 120}, "default_term": "y10"},
+        "variables": [
+            {"name": "contract_term", "label": "Term", "group": "agreement",
+             "options": [{"value": "y10", "label": "10 years"},
+                         {"value": "y5", "label": "5 years"}]},
+            {"name": "service_level", "label": "Service", "group": "agreement",
+             "options": [{"value": "basic", "label": "Basic", "monthly_price": 100}]},
+        ],
+        "constraints": [],
+    }
+    path = tmp_path / "tiny.json"
+    path.write_text(json.dumps(tiny))
+    tiny_solver = ConfigSolver(load_model(path))
+    assignment, monthly = tiny_solver.complete({})
+    assert monthly == 100
+    assert assignment["contract_term"] == "y5"
 
 
 # -- performance ----------------------------------------------------------

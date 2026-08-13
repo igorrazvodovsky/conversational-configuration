@@ -4,14 +4,15 @@
  * In-chat controls for the agent's ask_choices tool (docs/specs/configuration-canvas).
  *
  * The payload is computed server-side from solver state — valid options only
- * are selectable; invalid values render greyed in place. Controls go inert
- * once the conversation moves past them or after submission.
+ * are selectable; invalid values render greyed in place. Option prices are
+ * monthly deltas at the term in effect (docs/specs/service-agreement). Controls go
+ * inert once the conversation moves past them or after submission.
  */
 
 import { useState } from "react";
 import { BadgePercent } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import { choiceMessage, formatPrice } from "@/lib/configurator";
+import { choiceMessage, formatMonthly } from "@/lib/configurator";
 import { useCardDispatch } from "./card-dispatch";
 
 interface PayloadOption {
@@ -182,7 +183,7 @@ function ChipRow({
           >
             {o.label} {o.cheapest && <CheapestMark />}
             {o.price > 0 && (
-              <span className="ml-1 text-xs opacity-70">+{formatPrice(o.price)}</span>
+              <span className="ml-1 text-xs opacity-70">+{formatMonthly(o.price)}</span>
             )}
           </button>
         );
@@ -216,7 +217,7 @@ function ScaleControl({
                 disabled
                   ? "outside the valid range for your other choices"
                   : o.price > 0
-                    ? `+${formatPrice(o.price)}`
+                    ? `+${formatMonthly(o.price)}`
                     : undefined
               }
               className={`flex-1 border-r border-[var(--border)] px-1 py-1.5 text-xs last:border-r-0 transition-colors ${
@@ -276,7 +277,7 @@ function OptionList({
               </span>
             ) : (
               <span className="text-xs tabular-nums text-[var(--muted-foreground)]">
-                {o.price > 0 ? `+${formatPrice(o.price)}` : "included"}
+                {o.price > 0 ? `+${formatMonthly(o.price)}` : "included"}
               </span>
             )}
           </button>

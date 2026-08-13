@@ -13,7 +13,7 @@ Level 3 is the main job at the right altitude ([domain.md](domain.md)). Level 2 
 
 ## What the ladder decides
 
-This is the argument the [elevator-as-a-service pivot](../../specs/eaas-pivot/requirements.md) rests on: the job is stable; product-vs-service is a choice of solution form, and the service form covers more of the job. It is also what relocated the user — under the service frame the [building operator](persona-building-operator.md) becomes the primary persona and revision the primary interaction ([../problem-framing.md](../problem-framing.md) §3).
+This is the argument the [elevator-as-a-service offering](../../specs/service-agreement/requirements.md) rests on: the job is stable; product-vs-service is a choice of solution form, and the service form covers more of the job. It is also what relocated the user — under the service frame the [building operator](persona-building-operator.md) becomes the primary persona and revision the primary interaction ([../problem-framing.md](../problem-framing.md) §3).
 
 ## Related
 

@@ -11,7 +11,7 @@ from langchain.messages import ToolMessage
 from langchain.tools import ToolRuntime, tool
 from langgraph.types import Command
 
-from src.solver import ConfigSolver, ConflictError, load_model
+from src.solver import TERM_VAR, ConfigSolver, ConflictError, load_model
 
 MODEL_PATH = Path(__file__).parent / "product_model" / "elevator.json"
 MODEL = load_model(MODEL_PATH)
@@ -25,6 +25,9 @@ class Choice(TypedDict):
     source: Source
 
 
+# "price" means EUR/month since docs/specs/service-agreement. The key name is
+# deliberately unchanged: renaming would break threads persisted by
+# docs/specs/nonlinear-interaction thread resumption.
 class Candidate(TypedDict):
     assignment: dict[str, str]
     price: int
@@ -193,8 +196,10 @@ def _find_frame(config: Configuration, name: str) -> Frame:
 def frame_comparison(config: Configuration, a: str, b: str | None = None) -> dict:
     """Comparison payload between frame `a` and frame `b` (or the current
     candidate when `b` is omitted): only the differing variables, both values
-    with prices, and the price delta. Data is computed from stored solver
-    results, so both sides are valid by construction."""
+    with their monthly deltas, and the monthly-price delta. Per-side deltas are
+    computed at each side's own term — two agreements may differ precisely in
+    term. Data is computed from stored solver results, so both sides are valid
+    by construction."""
     side_a = _find_frame(config, a)
     if b is not None:
         side_b: Frame | dict = _find_frame(config, b)
@@ -207,6 +212,16 @@ def frame_comparison(config: Configuration, a: str, b: str | None = None) -> dic
             "propose_completion to create a current candidate"
         )
 
+    months_a = MODEL.months_of(side_a["assignment"].get(TERM_VAR))
+    months_b = MODEL.months_of(side_b["assignment"].get(TERM_VAR))
+
+    def _side(var_name: str, val: str | None, months: int) -> dict:
+        # val is None when a frame persisted before the service frame lacks an agreement variable
+        if val is None:
+            return {"value": None, "label": "—", "price": 0}
+        return {"value": val, "label": _label(var_name, val),
+                "price": MODEL.monthly_option_delta(var_name, val, months)}
+
     differences = []
     for var_name, variable in MODEL.variables.items():
         val_a = side_a["assignment"].get(var_name)
@@ -216,10 +231,8 @@ def frame_comparison(config: Configuration, a: str, b: str | None = None) -> dic
         differences.append({
             "variable": var_name,
             "label": variable.label,
-            "a": {"value": val_a, "label": _label(var_name, val_a),
-                  "price": MODEL.price_of(var_name, val_a)},
-            "b": {"value": val_b, "label": _label(var_name, val_b),
-                  "price": MODEL.price_of(var_name, val_b)},
+            "a": _side(var_name, val_a, months_a),
+            "b": _side(var_name, val_b, months_b),
         })
     return {
         "kind": "frame_comparison",
@@ -264,15 +277,29 @@ def _control_for(var_name: str) -> str:
     return "chips" if len(var.options) <= _CHIP_MAX_OPTIONS else "list"
 
 
+def _months_in_effect(config: Configuration) -> int:
+    """Amortization months for display: the chosen term, else the candidate's,
+    else the default term (docs/specs/service-agreement)."""
+    chosen = config["choices"].get(TERM_VAR)
+    if chosen:
+        return MODEL.months_of(chosen["value"])
+    candidate = config["candidate"]
+    if candidate:
+        return MODEL.months_of(candidate["assignment"].get(TERM_VAR))
+    return MODEL.months_of(None)
+
+
 def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
     """Typed payload for in-chat controls: per variable, its control type and
-    every option with validity status (from the solver), price, and a marker
-    on the cheapest-completion value. Raises ValueError on unknown variables."""
+    every option with validity status (from the solver), its monthly delta at
+    the term in effect, and a marker on the cheapest-monthly-completion value.
+    Raises ValueError on unknown variables."""
     unknown = [v for v in variables if v not in MODEL.variables]
     if unknown:
         raise ValueError(f"unknown variables: {unknown}; valid: {sorted(MODEL.variables)}")
 
     cheapest, _ = SOLVER.complete(_chosen_values(config))
+    months = _months_in_effect(config)
     payload = []
     for var_name in variables:
         var = MODEL.variables[var_name]
@@ -281,7 +308,7 @@ def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
             {
                 "value": o.value,
                 "label": o.label,
-                "price": o.price,
+                "price": MODEL.monthly_option_delta(var_name, o.value, months),
                 "status": "valid" if statuses[o.value] == "open" else statuses[o.value],
                 "cheapest": cheapest[var_name] == o.value,
             }
@@ -474,14 +501,16 @@ def clear_choices(variables: list[str], runtime: ToolRuntime) -> Command:
 
 @tool
 def propose_completion(runtime: ToolRuntime) -> Command:
-    """Compute the cheapest complete valid configuration extending the current
-    choices. Stores it as the candidate and returns it with the total price."""
+    """Compute the cheapest-monthly complete valid service agreement extending
+    the current choices. Stores it as the candidate and returns it with its
+    monthly fee."""
     config = _get_config(runtime)
     new_config = make_candidate(config)
     candidate = new_config["candidate"]
+    term = _label(TERM_VAR, candidate["assignment"][TERM_VAR])
     content = (
-        f"Candidate configuration, total {candidate['price']} EUR "
-        f"(cheapest valid completion of the current choices):\n"
+        f"Candidate service agreement, {candidate['price']} EUR/month over the "
+        f"{term} term (cheapest monthly completion of the current choices):\n"
         + _describe_assignment(candidate["assignment"])
     )
     return Command(update={
@@ -506,7 +535,7 @@ def save_frame_tool(name: str, runtime: ToolRuntime) -> Command:
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(
-            content=f"Saved frame {frame['name']!r} at {frame['price']} EUR.",
+            content=f"Saved frame {frame['name']!r} at {frame['price']} EUR/month.",
             tool_call_id=runtime.tool_call_id,
         )],
     })
@@ -541,7 +570,7 @@ def adopt_frame_tool(name: str, runtime: ToolRuntime) -> Command:
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(
-            content=f"Adopted frame {name!r} — configuration replaced, total {price} EUR.",
+            content=f"Adopted frame {name!r} — agreement replaced, {price} EUR/month.",
             tool_call_id=runtime.tool_call_id,
         )],
     })
@@ -564,10 +593,10 @@ def get_configuration(runtime: ToolRuntime) -> str:
         lines.append("Forced by rules: " + ", ".join(f"{v}={val}" for v, val in forced.items()))
     lines.append("Undecided: " + (", ".join(undecided) or "none"))
     if config["candidate"]:
-        lines.append(f"Candidate priced at {config['candidate']['price']} EUR is stored.")
+        lines.append(f"Candidate agreement at {config['candidate']['price']} EUR/month is stored.")
     if _frames(config):
         lines.append("Saved frames: " + ", ".join(
-            f"{f['name']} ({f['price']} EUR)" for f in _frames(config)
+            f"{f['name']} ({f['price']} EUR/month)" for f in _frames(config)
         ))
     return "\n".join(lines)
 
@@ -590,16 +619,37 @@ def ask_choices(variables: list[str], runtime: ToolRuntime, prompt: str = "") ->
 
 @tool
 def describe_product() -> str:
-    """The product catalog: every variable, its option value codes, labels and
-    prices, and the product rules. Call this before your first set_choices."""
-    lines = [f"Product: {MODEL.name}", "", "Variables (use the value codes with set_choices):"]
+    """The service catalog: every variable, its option value codes, labels and
+    monthly prices, and the product rules. Call this before your first
+    set_choices."""
+    # All prices shown are EUR/month — the LLM never sees a capex figure it
+    # could leak (docs/specs/service-agreement).
+    default_months = MODEL.months_of(None)
+    default_label = _label(TERM_VAR, MODEL.pricing.default_term)
+
+    def _price_note(var_name: str, o) -> str:
+        if o.monthly_price:
+            return f", +{o.monthly_price} EUR/month"
+        if o.price:
+            delta = MODEL.monthly_option_delta(var_name, o.value, default_months)
+            return f", ≈+{delta} EUR/month"
+        return ""
+
+    lines = [
+        f"Product: {MODEL.name} — offered as a service agreement, priced per month.",
+        "",
+        f"Hardware option deltas are amortized at the default {default_label} term; "
+        "the actual fee is derived from the chosen contract term.",
+        "",
+        "Variables (use the value codes with set_choices):",
+    ]
     group = None
     for var in MODEL.variables.values():
         if var.group != group:
             group = var.group
             lines.append(f"\n[{group}]")
         opts = ", ".join(
-            f"{o.value} ({o.label}{f', +{o.price} EUR' if o.price else ''})"
+            f"{o.value} ({o.label}{_price_note(var.name, o)})"
             for o in var.options
         )
         lines.append(f"- {var.name} — {var.label}: {opts}")

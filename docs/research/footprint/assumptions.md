@@ -8,7 +8,7 @@ Verdict: *all three defaults are retrievable and defensible. The only genuinely 
 
 Both KONE EPDs declare a *designed reference service life of 25 years* (*retrieved*). The 300 DX footnotes its basis: the figure is "aligned with the typical service life data published by elevator manufacturers. For elevators, it may take up to 20–30 years before major retrofitting is necessary," citing Sachs, *Opportunities for Elevator Energy Efficiency Improvements*, ACEEE 2005. It also states the maintenance condition attached to that life: rope changes typically every 8 years, and the component change frequency holds for lifts up to 200,000 starts/year.
 
-Recommendation: *25 years*, matching both EPDs, and quotable. The [footprint spec](../../specs/environmental-footprint/requirements.md) already fixes service life independently of the [service pivot](../../specs/eaas-pivot/requirements.md)'s contract term; that separation is right — an EaaS contract length is a commercial fact, service life is a physical assumption, and conflating them would make footprint numbers move for the wrong reason.
+Recommendation: *25 years*, matching both EPDs, and quotable. The [footprint spec](../../specs/environmental-footprint/requirements.md) already fixes service life independently of the [service agreement](../../specs/service-agreement/requirements.md)'s contract term; that separation is right — an EaaS contract length is a commercial fact, service life is a physical assumption, and conflating them would make footprint numbers move for the wrong reason.
 
 ## 2. Grid emission factor
 

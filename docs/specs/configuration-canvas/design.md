@@ -2,9 +2,9 @@
 
 ## Canvas
 
-New `src/components/config-canvas/` (the todo `example-canvas/` stays untouched as reference): a spec-sheet layout mapping `agent.state.configuration` — groups from the product model, one row per variable with value, status badge, and provenance. A static JSON copy of the model's display data (variables, groups, labels, prices) is exposed to the frontend so the canvas can render labels without a backend call; the solver statuses in state remain the only source of validity.
+New `src/components/config-canvas/` (the todo `example-canvas/` stays untouched as reference): a spec-sheet layout mapping `agent.state.configuration` — groups from the product model in model order, one row per variable with value, status badge, and provenance. Per the [service-agreement spec](../service-agreement/design.md) the leading `agreement` group puts outcome terms above the derived hardware spec (data order does the grouping — no layout logic), and the header is the agreement header: title "Service agreement", the candidate's monthly figure with its objective named ("cheapest completion"). A static JSON copy of the model's display data (variables, groups, labels, prices, the `pricing` block) is exposed to the frontend so the canvas can render labels without a backend call; the solver statuses in state remain the only source of validity.
 
-Row editor: popover listing options; `statuses[var][value] === "invalid"` renders disabled with a tooltip ("ruled out by your other choices — ask me why in chat"); price deltas shown. Candidate values fill open rows in a muted "proposed" style.
+Row editor: popover listing options; `statuses[var][value] === "invalid"` renders disabled with a tooltip ("ruled out by your other choices — ask me why in chat"); price deltas shown as EUR/month at the term in effect, via `monthlyDelta()` in `src/lib/configurator.ts` — the single place the frontend re-derives money, from the same imported JSON the agent reads. Candidate values fill open rows in a muted "proposed" style.
 
 ## Canvas-edit round trip (decision point)
 
@@ -12,7 +12,7 @@ A canvas edit must go through solver validation and refresh statuses, so it roun
 
 ## In-chat option controls
 
-New fixed-schema tool `ask_choices(variables: list[str], prompt?)` in the agent (the `search_flights` pattern, not free-form A2UI): the tool reads current state and returns a typed payload — per variable: valid options with labels/prices, invalid values flagged (rendered greyed in place), the cheapest-completion value marked, and a `control` field selected server-side.
+New fixed-schema tool `ask_choices(variables: list[str], prompt?)` in the agent (the `search_flights` pattern, not free-form A2UI): the tool reads current state and returns a typed payload — per variable: valid options with labels and monthly deltas at the term in effect (chosen, else the candidate's, else the default term — [service-agreement](../service-agreement/design.md)), invalid values flagged (rendered greyed in place), the cheapest-monthly-completion value marked, and a `control` field selected server-side.
 
 Control selection is a heuristic in the payload builder, not stored in the product model (UI concerns stay out of product data): variables in the `performance` and `dimensions` groups are ordered domains → `scale` (the option order in the model JSON is the scale order); otherwise ≤6 options → `chips`; otherwise → `list`. `car_size`, `wall_finish`, `floor` are forced to `list` regardless (consequence-heavy, need descriptions). The agent may pass several variables; the frontend composes them into one form card with a single submit.
 

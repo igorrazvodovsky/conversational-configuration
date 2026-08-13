@@ -17,6 +17,6 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [agent-tools](agent-tools/) | Configuration state + solver-backed agent tools | Implemented |
 | [configuration-canvas](configuration-canvas/) | Spec-sheet canvas + in-chat generated controls | Implemented |
 | [nonlinear-interaction](nonlinear-interaction/) | Revision with ripple, candidate frames, resumption | Implemented |
-| [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Draft — awaiting approval (to be recast for the service pivot) |
-| [eaas-pivot](eaas-pivot/) | Elevator-as-a-service pivot | Requirements approved 2026-08-13; not yet implemented |
+| [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Draft — awaiting approval (to be recast to the service frame's job stories) |
+| [service-agreement](service-agreement/) | Elevator as a service: outcome terms, monthly price, derived hardware | Implemented |
 | [environmental-footprint](environmental-footprint/) | Environmental footprint as a decision dimension | Requirements approved 2026-08-13; not yet implemented |

@@ -43,7 +43,7 @@ Non-objectives: production readiness, real pricing or LCA data, multi-product-fa
 
 Only the context that changes design decisions.
 
-*Business.* The offering is a service agreement, not a machine (the [service pivot](../specs/eaas-pivot/requirements.md)). This is fixed. Its interaction consequence is large: what gets configured are outcome terms — handling capacity, uptime, response time, term, monthly price — with the hardware spec derived beneath them. Elicitation therefore has a natural top layer that the product frame lacked. A second fixed decision, environmental footprint as a decision dimension (the [footprint spec](../specs/environmental-footprint/requirements.md)), means the interface must hold *two* optimization objectives at once; a single "best" candidate is no longer meaningful.
+*Business.* The offering is a service agreement, not a machine (the [service-agreement spec](../specs/service-agreement/requirements.md)). This is fixed. Its interaction consequence is large: what gets configured are outcome terms — handling capacity, uptime, response time, term, monthly price — with the hardware spec derived beneath them. Elicitation therefore has a natural top layer that the product frame lacked. A second fixed decision, environmental footprint as a decision dimension (the [footprint spec](../specs/environmental-footprint/requirements.md)), means the interface must hold *two* optimization objectives at once; a single "best" candidate is no longer meaningful.
 
 *User.* Three goal-based personas: the [delivery lead](jtbd/persona-delivery-lead.md), who needs early certainty because shaft dimensions get poured in concrete; the [design specifier](jtbd/persona-design-specifier.md), who iterates constantly on incomplete information and speaks only building language; the [building operator](jtbd/persona-building-operator.md), whose struggle sits in the stages a product configurator abandons — monitor, modify, conclude. The service frame makes the operator the primary persona, and the operator's characteristic move is *revision of an existing agreement*, not first-time configuration. Design for revisers, not for newcomers.
 
@@ -53,7 +53,7 @@ Only the context that changes design decisions.
 
 *Content.* ~20 user-facing decisions over ~30–80 constraints; footprint and price data are illustrative with plausible relative magnitudes. Small enough that the whole configuration fits on one canvas — which is a fidelity limitation to state honestly, since a real platform exposes 20–40 decisions over 250+ parameters and the canvas would not fit.
 
-*Process.* Solo prototyping, no budget, no access to job performers, spec-anchored workflow, with the five specs through nonlinear interaction implemented and the demo scenarios, service pivot and footprint specs still in draft ([../specs/README.md](../specs/README.md)). Discovery has to be cheap and continuous; there will be no discovery phase with a start and an end date.
+*Process.* Solo prototyping, no budget, no access to job performers, spec-anchored workflow, with the six specs through the service agreement implemented and the demo-scenarios and footprint specs still in draft ([../specs/README.md](../specs/README.md)). Discovery has to be cheap and continuous; there will be no discovery phase with a start and an end date.
 
 ## 4. Assertions under test
 
