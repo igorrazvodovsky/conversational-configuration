@@ -2,7 +2,7 @@
 
 Status: implemented (approved 2026-08-13; browser-verified same day).
 
-The prototype's actual research contribution (docs/research-and-outline.md, thread E): revising constrained choices with ripple explanation and repair, comparing parallel candidate configurations, and resuming mid-configuration. Everything before this made revision *safe* (atomic rejection); this feature makes it *productive*.
+The prototype's actual research contribution ([docs/research/interaction-literature.md](../../docs/research/interaction-literature.md), thread E): revising constrained choices with ripple explanation and repair, comparing parallel candidate configurations, and resuming mid-configuration. Everything before this made revision *safe* (atomic rejection); this feature makes it *productive*.
 
 ## Stories
 

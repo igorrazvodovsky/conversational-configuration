@@ -2,7 +2,7 @@
 
 Status: implemented.
 
-Replaces the todo canvas with a configuration spec sheet synced to `agent.state.configuration`, and gives the agent a way to ask questions as clickable, solver-valid option controls in chat. After this feature the prototype is the full chat+canvas hybrid the research argues for (docs/research-and-outline.md, thread D).
+Replaces the todo canvas with a configuration spec sheet synced to `agent.state.configuration`, and gives the agent a way to ask questions as clickable, solver-valid option controls in chat. After this feature the prototype is the full chat+canvas hybrid the research argues for ([docs/research/interaction-literature.md](../../docs/research/interaction-literature.md), thread D).
 
 ## Stories
 

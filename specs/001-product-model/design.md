@@ -7,7 +7,7 @@
 - *Two constraint types only:* `table` (allowed value pairs across two variables) and `implication` (`if_all` conditions → `then` membership). Everything observed in real configurators (requires, excludes, compatibility, code rules) reduced cleanly to these two.
 - *Named rules.* Every constraint has an `id` (R01…R30) and a `label` written as the sentence the agent should be able to say when the rule appears in an unsat core (constitution #6).
 - *Price as option-level deltas* (EUR) on customer-facing options; civil-works variables (shaft, pit, headroom) are unpriced.
-- Grounding: EN 81-20 dimension tables and KONE MonoSpace planning data for numbers; platform-caps-performance structure from Tacton-style CPQ; scale target (~23 vars, 30 rules) chosen per the Sisyphus-VT benchmark discussion in docs/research-and-outline.md.
+- Grounding: EN 81-20 dimension tables and KONE MonoSpace planning data for numbers; platform-caps-performance structure from Tacton-style CPQ; scale target (~23 vars, 30 rules) chosen per the Sisyphus-VT benchmark discussion in [docs/research/configuration-field.md](../../docs/research/configuration-field.md).
 
 ## Validator
 

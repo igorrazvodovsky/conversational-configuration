@@ -1,17 +1,18 @@
 # CopilotKit + LangGraph Todo Demo
 
-## Development method: spec-anchored SDD
+## Development method: discovery-framed, spec-anchored
 
-This project uses lightweight spec-driven development. Non-negotiable workflow:
+Two layers. Discovery (`docs/discovery/`) frames the design problem and sets direction, after Dan Brown's *Practical Design Discovery*. Specs (`specs/`) execute against that direction. Non-negotiable workflow:
 
-1. Read `specs/constitution.md` before making changes — its principles override convenience.
+1. Read `specs/constitution.md` before making changes — its principles override convenience. For anything touching the interaction design, also read `docs/discovery/brief.md`.
 2. Any change that adds a capability, changes behavior, or makes an architectural choice needs a spec in `specs/NNN-feature/` (`requirements.md`, `design.md`, `tasks.md`). Write or update the spec *before* implementing; new features need user approval of `requirements.md` first. Bug fixes and mechanical changes need no spec.
-3. Specs are anchored: after implementing, update `tasks.md` and reconcile `requirements.md`/`design.md` with what was actually built. A spec that disagrees with the code is a bug.
-4. The feature index and roadmap live in `specs/README.md`.
+3. New specs cite the discovery principle or assertion they serve (`docs/discovery/direction.md` §2, `docs/discovery/problem-framing.md` §4). A spec that serves none is a signal the framing is stale — fix the framing, don't skip the citation.
+4. Specs are anchored: after implementing, update `tasks.md` and reconcile `requirements.md`/`design.md` with what was actually built. A spec that disagrees with the code is a bug. Discovery artifacts are likewise living — when work changes the framing or direction, update them in the same session.
+5. The feature index and roadmap live in `specs/README.md`; the current discovery cycle and its open questions live in `docs/discovery/phase-plan.md`; the evidence base is `docs/research/`, with what it still lacks in `docs/research/gaps.md` — check there before proposing more research.
 
 ## Current state of the repo
 
-This repo started from the CopilotKit todo boilerplate documented below, but is being rebuilt into a research prototype: chat-based configuration of complex industrial products (an elevator), grounded in `docs/research-and-outline.md`. As of spec 003 the agent (`agent/main.py`) registers solver-backed configuration tools (`agent/src/configuration.py` over the Z3 service in `agent/src/solver/`), not the todo tools. The todo/a2ui example files remain as CopilotKit reference; the sections below describe that original boilerplate pattern, which the configurator reuses (agent-state sync, generative UI).
+This repo started from the CopilotKit todo boilerplate documented below, but is being rebuilt into a research prototype: chat-based configuration of complex industrial products (an elevator), grounded in the research notes in `docs/research/`. As of spec 003 the agent (`agent/main.py`) registers solver-backed configuration tools (`agent/src/configuration.py` over the Z3 service in `agent/src/solver/`), not the todo tools. The todo/a2ui example files remain as CopilotKit reference; the sections below describe that original boilerplate pattern, which the configurator reuses (agent-state sync, generative UI).
 
 ## Purpose
 

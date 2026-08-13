@@ -1,0 +1,43 @@
+# Gap register
+
+Status: current as of 2026-08-13. Every entry cites the note it comes from; nothing here is a gap someone thought of in the abstract. Three classes, because they call for three different responses:
+
+- *L — gaps in the published literature.* Not ours to close. These are the openings the prototype occupies, and the thing to watch is whether someone else fills them first.
+- *E — evidence we could retrieve and have not.* Ours to close, cheaply, when a decision depends on it.
+- *D — gaps no amount of reading closes.* Settled by a decision, or blocked by a project constraint. Listed so they are not mistaken for reading debt.
+
+*If you only act on one thing:* [E4](#e4). The finding it underwrites — stainless costs more carbon than glass — is the one the footprint interaction design is built around, and it could invert. [E5](#e5) is one download. Nothing else in this register changes a build decision today.
+
+## L — gaps in the published literature
+
+| # | The gap | What rests on it | What would close it | Status |
+|---|---|---|---|---|
+| <a id="l1"></a>L1 | No published system combines a realistic constraint-based product model, an LLM chat front-end, a synchronized structured canvas, and explicit support for nonlinear revision ([interaction-literature.md](interaction-literature.md), verdict) | The prototype's whole novelty claim ([../discovery/brief.md](../discovery/brief.md) §4) | Someone else publishing it. Watch ConfWS, CHI, UIST | Open at 2026-08. ConfWS 2024–25 narrowed the sustainability half of it ([sustainability-prior-art.md](footprint/sustainability-prior-art.md) §1) |
+| <a id="l2"></a>L2 | Dialogue-based configuration papers describe pipelines and pure-chat prototypes; none describes the frontend interaction design ([interaction-literature.md](interaction-literature.md), thread C) | The framing decision that this project's contribution must be an *interaction* contribution, judged as one | Nothing to retrieve — this is the opening | Open; it is the design opportunity |
+| <a id="l3"></a>L3 | Frame tracking solved parallel hypothetical states a decade ago and never got an LLM-era UI ([interaction-literature.md](interaction-literature.md), thread E) | Assertion A4 and spec [005](../../specs/005-nonlinear-interaction/requirements.md) — the project's central claim | Nothing to retrieve | Open; being answered by building |
+| <a id="l4"></a>L4 | All carbon-presentation evidence is food and menu labelling. No B2B capital-goods equivalent was found ([sustainability-prior-art.md](footprint/sustainability-prior-art.md) §2) | Assertion A7 and principle P7 — the pair-not-a-score decision | An original study with real buyers — explicitly a non-objective ([../discovery/problem-framing.md](../discovery/problem-framing.md) §2) | Open and staying open. A7's evidence line already names the transfer as an assumption; keep it named |
+| <a id="l5"></a>L5 | Component-level embodied data for drives, counterweights and machines appears not to exist publicly at all ([embodied-carbon.md](footprint/embodied-carbon.md) §6) | The weakest numbers in the footprint model | Manufacturer disclosure that does not exist today | Open. Mitigated by deriving platform footprint from load, travel and drive rather than inventing a platform scalar |
+
+## E — evidence we could retrieve and have not
+
+| # | The gap | What rests on it | What would close it | Status |
+|---|---|---|---|---|
+| <a id="e4"></a>E4 | Stainless steel (~5.5), rubber (~3.2) and PVC (~3.1) kg CO₂e/kg are *assumed*, not retrieved. NdFeB is a 20–80 guess and published granite factors disagree by 6× ([embodied-carbon.md](footprint/embodied-carbon.md) §1) | §3's headline finding — that brushed stainless carries roughly twice the embodied delta of panoramic glass at a quarter of the price. At a stainless factor near 2.5 the decorrelation shrinks and could invert, taking with it the case the trade-off UI is built on | Sourcing the three factors. ICE is no longer the easy route: V5.0 is registration-gated, its licence bars non-educational use after 30 September 2026, and it dropped the stone category outright. Ökobaudat — EN 15804-compliant and freely usable — is the likelier source ([embodied-carbon.md](footprint/embodied-carbon.md) §1, access note) | Open. *The one gap in this register that could change a conclusion rather than sharpen it* |
+| <a id="e5"></a>E5 | The EEA EU-27 grid intensity (242 g, 2023; ~220 g, 2024) was read from search-surfaced EEA text, not from the indicator page or its CSV ([assumptions.md](footprint/assumptions.md) §2) | The 0.22 kg CO₂e/kWh default, which scales every use-phase number in the model | Downloading `co2-emission-intensity-15.csv` from the EEA | Open, one download. Corroborated meanwhile by two EPD-derived Belgian factors read directly |
+| <a id="e2"></a>E2 | No high-traffic (UC4–6) elevator EPD was retrieved; both EPDs in hand declare usage category 3 ([lifecycle.md](footprint/lifecycle.md) §1) | The high-traffic column in §3 — the "use-phase reaches ~74%" claim — which is derived, not declared | A UC4+ declaration from any manufacturer's programme operator | Open. Search of Environdec not exhausted |
+| <a id="e3"></a>E3 | Otis, Schindler and TK Elevator EPDs are confirmed to exist (Environdec: Schindler 3300/5500/7000; Otis Gen2/Gen360) but no module-level figures were retrieved ([lifecycle.md](footprint/lifecycle.md)) | Whether the KONE embodied/use-phase split generalises, or is a KONE modelling artefact | Downloading and tabulating one competitor EPD | Open. Would test the split this folder's headline rests on; only matters if a claim starts leaning on generality |
+| <a id="e1"></a>E1 | The numeric A–G class boundary tables for ISO 25745-2 could not be retrieved; the standard is paywalled and derivative literature quotes classes without thresholds ([use-phase-energy.md](footprint/use-phase-energy.md) §5) | What `energy_class` in spec [008](../../specs/008-environmental-footprint/requirements.md) is allowed to mean | Buying ISO 25745-2 | *Mitigated by decision*: treat the class as a declared model enum, labelled "modelled, ISO 25745-flavoured", never as an achieved class ([claims-and-vocabulary.md](footprint/claims-and-vocabulary.md) §2). Reopens only if the UI ever claims a real class |
+
+## D — gaps reading does not close
+
+| # | The gap | What rests on it | Response |
+|---|---|---|---|
+| <a id="d1"></a>D1 | No access to real job performers. Every persona, journey stage and user-facing claim is a desk-research hypothesis ([../discovery/jtbd/README.md](../discovery/jtbd/README.md); [../discovery/phase-plan.md](../discovery/phase-plan.md) §2) | Assertions A1–A7 in their entirety | Not closable within the project's constraints. Two substitutes exist: structured self-walkthrough of the built prototype against the scenarios ([../discovery/phase-plan.md](../discovery/phase-plan.md) §3 task 6), and *AvgCarFConf*, which measures the system rather than the user and needs no participants ([sustainability-prior-art.md](footprint/sustainability-prior-art.md) §1) |
+| <a id="d2"></a>D2 | The project went gather → focus with almost no exploration: every interaction decision was made once, inline, and three of six models have never been drawn ([../discovery/phase-plan.md](../discovery/phase-plan.md) §1) | The four open questions in [../discovery/problem-framing.md](../discovery/problem-framing.md) §5 | Explicitly *not* a reading gap. Gathering is judged well served; the corrective is exploration, and it is the current cycle's plan |
+| <a id="d3"></a>D3 | Price and footprint data in the model are illustrative, with plausible relative magnitudes only ([../discovery/problem-framing.md](../discovery/problem-framing.md) §3) | Every number the UI displays | Closed by decision — real pricing and LCA data are a stated non-objective. The obligation it creates is disclosure, not accuracy ([claims-and-vocabulary.md](footprint/claims-and-vocabulary.md) §2) |
+| <a id="d4"></a>D4 | The model exposes ~20 decisions where a real platform configurator exposes 20–40 over 250+ underlying parameters ([elevator-domain.md](elevator-domain.md)) | Whether canvas-based interaction findings scale past one screen | Closed by decision, stated as a fidelity limitation. Worth restating whenever a canvas claim is made |
+
+## Related
+
+- [README.md](README.md) — the notes these gaps come from, and how strong each one is
+- [../discovery/phase-plan.md](../discovery/phase-plan.md) §1 — the diagnostic that says gathering is well served, which is why class E is short

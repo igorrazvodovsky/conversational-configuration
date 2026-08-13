@@ -2,7 +2,7 @@
 
 Status: draft — awaiting approval.
 
-The prototype's closing feature (docs/research-and-outline.md, step 6): four scripted walkthroughs that exercise every research claim. They serve two audiences at once — a presenter who needs a repeatable demo, and the repo itself, which needs an executable definition of done that fails when a change breaks a demonstrated behavior.
+The prototype's closing feature (the last step of the original research outline; the scenarios are the direction's worked examples, [docs/discovery/direction.md](../../docs/discovery/direction.md) §4): four scripted walkthroughs that exercise every research claim. They serve two audiences at once — a presenter who needs a repeatable demo, and the repo itself, which needs an executable definition of done that fails when a change breaks a demonstrated behavior.
 
 ## Stories
 
