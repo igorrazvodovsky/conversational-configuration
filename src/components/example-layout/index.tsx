@@ -11,7 +11,9 @@ interface ExampleLayoutProps {
 }
 
 export function ExampleLayout({ chatContent, appContent }: ExampleLayoutProps) {
-  const [mode, setMode] = useState<"chat" | "app">("chat");
+  // Default to "app" so the configuration spec sheet is visible beside the
+  // chat from the start — the canvas is the durable locus (constitution #7).
+  const [mode, setMode] = useState<"chat" | "app">("app");
 
   useFrontendTool({
     name: "enableAppMode",
@@ -51,14 +53,6 @@ export function ExampleLayout({ chatContent, appContent }: ExampleLayoutProps) {
             so the logo never sits under the cluster. max-lg:pt-2.5 + pb-0
             vertically center the logo with that launcher and the top-right
             Chat/App toggle (both pinned at top-2). */}
-        <div className="shrink-0 pt-[23px] pl-[max(1.5rem,calc(7rem_-_var(--cpk-drawer-reserved-width,320px)))] pb-2 max-lg:pl-24 max-lg:pb-4 flex gap-1.5 items-center align-center">
-          <span className="font-extrabold text-2xl">CopilotKit</span>
-          <img
-            src="/copilotkit-logo-mark.svg"
-            alt="CopilotKit"
-            className="h-7"
-          />
-        </div>
         <div className="flex-1 min-h-0 overflow-y-auto">{chatContent}</div>
       </div>
 

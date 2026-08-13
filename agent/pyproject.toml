@@ -18,5 +18,11 @@ dependencies = [
   "langgraph-api==0.7.101",
   "pip>=26.0.1",
   "langchain-anthropic==1.4.1",
+  "z3-solver>=5.0.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
 ]
 

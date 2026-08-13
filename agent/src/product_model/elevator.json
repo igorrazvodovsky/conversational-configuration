@@ -1,0 +1,565 @@
+{
+  "product": "elevator",
+  "name": "EP-3000 Elevator platform",
+  "currency": "EUR",
+  "variables": [
+    {
+      "name": "building_type",
+      "label": "Building type",
+      "group": "context",
+      "options": [
+        { "value": "residential", "label": "Residential" },
+        { "value": "office", "label": "Office" },
+        { "value": "hotel", "label": "Hotel" },
+        { "value": "hospital", "label": "Hospital" },
+        { "value": "retail", "label": "Retail" }
+      ]
+    },
+    {
+      "name": "region",
+      "label": "Region / code regime",
+      "group": "context",
+      "note": "Drives applicable code: EN 81-20/50 + EN 81-70 in Europe, ASME A17.1 + ADA in North America.",
+      "options": [
+        { "value": "europe", "label": "Europe (EN 81-20)" },
+        { "value": "north_america", "label": "North America (ASME A17.1)" }
+      ]
+    },
+    {
+      "name": "installation",
+      "label": "Installation type",
+      "group": "context",
+      "options": [
+        { "value": "new_build", "label": "New building" },
+        { "value": "modernization", "label": "Modernization (existing shaft)" }
+      ]
+    },
+    {
+      "name": "accessibility",
+      "label": "Accessibility package",
+      "group": "context",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "en81_70", "label": "EN 81-70 accessibility", "price": 1800 },
+        { "value": "ada", "label": "ADA accessibility", "price": 1800 }
+      ]
+    },
+    {
+      "name": "rated_load",
+      "label": "Rated load",
+      "group": "performance",
+      "options": [
+        { "value": "kg630", "label": "630 kg / 8 persons", "price": 0 },
+        { "value": "kg800", "label": "800 kg / 10 persons", "price": 1500 },
+        { "value": "kg1000", "label": "1000 kg / 13 persons", "price": 3000 },
+        { "value": "kg1250", "label": "1250 kg / 16 persons", "price": 5000 },
+        { "value": "kg1600", "label": "1600 kg / 21 persons", "price": 8000 },
+        { "value": "kg2000", "label": "2000 kg / 26 persons", "price": 12000 },
+        { "value": "kg2500", "label": "2500 kg / 33 persons", "price": 17000 }
+      ]
+    },
+    {
+      "name": "rated_speed",
+      "label": "Rated speed",
+      "group": "performance",
+      "options": [
+        { "value": "mps0_63", "label": "0.63 m/s", "price": 0 },
+        { "value": "mps1_0", "label": "1.0 m/s", "price": 1000 },
+        { "value": "mps1_6", "label": "1.6 m/s", "price": 4000 },
+        { "value": "mps2_5", "label": "2.5 m/s", "price": 12000 },
+        { "value": "mps3_0", "label": "3.0 m/s", "price": 22000 }
+      ]
+    },
+    {
+      "name": "travel",
+      "label": "Travel height",
+      "group": "performance",
+      "options": [
+        { "value": "low_0_15", "label": "Up to 15 m" },
+        { "value": "mid_15_30", "label": "15–30 m" },
+        { "value": "high_30_50", "label": "30–50 m" },
+        { "value": "very_high_50_75", "label": "50–75 m" },
+        { "value": "tower_75_100", "label": "75–100 m" }
+      ]
+    },
+    {
+      "name": "stops",
+      "label": "Number of stops",
+      "group": "performance",
+      "options": [
+        { "value": "s2_6", "label": "2–6 stops" },
+        { "value": "s7_12", "label": "7–12 stops" },
+        { "value": "s13_24", "label": "13–24 stops" }
+      ]
+    },
+    {
+      "name": "platform",
+      "label": "Product platform",
+      "group": "platform",
+      "options": [
+        { "value": "hydro_s300", "label": "S300 (hydraulic, low-rise)", "price": 45000 },
+        { "value": "mrl_m500", "label": "M500 (machine-room-less, mid-rise)", "price": 58000 },
+        { "value": "mrl_m700", "label": "M700 (machine-room-less, high-rise)", "price": 78000 },
+        { "value": "highrise_h900", "label": "H900 (machine room, tower)", "price": 125000 }
+      ]
+    },
+    {
+      "name": "drive",
+      "label": "Drive type",
+      "group": "platform",
+      "options": [
+        { "value": "hydraulic", "label": "Hydraulic" },
+        { "value": "gearless_mrl", "label": "Gearless traction, machine-room-less" },
+        { "value": "gearless_mr", "label": "Gearless traction, machine room" }
+      ]
+    },
+    {
+      "name": "car_size",
+      "label": "Car dimensions (width × depth)",
+      "group": "dimensions",
+      "options": [
+        { "value": "c1100x1400", "label": "1100 × 1400 mm", "price": 0 },
+        { "value": "c1350x1400", "label": "1350 × 1400 mm", "price": 800 },
+        { "value": "c1600x1400", "label": "1600 × 1400 mm", "price": 1500 },
+        { "value": "c1950x1400", "label": "1950 × 1400 mm (wide)", "price": 2500 },
+        { "value": "c1200x2300", "label": "1200 × 2300 mm (deep)", "price": 2500 },
+        { "value": "c2100x1600", "label": "2100 × 1600 mm (wide)", "price": 3000 },
+        { "value": "c1400x2400", "label": "1400 × 2400 mm (stretcher)", "price": 3500 },
+        { "value": "c1500x2700", "label": "1500 × 2700 mm (bed)", "price": 5000 },
+        { "value": "c1800x2700", "label": "1800 × 2700 mm (bed)", "price": 7000 }
+      ]
+    },
+    {
+      "name": "shaft",
+      "label": "Shaft size (width × depth)",
+      "group": "dimensions",
+      "options": [
+        { "value": "t1_1800x1700", "label": "1800 × 1700 mm" },
+        { "value": "t2_2000x1800", "label": "2000 × 1800 mm" },
+        { "value": "t3_2200x2000", "label": "2200 × 2000 mm" },
+        { "value": "t4_2500x2200", "label": "2500 × 2200 mm" },
+        { "value": "t5_2700x2900", "label": "2700 × 2900 mm" },
+        { "value": "t6_3000x3000", "label": "3000 × 3000 mm" }
+      ]
+    },
+    {
+      "name": "pit_depth",
+      "label": "Pit depth",
+      "group": "dimensions",
+      "options": [
+        { "value": "p1100", "label": "1100 mm" },
+        { "value": "p1400", "label": "1400 mm" },
+        { "value": "p1600", "label": "1600 mm" },
+        { "value": "p2100", "label": "2100 mm" }
+      ]
+    },
+    {
+      "name": "headroom",
+      "label": "Headroom",
+      "group": "dimensions",
+      "options": [
+        { "value": "h3400", "label": "3400 mm" },
+        { "value": "h3800", "label": "3800 mm" },
+        { "value": "h4200", "label": "4200 mm" },
+        { "value": "h4600", "label": "4600 mm" }
+      ]
+    },
+    {
+      "name": "door_type",
+      "label": "Door opening type",
+      "group": "doors",
+      "options": [
+        { "value": "telescopic_2", "label": "Side-opening telescopic, 2 panels", "price": 0 },
+        { "value": "center_2", "label": "Center-opening, 2 panels", "price": 1200 },
+        { "value": "center_4", "label": "Center-opening, 4 panels", "price": 3500 }
+      ]
+    },
+    {
+      "name": "door_width",
+      "label": "Door width",
+      "group": "doors",
+      "options": [
+        { "value": "d800", "label": "800 mm", "price": 0 },
+        { "value": "d900", "label": "900 mm", "price": 300 },
+        { "value": "d1000", "label": "1000 mm", "price": 600 },
+        { "value": "d1100", "label": "1100 mm", "price": 1200 },
+        { "value": "d1300", "label": "1300 mm", "price": 2500 }
+      ]
+    },
+    {
+      "name": "door_finish",
+      "label": "Door finish",
+      "group": "doors",
+      "options": [
+        { "value": "painted", "label": "Painted steel", "price": 0 },
+        { "value": "brushed_ss", "label": "Brushed stainless steel", "price": 900 },
+        { "value": "glass", "label": "Framed glass", "price": 2800 }
+      ]
+    },
+    {
+      "name": "fire_rating",
+      "label": "Landing door fire rating",
+      "group": "doors",
+      "options": [
+        { "value": "none", "label": "Not fire rated", "price": 0 },
+        { "value": "e120", "label": "E120", "price": 1800 },
+        { "value": "ei60", "label": "EI60", "price": 3200 }
+      ]
+    },
+    {
+      "name": "wall_finish",
+      "label": "Car wall finish",
+      "group": "cabin",
+      "options": [
+        { "value": "painted_steel", "label": "Painted steel", "price": 0 },
+        { "value": "laminate", "label": "Laminate", "price": 1200 },
+        { "value": "brushed_ss", "label": "Brushed stainless steel", "price": 2400 },
+        { "value": "glass_panoramic", "label": "Panoramic glass back wall", "price": 9500 }
+      ]
+    },
+    {
+      "name": "floor",
+      "label": "Car floor",
+      "group": "cabin",
+      "options": [
+        { "value": "rubber", "label": "Studded rubber", "price": 0 },
+        { "value": "pvc", "label": "PVC", "price": 400 },
+        { "value": "granite", "label": "Granite composite", "price": 2200 }
+      ]
+    },
+    {
+      "name": "cop",
+      "label": "Car operating panel",
+      "group": "cabin",
+      "options": [
+        { "value": "standard", "label": "Standard buttons", "price": 0 },
+        { "value": "vandal", "label": "Vandal-resistant", "price": 700 },
+        { "value": "touch_premium", "label": "Premium touchscreen", "price": 2600 }
+      ]
+    },
+    {
+      "name": "mirror",
+      "label": "Mirror",
+      "group": "cabin",
+      "options": [
+        { "value": "none", "label": "None", "price": 0 },
+        { "value": "half", "label": "Half-height rear wall", "price": 350 },
+        { "value": "full", "label": "Full-height rear wall", "price": 700 }
+      ]
+    },
+    {
+      "name": "handrail",
+      "label": "Handrail",
+      "group": "cabin",
+      "options": [
+        { "value": "none", "label": "None", "price": 0 },
+        { "value": "one_side", "label": "One side", "price": 250 },
+        { "value": "three_sides", "label": "Three sides", "price": 650 }
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "id": "R01",
+      "label": "Rated load determines car dimensions (EN 81-20 Table 6)",
+      "type": "table",
+      "vars": ["rated_load", "car_size"],
+      "allowed": [
+        ["kg630", "c1100x1400"],
+        ["kg800", "c1350x1400"],
+        ["kg1000", "c1600x1400"],
+        ["kg1250", "c1950x1400"],
+        ["kg1250", "c1200x2300"],
+        ["kg1600", "c2100x1600"],
+        ["kg1600", "c1400x2400"],
+        ["kg2000", "c1500x2700"],
+        ["kg2500", "c1800x2700"]
+      ]
+    },
+    {
+      "id": "R02",
+      "label": "Car dimensions determine minimum shaft size",
+      "type": "table",
+      "vars": ["car_size", "shaft"],
+      "allowed": [
+        ["c1100x1400", "t1_1800x1700"], ["c1100x1400", "t2_2000x1800"], ["c1100x1400", "t3_2200x2000"], ["c1100x1400", "t4_2500x2200"], ["c1100x1400", "t5_2700x2900"], ["c1100x1400", "t6_3000x3000"],
+        ["c1350x1400", "t2_2000x1800"], ["c1350x1400", "t3_2200x2000"], ["c1350x1400", "t4_2500x2200"], ["c1350x1400", "t5_2700x2900"], ["c1350x1400", "t6_3000x3000"],
+        ["c1600x1400", "t3_2200x2000"], ["c1600x1400", "t4_2500x2200"], ["c1600x1400", "t5_2700x2900"], ["c1600x1400", "t6_3000x3000"],
+        ["c1950x1400", "t4_2500x2200"], ["c1950x1400", "t5_2700x2900"], ["c1950x1400", "t6_3000x3000"],
+        ["c1200x2300", "t4_2500x2200"], ["c1200x2300", "t5_2700x2900"], ["c1200x2300", "t6_3000x3000"],
+        ["c2100x1600", "t4_2500x2200"], ["c2100x1600", "t5_2700x2900"], ["c2100x1600", "t6_3000x3000"],
+        ["c1400x2400", "t5_2700x2900"], ["c1400x2400", "t6_3000x3000"],
+        ["c1500x2700", "t5_2700x2900"], ["c1500x2700", "t6_3000x3000"],
+        ["c1800x2700", "t6_3000x3000"]
+      ]
+    },
+    {
+      "id": "R03",
+      "label": "Rated speed determines minimum pit depth",
+      "type": "table",
+      "vars": ["rated_speed", "pit_depth"],
+      "allowed": [
+        ["mps0_63", "p1100"], ["mps0_63", "p1400"], ["mps0_63", "p1600"], ["mps0_63", "p2100"],
+        ["mps1_0", "p1100"], ["mps1_0", "p1400"], ["mps1_0", "p1600"], ["mps1_0", "p2100"],
+        ["mps1_6", "p1400"], ["mps1_6", "p1600"], ["mps1_6", "p2100"],
+        ["mps2_5", "p1600"], ["mps2_5", "p2100"],
+        ["mps3_0", "p2100"]
+      ]
+    },
+    {
+      "id": "R04",
+      "label": "Rated speed determines minimum headroom",
+      "type": "table",
+      "vars": ["rated_speed", "headroom"],
+      "allowed": [
+        ["mps0_63", "h3400"], ["mps0_63", "h3800"], ["mps0_63", "h4200"], ["mps0_63", "h4600"],
+        ["mps1_0", "h3400"], ["mps1_0", "h3800"], ["mps1_0", "h4200"], ["mps1_0", "h4600"],
+        ["mps1_6", "h3800"], ["mps1_6", "h4200"], ["mps1_6", "h4600"],
+        ["mps2_5", "h4200"], ["mps2_5", "h4600"],
+        ["mps3_0", "h4600"]
+      ]
+    },
+    {
+      "id": "R05",
+      "label": "Door width must fit the car front",
+      "type": "table",
+      "vars": ["car_size", "door_width"],
+      "allowed": [
+        ["c1100x1400", "d800"], ["c1100x1400", "d900"],
+        ["c1350x1400", "d800"], ["c1350x1400", "d900"], ["c1350x1400", "d1000"],
+        ["c1600x1400", "d900"], ["c1600x1400", "d1000"], ["c1600x1400", "d1100"],
+        ["c1950x1400", "d1000"], ["c1950x1400", "d1100"], ["c1950x1400", "d1300"],
+        ["c1200x2300", "d900"], ["c1200x2300", "d1000"],
+        ["c2100x1600", "d1000"], ["c2100x1600", "d1100"], ["c2100x1600", "d1300"],
+        ["c1400x2400", "d1100"], ["c1400x2400", "d1300"],
+        ["c1500x2700", "d1100"], ["c1500x2700", "d1300"],
+        ["c1800x2700", "d1100"], ["c1800x2700", "d1300"]
+      ]
+    },
+    {
+      "id": "R06",
+      "label": "Door opening type limits available widths",
+      "type": "table",
+      "vars": ["door_type", "door_width"],
+      "allowed": [
+        ["telescopic_2", "d800"], ["telescopic_2", "d900"], ["telescopic_2", "d1000"],
+        ["center_2", "d800"], ["center_2", "d900"], ["center_2", "d1000"], ["center_2", "d1100"],
+        ["center_4", "d1100"], ["center_4", "d1300"]
+      ]
+    },
+    {
+      "id": "R07",
+      "label": "Product platform fixes the drive type",
+      "type": "table",
+      "vars": ["platform", "drive"],
+      "allowed": [
+        ["hydro_s300", "hydraulic"],
+        ["mrl_m500", "gearless_mrl"],
+        ["mrl_m700", "gearless_mrl"],
+        ["highrise_h900", "gearless_mr"]
+      ]
+    },
+    {
+      "id": "R08",
+      "label": "Product platform limits rated speed",
+      "type": "table",
+      "vars": ["platform", "rated_speed"],
+      "allowed": [
+        ["hydro_s300", "mps0_63"], ["hydro_s300", "mps1_0"],
+        ["mrl_m500", "mps1_0"], ["mrl_m500", "mps1_6"],
+        ["mrl_m700", "mps1_0"], ["mrl_m700", "mps1_6"], ["mrl_m700", "mps2_5"],
+        ["highrise_h900", "mps2_5"], ["highrise_h900", "mps3_0"]
+      ]
+    },
+    {
+      "id": "R09",
+      "label": "Product platform limits travel height",
+      "type": "table",
+      "vars": ["platform", "travel"],
+      "allowed": [
+        ["hydro_s300", "low_0_15"],
+        ["mrl_m500", "low_0_15"], ["mrl_m500", "mid_15_30"],
+        ["mrl_m700", "low_0_15"], ["mrl_m700", "mid_15_30"], ["mrl_m700", "high_30_50"], ["mrl_m700", "very_high_50_75"],
+        ["highrise_h900", "very_high_50_75"], ["highrise_h900", "tower_75_100"]
+      ]
+    },
+    {
+      "id": "R10",
+      "label": "Product platform limits rated load",
+      "type": "table",
+      "vars": ["platform", "rated_load"],
+      "allowed": [
+        ["hydro_s300", "kg630"], ["hydro_s300", "kg800"], ["hydro_s300", "kg1000"], ["hydro_s300", "kg1250"], ["hydro_s300", "kg1600"], ["hydro_s300", "kg2000"], ["hydro_s300", "kg2500"],
+        ["mrl_m500", "kg630"], ["mrl_m500", "kg800"], ["mrl_m500", "kg1000"], ["mrl_m500", "kg1250"],
+        ["mrl_m700", "kg630"], ["mrl_m700", "kg800"], ["mrl_m700", "kg1000"], ["mrl_m700", "kg1250"], ["mrl_m700", "kg1600"], ["mrl_m700", "kg2000"],
+        ["highrise_h900", "kg1000"], ["highrise_h900", "kg1250"], ["highrise_h900", "kg1600"], ["highrise_h900", "kg2000"]
+      ]
+    },
+    {
+      "id": "R11",
+      "label": "Product platform limits number of stops",
+      "type": "table",
+      "vars": ["platform", "stops"],
+      "allowed": [
+        ["hydro_s300", "s2_6"],
+        ["mrl_m500", "s2_6"], ["mrl_m500", "s7_12"],
+        ["mrl_m700", "s2_6"], ["mrl_m700", "s7_12"], ["mrl_m700", "s13_24"],
+        ["highrise_h900", "s7_12"], ["highrise_h900", "s13_24"]
+      ]
+    },
+    {
+      "id": "R12",
+      "label": "Region determines applicable accessibility standard",
+      "type": "table",
+      "vars": ["region", "accessibility"],
+      "allowed": [
+        ["europe", "none"], ["europe", "en81_70"],
+        ["north_america", "none"], ["north_america", "ada"]
+      ]
+    },
+    {
+      "id": "R13",
+      "label": "Travel height constrains sensible rated speeds",
+      "type": "table",
+      "vars": ["travel", "rated_speed"],
+      "allowed": [
+        ["low_0_15", "mps0_63"], ["low_0_15", "mps1_0"],
+        ["mid_15_30", "mps1_0"], ["mid_15_30", "mps1_6"],
+        ["high_30_50", "mps1_6"], ["high_30_50", "mps2_5"],
+        ["very_high_50_75", "mps1_6"], ["very_high_50_75", "mps2_5"],
+        ["tower_75_100", "mps2_5"], ["tower_75_100", "mps3_0"]
+      ]
+    },
+    {
+      "id": "R14",
+      "label": "Travel height constrains number of stops",
+      "type": "table",
+      "vars": ["travel", "stops"],
+      "allowed": [
+        ["low_0_15", "s2_6"],
+        ["mid_15_30", "s2_6"], ["mid_15_30", "s7_12"],
+        ["high_30_50", "s7_12"], ["high_30_50", "s13_24"],
+        ["very_high_50_75", "s7_12"], ["very_high_50_75", "s13_24"],
+        ["tower_75_100", "s7_12"], ["tower_75_100", "s13_24"]
+      ]
+    },
+    {
+      "id": "R15",
+      "label": "Hospitals require stretcher/bed-depth cars",
+      "type": "implication",
+      "if_all": [{ "var": "building_type", "in": ["hospital"] }],
+      "then": { "var": "car_size", "in": ["c1400x2400", "c1500x2700", "c1800x2700"] }
+    },
+    {
+      "id": "R16",
+      "label": "Hospitals require wide doors for stretcher access",
+      "type": "implication",
+      "if_all": [{ "var": "building_type", "in": ["hospital"] }],
+      "then": { "var": "door_width", "in": ["d1100", "d1300"] }
+    },
+    {
+      "id": "R17",
+      "label": "Hospitals require an accessibility package",
+      "type": "implication",
+      "if_all": [{ "var": "building_type", "in": ["hospital"] }],
+      "then": { "var": "accessibility", "in": ["en81_70", "ada"] }
+    },
+    {
+      "id": "R18",
+      "label": "New public buildings require an accessibility package",
+      "type": "implication",
+      "if_all": [
+        { "var": "installation", "in": ["new_build"] },
+        { "var": "building_type", "in": ["office", "hotel", "hospital"] }
+      ],
+      "then": { "var": "accessibility", "in": ["en81_70", "ada"] }
+    },
+    {
+      "id": "R19",
+      "label": "Accessibility requires door width of at least 900 mm",
+      "type": "implication",
+      "if_all": [{ "var": "accessibility", "in": ["en81_70", "ada"] }],
+      "then": { "var": "door_width", "in": ["d900", "d1000", "d1100", "d1300"] }
+    },
+    {
+      "id": "R20",
+      "label": "Accessibility requires a handrail",
+      "type": "implication",
+      "if_all": [{ "var": "accessibility", "in": ["en81_70", "ada"] }],
+      "then": { "var": "handrail", "in": ["one_side", "three_sides"] }
+    },
+    {
+      "id": "R21",
+      "label": "Accessibility requires a mirror for reversing visibility",
+      "type": "implication",
+      "if_all": [{ "var": "accessibility", "in": ["en81_70", "ada"] }],
+      "then": { "var": "mirror", "in": ["half", "full"] }
+    },
+    {
+      "id": "R22",
+      "label": "ADA requires tactile controls (no touchscreen-only panel)",
+      "type": "implication",
+      "if_all": [{ "var": "accessibility", "in": ["ada"] }],
+      "then": { "var": "cop", "in": ["standard", "vandal"] }
+    },
+    {
+      "id": "R23",
+      "label": "Glass landing doors are not available fire-rated",
+      "type": "implication",
+      "if_all": [{ "var": "door_finish", "in": ["glass"] }],
+      "then": { "var": "fire_rating", "in": ["none"] }
+    },
+    {
+      "id": "R24",
+      "label": "Tall public buildings require fire-rated landing doors",
+      "type": "implication",
+      "if_all": [
+        { "var": "building_type", "in": ["office", "hotel", "hospital"] },
+        { "var": "travel", "in": ["high_30_50", "very_high_50_75", "tower_75_100"] }
+      ],
+      "then": { "var": "fire_rating", "in": ["e120", "ei60"] }
+    },
+    {
+      "id": "R25",
+      "label": "Panoramic glass wall exceeds weight budget at 2500 kg",
+      "type": "implication",
+      "if_all": [{ "var": "wall_finish", "in": ["glass_panoramic"] }],
+      "then": { "var": "rated_load", "in": ["kg630", "kg800", "kg1000", "kg1250", "kg1600", "kg2000"] }
+    },
+    {
+      "id": "R26",
+      "label": "Granite floor exceeds weight budget on the smallest car",
+      "type": "implication",
+      "if_all": [{ "var": "floor", "in": ["granite"] }],
+      "then": { "var": "rated_load", "in": ["kg800", "kg1000", "kg1250", "kg1600", "kg2000", "kg2500"] }
+    },
+    {
+      "id": "R27",
+      "label": "Modernization cannot deepen the existing pit to 2100 mm",
+      "type": "implication",
+      "if_all": [{ "var": "installation", "in": ["modernization"] }],
+      "then": { "var": "pit_depth", "in": ["p1100", "p1400", "p1600"] }
+    },
+    {
+      "id": "R28",
+      "label": "Modernization cannot raise the existing headroom to 4600 mm",
+      "type": "implication",
+      "if_all": [{ "var": "installation", "in": ["modernization"] }],
+      "then": { "var": "headroom", "in": ["h3400", "h3800", "h4200"] }
+    },
+    {
+      "id": "R29",
+      "label": "Retail traffic requires a vandal-resistant panel",
+      "type": "implication",
+      "if_all": [{ "var": "building_type", "in": ["retail"] }],
+      "then": { "var": "cop", "in": ["vandal"] }
+    },
+    {
+      "id": "R30",
+      "label": "4-panel center doors need the wider shaft tiers",
+      "type": "implication",
+      "if_all": [{ "var": "door_type", "in": ["center_4"] }],
+      "then": { "var": "shaft", "in": ["t4_2500x2200", "t5_2700x2900", "t6_3000x3000"] }
+    }
+  ]
+}

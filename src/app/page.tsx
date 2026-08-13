@@ -1,8 +1,12 @@
 "use client";
 
 import { ExampleLayout } from "@/components/example-layout";
-import { ExampleCanvas } from "@/components/example-canvas";
-import { useGenerativeUIExamples, useExampleSuggestions } from "@/hooks";
+import { ConfigCanvas } from "@/components/config-canvas";
+import {
+  useConfiguratorUI,
+  useConfiguratorSuggestions,
+  useThreadResumption,
+} from "@/hooks";
 
 import {
   CopilotChat,
@@ -12,25 +16,26 @@ import {
 
 import styles from "./page.module.css";
 
+/** Must render inside the configuration provider to see the active thread. */
+function ThreadResumption() {
+  useThreadResumption();
+  return null;
+}
+
 export default function HomePage() {
-  useGenerativeUIExamples();
-  useExampleSuggestions();
+  useConfiguratorUI();
+  useConfiguratorSuggestions();
 
   return (
     /*
       One UNCONTROLLED CopilotChatConfigurationProvider (no `threadId` prop) owns
-      the active thread for the whole surface. The SDK <CopilotThreadsDrawer> drives it
-      directly — picking a row sets the active thread, "+ New" resets to a fresh
-      thread (clearing the chat) — with no host thread-state. The chat and the
-      canvas read the same active thread from the provider (the canvas's
-      `useAgent()` falls back to it), so they stay on the same per-thread agent
-      clone the chat's /connect replay populates. A *controlled* provider would
-      block "+ New" from resetting the chat, so uncontrolled-inside-provider is
-      required, not optional.
+      the active thread for the whole surface (see git history for the full
+      rationale). The chat and the canvas read the same active thread, so the
+      spec sheet reflects the per-thread agent state.
     */
     <CopilotChatConfigurationProvider agentId="default">
+      <ThreadResumption />
       <div className={styles.layout}>
-        {/* SDK threads drawer (replaces the hand-rolled fork). License-gated: the locked view's Upgrade CTA opens the Intelligence docs by default. */}
         <CopilotThreadsDrawer agentId="default" />
         <div className={styles.mainPanel}>
           <ExampleLayout
@@ -40,7 +45,7 @@ export default function HomePage() {
                 input={{ disclaimer: () => null, className: "pb-6" }}
               />
             }
-            appContent={<ExampleCanvas />}
+            appContent={<ConfigCanvas />}
           />
         </div>
       </div>

@@ -1,5 +1,18 @@
 # CopilotKit + LangGraph Todo Demo
 
+## Development method: spec-anchored SDD
+
+This project uses lightweight spec-driven development. Non-negotiable workflow:
+
+1. Read `specs/constitution.md` before making changes — its principles override convenience.
+2. Any change that adds a capability, changes behavior, or makes an architectural choice needs a spec in `specs/NNN-feature/` (`requirements.md`, `design.md`, `tasks.md`). Write or update the spec *before* implementing; new features need user approval of `requirements.md` first. Bug fixes and mechanical changes need no spec.
+3. Specs are anchored: after implementing, update `tasks.md` and reconcile `requirements.md`/`design.md` with what was actually built. A spec that disagrees with the code is a bug.
+4. The feature index and roadmap live in `specs/README.md`.
+
+## Current state of the repo
+
+This repo started from the CopilotKit todo boilerplate documented below, but is being rebuilt into a research prototype: chat-based configuration of complex industrial products (an elevator), grounded in `docs/research-and-outline.md`. As of spec 003 the agent (`agent/main.py`) registers solver-backed configuration tools (`agent/src/configuration.py` over the Z3 service in `agent/src/solver/`), not the todo tools. The todo/a2ui example files remain as CopilotKit reference; the sections below describe that original boilerplate pattern, which the configurator reuses (agent-state sync, generative UI).
+
 ## Purpose
 
 This repository serves as both a **showcase** and **template** for building AI agents with CopilotKit and LangGraph. It demonstrates how CopilotKit can drive interactive UI beyond just chat, using a **collaborative todo list** as the primary example.
