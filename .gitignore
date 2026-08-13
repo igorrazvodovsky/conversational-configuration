@@ -52,3 +52,6 @@ next-env.d.ts
 # Tools
 .claude
 .scratch/
+
+# durable workspace store (docs/specs/agreement-workspace)
+agent/data/

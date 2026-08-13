@@ -27,7 +27,7 @@ Candidate frames:
 
 Resumption:
 
-- GIVEN an existing thread reopened from the threads drawer, WHEN the canvas mounts, THEN choices, statuses, provenance badges, candidate, and frames render exactly as they were. (The draft assumed this only needed verification; it needed implementation — CopilotKit's drawer switches threads without restoring history, so `useThreadResumption` hydrates from the runtime's thread endpoints. See design.)
+- GIVEN an existing conversation reopened from its workspace's conversation list, WHEN the canvas mounts, THEN the transcript renders as it was and the canvas shows the agreement's *current* state with provenance badges, candidate, and frames. (The draft assumed reopening only needed verification; it needed implementation — CopilotKit switches threads without restoring history — and its meaning later changed: since the [agreement-workspace spec](../agreement-workspace/requirements.md), configuration hydrates from the durable workspace rather than the thread checkpoint. See both designs.)
 - GIVEN a resumed thread, WHEN the customer asks what's left, THEN the agent answers from `get_configuration` — decided (with who decided), forced, and undecided variables — without re-eliciting anything already settled.
 
 ## Out of scope

@@ -11,6 +11,7 @@ from langchain.messages import ToolMessage
 from langchain.tools import ToolRuntime, tool
 from langgraph.types import Command
 
+from src import workspace_store
 from src.solver import TERM_VAR, ConfigSolver, ConflictError, load_model
 
 MODEL_PATH = Path(__file__).parent / "product_model" / "elevator.json"
@@ -67,6 +68,13 @@ class Configuration(TypedDict):
 
 class AgentState(BaseAgentState):
     configuration: Configuration
+    # The workspace this conversation belongs to (docs/specs/agreement-workspace).
+    # Seeded by the frontend on attach; absent on legacy threads — read with .get.
+    workspace_id: NotRequired[str]
+    # Mirror of the workspace's name, updated by name_workspace so the open
+    # workspace's UI re-renders with the name immediately. The store is the
+    # durable copy; this field is display plumbing.
+    workspace_name: NotRequired[str]
 
 
 def empty_configuration() -> Configuration:
@@ -470,6 +478,19 @@ def _get_config(runtime: ToolRuntime) -> Configuration:
     return runtime.state.get("configuration") or empty_configuration()
 
 
+def _commit(runtime: ToolRuntime, config: Configuration) -> None:
+    """Write-through to the durable workspace (docs/specs/agreement-workspace):
+    the thread checkpoint keeps its own copy as the historical record of what
+    this conversation saw. A missing workspace must not break the conversation."""
+    workspace_id = runtime.state.get("workspace_id")
+    if not workspace_id:
+        return  # legacy thread — nothing durable to update
+    try:
+        workspace_store.save_configuration(workspace_id, config)
+    except KeyError:
+        print(f"workspace {workspace_id!r} not found — configuration not persisted")
+
+
 # -- tools ----------------------------------------------------------------
 
 
@@ -503,6 +524,7 @@ def set_choices(choices: dict[str, str], source: Source, runtime: ToolRuntime) -
         )
     if new_config["candidate"] is None and config["candidate"] is not None:
         lines.append("The previous candidate no longer fits and was discarded.")
+    _commit(runtime, new_config)
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(content="\n".join(lines), tool_call_id=runtime.tool_call_id)],
@@ -557,6 +579,7 @@ def revise_choices(
         )
     if new_config["candidate"] is None and config["candidate"] is not None:
         lines.append("The previous candidate no longer fits and was discarded.")
+    _commit(runtime, new_config)
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(content="\n".join(lines), tool_call_id=runtime.tool_call_id)],
@@ -573,6 +596,7 @@ def clear_choices(variables: list[str], runtime: ToolRuntime) -> Command:
         return Command(update={"messages": [
             ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
         ]})
+    _commit(runtime, new_config)
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(
@@ -596,6 +620,7 @@ def propose_completion(runtime: ToolRuntime, objective: Objective = "price") -> 
     other_assignment, other_price = SOLVER.complete(_chosen_values(config), other)
     content = completion_message(new_config["candidate"], objective,
                                  other_assignment, other_price)
+    _commit(runtime, new_config)
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(content=content, tool_call_id=runtime.tool_call_id)],
@@ -615,6 +640,7 @@ def save_frame_tool(name: str, runtime: ToolRuntime) -> Command:
             ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
         ]})
     frame = new_config["frames"][-1]
+    _commit(runtime, new_config)
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(
@@ -650,10 +676,39 @@ def adopt_frame_tool(name: str, runtime: ToolRuntime) -> Command:
             ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
         ]})
     price = new_config["candidate"]["price"]
+    _commit(runtime, new_config)
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(
             content=f"Adopted frame {name!r} — agreement replaced, {price} EUR/month.",
+            tool_call_id=runtime.tool_call_id,
+        )],
+    })
+
+
+@tool
+def name_workspace(name: str, runtime: ToolRuntime) -> Command:
+    """Name (or rename) this elevator's entry — a short identifying name like
+    "Riverside Tower — north lift", or a short description of the installation
+    when no explicit identity has emerged yet. Call it as soon as the
+    conversation reveals which installation this is; never ask the customer to
+    invent a name, and don't announce the naming."""
+    workspace_id = runtime.state.get("workspace_id")
+    if not workspace_id:
+        return Command(update={"messages": [ToolMessage(
+            content="No workspace attached to this conversation — nothing to name.",
+            tool_call_id=runtime.tool_call_id,
+        )]})
+    try:
+        workspace_store.rename_workspace(workspace_id, name)
+    except (KeyError, ValueError) as e:
+        return Command(update={"messages": [
+            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
+        ]})
+    return Command(update={
+        "workspace_name": name.strip(),
+        "messages": [ToolMessage(
+            content=f"Named the elevator {name.strip()!r}.",
             tool_call_id=runtime.tool_call_id,
         )],
     })
@@ -669,7 +724,17 @@ def get_configuration(runtime: ToolRuntime) -> str:
         var for var in MODEL.variables
         if var not in config["choices"] and var not in forced
     ]
-    lines = ["Choices:"]
+    lines = []
+    workspace_id = runtime.state.get("workspace_id")
+    if workspace_id:
+        try:
+            name = workspace_store.get_workspace(workspace_id)["name"]
+            lines.append(f"Elevator: {name}" if name
+                         else "Elevator: unnamed — call name_workspace once you "
+                              "know which installation this is.")
+        except KeyError:
+            pass
+    lines.append("Choices:")
     for var, c in config["choices"].items():
         lines.append(f"- {var} = {c['value']} (source: {c['source']})")
     if forced:
@@ -771,6 +836,7 @@ def describe_product() -> str:
 
 
 configuration_tools = [
+    name_workspace,
     set_choices,
     revise_choices,
     clear_choices,

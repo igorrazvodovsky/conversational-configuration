@@ -183,6 +183,10 @@
   },
   "active": "0a96195340f5dc8d",
   "lastOpenFiles": [
+    "specs/agreement-workspace/tasks.md",
+    "specs/agreement-workspace/design.md",
+    "specs/agreement-workspace/requirements.md",
+    "specs/agreement-workspace",
     "specs/environmental-footprint/tasks.md",
     "specs/environmental-footprint/design.md",
     "specs/service-agreement/tasks.md",
@@ -213,11 +217,7 @@
     "specs/agent-tools",
     "specs/solver-service/tasks.md",
     "specs/solver-service/requirements.md",
-    "specs/solver-service/design.md",
     "specs/solver-service",
-    "specs/product-model/tasks.md",
-    "specs/product-model/requirements.md",
-    "specs/product-model",
-    "discovery/assertions"
+    "specs/product-model"
   ]
 }

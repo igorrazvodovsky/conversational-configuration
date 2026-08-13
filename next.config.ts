@@ -1,8 +1,26 @@
 import type { NextConfig } from "next";
 
+// Same fallback chain as src/agent.ts, so the workspace API and the agent
+// runs always target the same LangGraph server.
+const agentUrl =
+  process.env.AGENT_URL ||
+  process.env.LANGGRAPH_DEPLOYMENT_URL ||
+  "http://localhost:8123";
+
 const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["@copilotkit/runtime"],
+  async rewrites() {
+    // Workspace store routes (docs/specs/agreement-workspace) live on the
+    // agent server (langgraph.json http.app); proxy keeps them same-origin.
+    return [
+      { source: "/api/workspaces", destination: `${agentUrl}/workspaces` },
+      {
+        source: "/api/workspaces/:path*",
+        destination: `${agentUrl}/workspaces/:path*`,
+      },
+    ];
+  },
   env: {
     // The public Threads UI flag is DERIVED from the server-side license token.
     // Set COPILOTKIT_LICENSE_TOKEN (only) to enable Threads — do not set this flag

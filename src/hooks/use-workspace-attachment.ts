@@ -1,0 +1,270 @@
+"use client";
+
+/**
+ * Workspace attachment (docs/specs/agreement-workspace) — the evolution of
+ * the thread-resumption hook from docs/specs/nonlinear-interaction.
+ *
+ * The workspace, not the thread, is the durable locus of the agreement. On
+ * every active-thread change (and on the agent-instance change the initial
+ * connect causes) this hook:
+ *   1. clears the agent state synchronously (so nothing from the previous
+ *      thread leaks into the next run),
+ *   2. seeds `{workspace_id, configuration}` from the workspace store and
+ *      KEEPS it seeded via an agent subscriber: the connect that follows a
+ *      page load or thread switch delivers the thread checkpoint's state
+ *      after the seed, and the workspace configuration must win over that
+ *      checkpoint (it is a historical record). The subscriber disarms the
+ *      moment a genuinely new user message exists — from then on state
+ *      belongs to the live run,
+ *   3. for a thread with server history, hydrates the transcript from the
+ *      runtime (CopilotKit v2 switches threads but never fetches messages),
+ *   4. flags the thread stale when its checkpoint configuration no longer
+ *      matches the workspace — its cards must not act on a superseded state,
+ *   5. registers a conversation with the workspace on its first message.
+ *
+ * Two inherited traps (see docs/specs/nonlinear-interaction/design.md): the
+ * runtime returns LangChain-style tool calls that must be converted to the
+ * AG-UI shape, and the switch-triggered connect can wipe hydrated messages —
+ * hydration waits for the agent to settle and briefly re-applies if wiped.
+ */
+
+import {
+  useAgent,
+  useCopilotChatConfiguration,
+} from "@copilotkit/react-core/v2";
+import { useEffect, useRef, useState } from "react";
+import {
+  WorkspaceRecord,
+  fetchWorkspace,
+  registerThread,
+} from "@/lib/workspaces";
+
+interface RuntimeToolCall {
+  id: string;
+  name: string;
+  args: string | object;
+}
+
+interface RuntimeMessage {
+  id: string;
+  role: string;
+  content?: string;
+  toolCalls?: RuntimeToolCall[];
+  [key: string]: unknown;
+}
+
+/** The runtime returns LangChain-style tool calls ({id, name, args}); the
+ * AG-UI agent expects OpenAI shape ({id, type, function: {name, arguments}}). */
+function toAgUiMessage(message: RuntimeMessage) {
+  if (!message.toolCalls?.length) return message;
+  return {
+    ...message,
+    toolCalls: message.toolCalls.map((tc) => ({
+      id: tc.id,
+      type: "function" as const,
+      function: {
+        name: tc.name,
+        arguments:
+          typeof tc.args === "string" ? tc.args : JSON.stringify(tc.args ?? {}),
+      },
+    })),
+  };
+}
+
+/** Key-order-independent comparison: checkpoint and workspace configurations
+ * take different serialization paths, so plain JSON.stringify could disagree
+ * on identical states. */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  const entries = Object.keys(value as object)
+    .sort()
+    .map(
+      (k) =>
+        `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`,
+    );
+  return `{${entries.join(",")}}`;
+}
+
+export function useWorkspaceAttachment(workspaceId: string) {
+  const { agent } = useAgent();
+  const configuration = useCopilotChatConfiguration();
+  const threadId = configuration?.threadId;
+
+  const [workspace, setWorkspace] = useState<WorkspaceRecord | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [staleThread, setStaleThread] = useState(false);
+  const clearedFor = useRef<string | undefined>(undefined);
+  const enteredFor = useRef<string | undefined>(undefined);
+  // Thread whose seed has landed — only it may register conversations. Right
+  // after a switch the new threadId renders while the previous conversation's
+  // messages are still in the agent, and without this gate that stale render
+  // registers the fresh thread before its first real message.
+  const attachedFor = useRef<string | undefined>(undefined);
+  const registering = useRef<Set<string>>(new Set());
+
+  // Opening a workspace always mounts a fresh, unregistered conversation.
+  // The active thread is global to the CopilotKit core and survives
+  // client-side navigation, so without this a workspace opened after another
+  // one would attach to — and register — the previous workspace's active
+  // conversation.
+  useEffect(() => {
+    if (!configuration || enteredFor.current === workspaceId) return;
+    enteredFor.current = workspaceId;
+    configuration.startNewThread();
+  }, [configuration, workspaceId]);
+
+  // Attach on active-thread change. Deliberately NOT guarded to run once per
+  // thread: the initial connect swaps the `agent` instance, and a seed or
+  // subscriber applied to the stale instance is invisible to the UI — the
+  // effect must re-attach on the fresh one.
+  useEffect(() => {
+    if (!threadId) return;
+
+    // Clear synchronously on the switch itself, before anything can be sent —
+    // otherwise a new conversation would start from the previous thread's
+    // choices (the trap the resumption hook documented). The seed below puts
+    // the real state in. Messages are cleared too: after cross-workspace
+    // navigation no connect wipes them, and they would both show another
+    // workspace's transcript and trip message-count-based registration.
+    if (clearedFor.current !== threadId) {
+      clearedFor.current = threadId;
+      setStaleThread(false);
+      agent.setState({});
+      agent.setMessages([]);
+    }
+
+    let cancelled = false;
+    let subscription: { unsubscribe: () => void } | undefined;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    (async () => {
+      // The previous conversation's messages linger until the runtime's
+      // switch-triggered connect wipes them — wait for the drain so the
+      // subscriber's "user acted" check sees this thread, not the old one.
+      for (let i = 0; i < 20 && !cancelled && agent.messages.length > 0; i++)
+        await sleep(250);
+      if (cancelled || agent.messages.length > 0) return;
+
+      let record: WorkspaceRecord;
+      try {
+        record = await fetchWorkspace(workspaceId);
+      } catch {
+        if (!cancelled) setNotFound(true);
+        return;
+      }
+      if (cancelled) return;
+      setWorkspace(record);
+
+      const want = stableStringify(record.configuration);
+      const restoredIds = new Set<string>();
+      // A user message that was not hydrated from the server is the user (or
+      // a card) acting live in this conversation.
+      const userActed = () =>
+        agent.messages.some(
+          (m) =>
+            (m as { role?: string }).role === "user" &&
+            !restoredIds.has((m as { id: string }).id),
+        );
+      const seed = () =>
+        agent.setState({
+          workspace_id: record.id,
+          configuration: record.configuration,
+        });
+
+      seed();
+      // Workspace-configuration precedence, event-driven: whatever the
+      // connect writes (nothing, or the checkpoint state), put the workspace
+      // configuration back — until the user acts, after which state belongs
+      // to the live run and the subscriber disarms.
+      subscription = agent.subscribe({
+        onStateChanged: () => {
+          if (cancelled) return;
+          if (userActed()) {
+            subscription?.unsubscribe();
+            subscription = undefined;
+            return;
+          }
+          const state = agent.state as { configuration?: unknown } | undefined;
+          if (
+            !state?.configuration ||
+            stableStringify(state.configuration) !== want
+          )
+            seed();
+        },
+      });
+      attachedFor.current = threadId;
+
+      const base = `/api/copilotkit/threads/${encodeURIComponent(threadId)}`;
+      const [messagesRes, stateRes] = await Promise.all([
+        fetch(`${base}/messages`),
+        fetch(`${base}/state`),
+      ]);
+      // A brand-new thread has no server record yet — nothing to restore.
+      if (cancelled || !messagesRes.ok || !stateRes.ok) return;
+      const { messages } = await messagesRes.json();
+      const { state } = await stateRes.json();
+
+      // The checkpoint is the record of what this conversation saw; when the
+      // agreement has moved on (another conversation changed it), the
+      // transcript's cards must not act on it.
+      if (
+        state?.configuration &&
+        stableStringify(state.configuration) !== want
+      ) {
+        if (!cancelled) setStaleThread(true);
+      }
+
+      if (!Array.isArray(messages) || messages.length === 0) return;
+      const restored = (messages as RuntimeMessage[]).map(toAgUiMessage);
+      restored.forEach((m) => restoredIds.add(m.id));
+      const hydrate = () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        agent.setMessages(restored as any);
+        seed(); // workspace configuration wins over whatever connect left
+      };
+
+      // The switch-triggered connect can be in flight (isRunning) and reset
+      // local messages when it lands — wait for it to settle, hydrate, then
+      // briefly watch for a late wipe.
+      for (let i = 0; i < 40 && !cancelled && agent.isRunning; i++)
+        await sleep(250);
+      if (cancelled || agent.messages.length > 0) return;
+      hydrate();
+      for (let i = 0; i < 8 && !cancelled; i++) {
+        await sleep(500);
+        if (!cancelled && !agent.isRunning && agent.messages.length === 0)
+          hydrate();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      subscription?.unsubscribe();
+    };
+  }, [agent, threadId, workspaceId]);
+
+  // A conversation joins the workspace's list on its first message — this is
+  // also how a canvas edit with no active conversation "starts" one.
+  const messageCount = agent.messages.length;
+  useEffect(() => {
+    if (!threadId || !workspace || messageCount === 0) return;
+    if (attachedFor.current !== threadId) return; // not this thread's messages
+    if (workspace.threads.some((t) => t.id === threadId)) return;
+    if (registering.current.has(threadId)) return;
+    registering.current.add(threadId);
+    registerThread(workspace.id, threadId)
+      .then((record) => setWorkspace(record))
+      .catch(() => registering.current.delete(threadId));
+  }, [messageCount, threadId, workspace]);
+
+  // Live display name: the name_workspace tool mirrors the store's name into
+  // agent state, so a rename shows up mid-conversation without a refetch.
+  // null means unnamed — the caller shows the placeholder.
+  const workspaceName =
+    (agent.state as { workspace_name?: string } | undefined)?.workspace_name ??
+    workspace?.name ??
+    null;
+
+  return { workspace, workspaceName, staleThread, notFound };
+}

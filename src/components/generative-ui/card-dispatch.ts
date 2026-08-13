@@ -8,10 +8,19 @@
  */
 
 import { useAgent } from "@copilotkit/react-core/v2";
-import { useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
+
+/**
+ * True when the whole reopened conversation refers to an agreement state the
+ * workspace has moved past (docs/specs/agreement-workspace) — every card in it
+ * is inert then. Provided by the workspace page; defaults to false so cards
+ * work unchanged outside a workspace.
+ */
+export const StaleThreadContext = createContext(false);
 
 export function useCardDispatch(toolCallId: string) {
   const { agent } = useAgent();
+  const staleThread = useContext(StaleThreadContext);
   const [submitted, setSubmitted] = useState(false);
 
   // Inert once any user message exists after the message carrying this call.
@@ -37,5 +46,5 @@ export function useCardDispatch(toolCallId: string) {
     agent.runAgent();
   };
 
-  return { inert: stale || submitted, dispatch };
+  return { inert: stale || submitted || staleThread, dispatch };
 }

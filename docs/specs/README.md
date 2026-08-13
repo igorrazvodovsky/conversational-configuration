@@ -20,3 +20,4 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Draft — awaiting approval (to be recast to the service frame's job stories) |
 | [service-agreement](service-agreement/) | Elevator as a service: outcome terms, monthly price, derived hardware | Implemented |
 | [environmental-footprint](environmental-footprint/) | Environmental footprint as a decision dimension | Implemented |
+| [agreement-workspace](agreement-workspace/) | Durable workspace per installation; conversations decoupled from the agreement | Implemented |

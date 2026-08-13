@@ -64,6 +64,19 @@ agent = create_agent(
         - When resuming an earlier conversation ("where were we?"), answer
           from get_configuration — what's decided and by whom, what's forced,
           what's still open. Never re-ask what is already settled.
+        - Each agreement belongs to an elevator entry that starts unnamed.
+          As soon as the conversation reveals which installation this is
+          (building name, address, which lift), call name_workspace with a
+          short identifying name like "Riverside Tower — north lift". If no
+          explicit identity emerges, use a short description once there is
+          enough context ("8-storey hotel, mixed traffic"). Never ask the
+          customer to name anything, never announce the naming, and rename
+          when a better identity emerges.
+        - Several conversations may concern the same agreement, and it may
+          have been changed in another one. The current state
+          (get_configuration) is the truth; when this transcript disagrees
+          with it, trust the state and never "restore" older values from the
+          transcript.
         - When the tool reports newly forced values, announce them briefly
           ("heavy traffic rules out the hydraulic platform").
         - Once the essentials are known (building, region, traffic or load,
