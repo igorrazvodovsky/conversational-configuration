@@ -16,7 +16,7 @@ import {
   useAgent,
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface RuntimeToolCall {
   id: string;
@@ -54,9 +54,30 @@ export function useThreadResumption() {
   const { agent } = useAgent();
   const configuration = useCopilotChatConfiguration();
   const threadId = configuration?.threadId;
+  const clearedFor = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!threadId || agent.messages.length > 0) return;
+    if (!threadId) return;
+
+    // Switching threads clears the agent's messages but leaves the previous
+    // thread's configuration on it, and every run sends agent.state as the
+    // run's initial state — so a new conversation would start from the old
+    // thread's choices and persist them into its own checkpoint. Clear on the
+    // switch itself, before anything can be sent; the hydration below puts
+    // the real state back for a thread that has one.
+    //
+    // Cleared rather than replaced with an empty Configuration: the agent's
+    // empty_configuration() derives statuses from the solver, and a
+    // client-authored `{choices: {}, statuses: {}}` is truthy, so it would
+    // win over that fallback and leave the canvas with no option statuses.
+    // Sending no `configuration` key at all writes nothing, so this is also
+    // safe for a thread whose checkpoint already holds one.
+    if (clearedFor.current !== threadId) {
+      clearedFor.current = threadId;
+      agent.setState({});
+    }
+
+    if (agent.messages.length > 0) return;
     let cancelled = false;
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     (async () => {
