@@ -18,5 +18,5 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [configuration-canvas](configuration-canvas/) | Spec-sheet canvas + in-chat generated controls | Implemented |
 | [nonlinear-interaction](nonlinear-interaction/) | Revision with ripple, candidate frames, resumption | Implemented |
 | [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Draft — awaiting approval (to be recast for the service pivot) |
-| [eaas-pivot](eaas-pivot/) | Elevator-as-a-service pivot | Draft — awaiting approval |
-| [environmental-footprint](environmental-footprint/) | Environmental footprint as a decision dimension | Draft — awaiting approval |
+| [eaas-pivot](eaas-pivot/) | Elevator-as-a-service pivot | Requirements approved 2026-08-13; not yet implemented |
+| [environmental-footprint](environmental-footprint/) | Environmental footprint as a decision dimension | Requirements approved 2026-08-13; not yet implemented |

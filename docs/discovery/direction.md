@@ -71,8 +71,6 @@ The scripted scenarios in the [demo-scenarios spec](../specs/demo-scenarios/requ
 | Comparing agreements | [trade-offs shown as a pair](principles/trade-offs-shown-as-a-pair.md), [always show a valid whole](principles/always-show-a-valid-whole.md) | [a candidate beats a question sequence](assertions/candidate-beats-questions.md), [two objectives held as a pair](assertions/two-objectives-as-a-pair.md) |
 | Renewal as revision | [any door is an entrance](principles/any-door-is-an-entrance.md), [changing your mind is not a restart](principles/revision-is-not-a-restart.md), [the canvas remembers, the chat explains](principles/canvas-remembers-chat-explains.md) | [the canvas is the durable state](assertions/canvas-is-the-durable-state.md), [ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md) |
 
-Every principle is covered except [any door is an entrance](principles/any-door-is-an-entrance.md), which only appears incidentally in the fourth scenario. Either a scenario should start from an unusual entry point, or it is a claim the demos will not support — worth deciding before that spec is approved.
-
 ## Related
 
 - [principles/](principles/) — one note per principle, the §2 table expanded

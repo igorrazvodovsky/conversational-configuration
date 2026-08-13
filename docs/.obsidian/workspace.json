@@ -183,6 +183,8 @@
   },
   "active": "0a96195340f5dc8d",
   "lastOpenFiles": [
+    "specs/eaas-pivot/tasks.md",
+    "specs/eaas-pivot/design.md",
     "specs/environmental-footprint/requirements.md",
     "specs/environmental-footprint",
     "specs/eaas-pivot/requirements.md",
@@ -215,8 +217,6 @@
     "discovery/assertions/two-objectives-as-a-pair.md",
     "discovery/assertions/outcome-level-elicitation.md",
     "discovery/assertions/cores-are-enough-for-trust.md",
-    "discovery/assertions/ripple-at-the-moment-of-revision.md",
-    "discovery/assertions/generated-controls-beat-free-text.md",
     "discovery/assertions",
     "discovery/principles"
   ]

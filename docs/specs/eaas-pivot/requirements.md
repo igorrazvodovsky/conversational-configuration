@@ -1,10 +1,14 @@
 # Elevator-as-a-service pivot
 
-Status: draft — awaiting approval.
+Status: requirements approved 2026-08-13. Design and implementation not started.
 
 Grounding: docs/discovery/jtbd/ (job ladder, job map). The main job — keep people and goods moving through a building over its life — outlasts the purchase; the service frame covers the job stages (monitor, modify, conclude) that the product frame abandons, and it is where the prototype's [nonlinear-revision machinery](../nonlinear-interaction/requirements.md) does its best work. The pivot reframes what is being configured: not a machine, but a *service agreement* — outcome terms with a monthly price — under which the machine spec is derived, inspectable, and editable.
 
-Scope decision recommended for approval: the service frame *replaces* the capex frame as the prototype's single offering (constitution #10, simplest mechanism). A buy-vs-subscribe comparison mode is the rejected alternative — richer, but it doubles the pricing model for a comparison that is not this prototype's research question.
+Serves discovery principles [changing your mind is a normal move, not a restart](../../discovery/principles/revision-is-not-a-restart.md) — the pivot makes mid-contract modification the primary interaction rather than an escape hatch — and [speak the building's language, not the catalogue's](../../discovery/principles/speak-the-buildings-language.md) — outcome terms are the building's language carried through the whole life of the job.
+
+One seam is inherited rather than created here. A service proposal must be completed against *some* objective, and which objective the first proposal uses is the standing tension named in [the conversation move inventory](../../discovery/models/Conversation%20moves.md) §6 — completing on cheapest monthly price is a silent 100%-cost weighting once footprint exists. This spec does not settle that tension, and approving it is not approving a price-minimizing first proposal.
+
+Scope decision, settled by this spec's approval: the service frame *replaces* the capex frame as the prototype's single offering (constitution #10, simplest mechanism). A buy-vs-subscribe comparison mode is the rejected alternative — richer, but it doubles the pricing model for a comparison that is not this prototype's research question.
 
 ## Stories
 
@@ -18,7 +22,7 @@ Scope decision recommended for approval: the service frame *replaces* the capex 
 - GIVEN the extended product model, WHEN the model validator runs, THEN service-dimension variables (at minimum: service level, contract term, usage profile, connectivity package) and their coupling constraints pass the same validation as hardware variables.
 - GIVEN a service-hardware coupling (e.g. a premium uptime level requires the connectivity package; a heavy usage profile excludes the light-duty drive), WHEN the user's outcome choices trigger it, THEN the consequence is propagated, shown as forced/greyed like any other constraint, and explained via named rules (constitution #6).
 - GIVEN a fresh conversation, WHEN the user states needs in building and outcome terms, THEN elicitation targets outcome-level variables, every proposed candidate is solver-valid, and its price is a recurring monthly fee derived from the model (hardware amortization over term + service level + usage), never a one-off capex figure.
-- GIVEN the canvas, WHEN a configuration is displayed, THEN outcome terms (performance, service level, term, monthly price) are grouped above the derived hardware spec, and hardware values remain directly editable with invalid options greyed out.
+- GIVEN the canvas, WHEN a configuration is displayed, THEN outcome terms (performance, service level, term, monthly price) are grouped above the derived hardware spec, every value carries its provenance so the user can tell who chose it ([the agent proposes; the user disposes](../../discovery/principles/agent-proposes-user-disposes.md)), and hardware values remain directly editable with invalid options greyed out.
 - GIVEN an active agreement, WHEN the user requests a different outcome mid-contract, THEN repair options are computed by the solver with ripple spanning both service terms and hardware, each grounded in named rules, and applying one updates the agreement atomically.
 - GIVEN two candidate frames, WHEN they are compared, THEN the comparison lists only differing variables — service and hardware alike — with a correct monthly-price delta.
 
@@ -27,6 +31,7 @@ Scope decision recommended for approval: the service frame *replaces* the capex 
 - [Product model](../product-model/requirements.md): extended with service variables, coupling constraints, and monthly pricing data; the capex price field is replaced, not kept alongside.
 - [Agent tools](../agent-tools/requirements.md) and [canvas](../configuration-canvas/requirements.md): elicitation prompt and canvas grouping updated; tool surface expected to be unchanged.
 - [Demo scenarios](../demo-scenarios/requirements.md) (still draft): the four scenarios are recast to the job stories in `docs/discovery/jtbd/job-stories.md` before that spec is approved.
+- [Environmental footprint](../environmental-footprint/requirements.md) (draft): shares the `usage_profile` variable — whichever spec lands first introduces it. Once both land, the agreement comparison carries a footprint delta beside the monthly-price delta ([trade-offs are shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md)), and the first proposal's objective can no longer default silently to cheapest.
 
 ## Out of scope
 

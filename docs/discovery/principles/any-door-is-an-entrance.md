@@ -8,7 +8,7 @@ The user may start from any variable, in any order, and edit anything at any tim
 
 *Test.* Can a session that starts with "the shaft is 1800 by 1700" go as well as one that starts with the building type?
 
-*Coverage gap.* This is the one principle the four demo scenarios do not exercise deliberately — a decision owed before the [demo scenarios](../../specs/demo-scenarios/requirements.md) are approved ([../direction.md](../direction.md) §4).
+*Coverage.* Deliberately exercised in the fourth [demo scenario](../../specs/demo-scenarios/requirements.md): the renewal opens with the bare dimension statement "the shaft is 1800 by 1700" — no canvas control, no pending question — and must land on the right variable without re-eliciting anything settled ([../direction.md](../direction.md) §4).
 
 ## Related
 

@@ -10,4 +10,4 @@ Status: desk-research hypothesis. Play: *Align Teams to Job Stories*. Aligned to
 ## Related
 
 - [consumption-journey.md](consumption-journey.md) — where each story sits in the journey
-- [../direction.md](../direction.md) §4 — principle and assertion coverage per story, including the gap on [any door is an entrance](../principles/any-door-is-an-entrance.md)
+- [../direction.md](../direction.md) §4 — principle and assertion coverage per story, all eight principles now deliberately exercised

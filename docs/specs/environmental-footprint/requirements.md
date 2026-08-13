@@ -1,12 +1,12 @@
 # Environmental footprint
 
-Status: draft — awaiting approval. Revised 2026-08-13 against the footprint research notes in [docs/research/](../../research/README.md).
+Status: requirements approved 2026-08-13, as revised against the footprint research notes in [docs/research/](../../research/README.md).
 
 Grounding: an elevator's life-cycle impact splits into two parts that behave differently in a configuration model. *Embodied* impact (materials, manufacturing) is roughly additive per chosen option. *Use-phase* energy is not additive: it depends on interactions between drive, speed, energy features, and how the building actually uses the elevator (the framing of ISO 25745-2, which assigns usage categories and energy classes). Making footprint a first-class decision dimension in a configuration *conversation* — visible alongside price, queryable, tradeable — is the research angle.
 
 Serves discovery principle [trade-offs shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md) and puts [two objectives held as a pair](../../discovery/assertions/two-objectives-as-a-pair.md) under test. Evidence for both is now in [docs/research/footprint/sustainability-prior-art.md](../../research/footprint/sustainability-prior-art.md) rather than assumed.
 
-This is the product model's first schema evolution beyond "options carry one price scalar," so the modelling shape is the decision that needs approval.
+This is the product model's first schema evolution beyond "options carry one price scalar," so the modelling shape was the decision approval settled.
 
 ## What the research changed
 
@@ -17,7 +17,7 @@ The footprint research ([docs/research/](../../research/README.md)) reached four
 3. *Per-option carbon badges are the wrong surface.* Most option-level deltas are noise against a total in the tens of tonnes, and the carbon-labelling literature documents moral licensing — an early green choice licences worse later ones — which is acute across a sequence of twenty choices. Cumulative total plus paired comparison is both the better-evidenced format and the one [trade-offs shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md) already asks for.
 4. *Illustrative data carries a naming obligation.* EU Directive 2024/825 applies from 27 September 2026: it bans generic environmental claims and sustainability labels not backed by a certification scheme. A self-styled A–G badge is in scope even for a prototype. See decision 6.
 
-## Modelling decisions recommended for approval
+## Modelling decisions
 
 1. *Embodied carbon as an option-level scalar, on more variables than price.* Each option gains a `co2` field (kg CO₂e delta), summed by the service and available as a second optimization objective ("greenest valid completion"). Unlike `price`, `co2` must also be carried by variables that are currently price-free — notably `travel` and `stops`, which together drive guide rails, roping, travelling cable and landing door sets, the largest embodied terms in the model. A `co2` field that mirrored `price` exactly would report a 100 m tower lift and a 15 m residential lift as embodied-identical. Both are banded enums already, so this costs nothing structurally; it just breaks the symmetry. Values are illustrative with plausible relative magnitudes, derived bottom-up (assumed component mass × published material factor) per [embodied-carbon.md](../../research/footprint/embodied-carbon.md).
 2. *Use-phase as a derived enum, not arithmetic.* A new `energy_class` variable (A–D, ISO 25745-flavoured) is *determined* by table constraints over drive and energy package — the same mechanism as every other derived value in the model. A small data table gives annual kWh per (energy class, usage profile); the service multiplies out lifetime energy × a single grid factor, the same trivial arithmetic it already does for price totals. Rejected alternative: a numeric/arithmetic constraint layer in the solver — more faithful physics, but it breaks the enum-only schema shape (001 design) and buys nothing for the interaction research.
@@ -67,7 +67,7 @@ The footprint research ([docs/research/](../../research/README.md)) reached four
 - [Solver service](../solver-service/requirements.md): `complete()` gains a footprint objective; the service computes embodied and lifetime use-phase totals alongside price.
 - [Agent tools](../agent-tools/requirements.md) and [canvas](../configuration-canvas/requirements.md): configuration state and spec-sheet gain a cumulative footprint summary and an assumptions view; tool surface expected otherwise unchanged.
 - [Demo scenarios](../demo-scenarios/requirements.md) (draft): the comparison scenario is where [trade-offs shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md) and [two objectives held as a pair](../../discovery/assertions/two-objectives-as-a-pair.md) get demonstrated; it should show a case where price and footprint disagree. Use *travel band vs. any finish* — that case rests on the retrieved steel factor and a 1.5–6× magnitude gap, so it holds regardless of the material-factor uncertainties ([gaps.md](../../research/gaps.md#e4)). The stainless-vs-glass case is more striking but depends on an unsourced factor; do not build a demo on it.
-- [Service pivot](../eaas-pivot/requirements.md) (draft): shares the `usage_profile` variable — whichever spec lands first introduces it. Footprint uses a fixed assumed service life, deliberately independent of contract term. The two specs do not otherwise depend on each other.
+- [Service pivot](../eaas-pivot/requirements.md) (draft): shares the `usage_profile` variable — whichever spec lands first introduces it. Footprint uses a fixed assumed service life, deliberately independent of contract term. The two specs also meet at two further points once both land: the agreement comparison shows the monthly-price and footprint deltas side by side ([trade-offs are shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md)), and the first proposal's objective — the standing tension in [the conversation move inventory](../../discovery/models/Conversation%20moves.md) §6 — must be settled rather than defaulting to cheapest.
 - Discovery: [two objectives held as a pair](../../discovery/assertions/two-objectives-as-a-pair.md) no longer rests on assumption alone; its evidence line is updated in the same revision as this spec.
 
 ## Out of scope
