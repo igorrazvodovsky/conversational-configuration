@@ -1,6 +1,6 @@
 # Sustainability in configuration — prior art, presentation evidence, and what backfires
 
-Status: literature review, 2026-08. Split from the former `docs/environmental-footprint-research.md` §6. Cited as "§6" by [../discovery/problem-framing.md](../../discovery/problem-framing.md) §4 (assertion A7) and grounds principle P7 in [../discovery/direction.md](../../discovery/direction.md) §2.
+Status: literature review, 2026-08. Split from the former `docs/environmental-footprint-research.md` §6. Cited as "§6" by [two objectives held as a pair](../../discovery/assertions/two-objectives-as-a-pair.md), and grounds [trade-offs shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md).
 
 Verdict: *the configuration community has arrived at this problem very recently and has published the architecture, the metrics and even an LLM-explanation prototype — but not the interaction design, and not with a constraint solver keeping candidates valid. The gap this prototype occupies is real and narrower than it was; the HCI literature on carbon presentation is mature, mixed, and has specific findings about what backfires.*
 
@@ -55,4 +55,4 @@ This is the part that should change design decisions, and it is the part a persu
 
 - [interaction-literature.md](../interaction-literature.md) — the same "no frontend" verdict, for configuration generally
 - [claims-and-vocabulary.md](claims-and-vocabulary.md) — the legal floor under these presentation choices
-- [../discovery/direction.md](../../discovery/direction.md) §2 — principle P7, this note's main consumer
+- [trade-offs shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md) — this note's main consumer, with [two objectives held as a pair](../../discovery/assertions/two-objectives-as-a-pair.md) the assertion it tests

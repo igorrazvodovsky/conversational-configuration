@@ -15,6 +15,6 @@ Method: plays from the JTBD Playbook set — *Scope the JTBD Domain*, *Expand Ma
 | [persona-design-specifier.md](persona-design-specifier.md) | The architect — the articulation barrier made flesh |
 | [persona-building-operator.md](persona-building-operator.md) | Owner/facility manager — the primary persona under the service frame |
 | [consumption-journey.md](consumption-journey.md) | How the offering is bought, used, adjusted, renewed — product frame vs service frame |
-| [job-stories.md](job-stories.md) | Four stories aligned to the demo scenarios (spec 006) |
+| [job-stories.md](job-stories.md) | Four stories aligned to the [demo scenarios](../../specs/demo-scenarios/requirements.md) |
 
-The original document's implications section is not a note: its content was absorbed into [problem-framing.md](../problem-framing.md), [direction.md](../direction.md), and spec [007](../../../specs/007-eaas-pivot/requirements.md).
+The original document's implications section is not a note: its content was absorbed into [problem-framing.md](../problem-framing.md), [direction.md](../direction.md), and spec [007](../../specs/eaas-pivot/requirements.md).

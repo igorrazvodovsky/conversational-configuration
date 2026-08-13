@@ -1,6 +1,6 @@
-"""Configuration state and solver-backed agent tools (specs/003-agent-tools,
-ask_choices from specs/004-configuration-canvas, revision/frames from
-specs/005-nonlinear-interaction)."""
+"""Configuration state and solver-backed agent tools (docs/specs/agent-tools,
+ask_choices from docs/specs/configuration-canvas, revision/frames from
+docs/specs/nonlinear-interaction)."""
 
 import json
 from pathlib import Path
@@ -89,7 +89,7 @@ def _keep_candidate(candidate: Candidate | None, choices: dict[str, str]) -> Can
 
 
 def _frames(config: Configuration) -> list[Frame]:
-    # .get: threads persisted before specs/005 have no frames key
+    # .get: threads persisted before docs/specs/nonlinear-interaction have no frames key
     return config.get("frames", [])
 
 
@@ -143,7 +143,7 @@ def make_candidate(config: Configuration) -> Configuration:
     }
 
 
-# -- revision and frames (specs/005) ---------------------------------------
+# -- revision and frames (docs/specs/nonlinear-interaction) ---------------------------------------
 
 
 def revise(
@@ -245,10 +245,10 @@ def adopt_frame(config: Configuration, name: str) -> Configuration:
     }
 
 
-# -- ask_choices payload (specs/004) --------------------------------------
+# -- ask_choices payload (docs/specs/configuration-canvas) --------------------------------------
 
 # Control selection is a UI heuristic and deliberately not part of the
-# product model (specs/004 design). Ordered groups render as scales;
+# product model (docs/specs/configuration-canvas design). Ordered groups render as scales;
 # consequence-heavy variables always render as detail lists.
 _ORDERED_GROUPS = {"performance", "dimensions"}
 _FORCE_LIST = {"car_size", "wall_finish", "floor"}
@@ -297,7 +297,7 @@ def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
     return {"variables": payload}
 
 
-# -- repair payload (specs/005) --------------------------------------------
+# -- repair payload (docs/specs/nonlinear-interaction) --------------------------------------------
 
 
 def _described(pairs) -> list[dict]:

@@ -1,298 +1,31 @@
-# CopilotKit + LangGraph Todo Demo
+# Conversational product configuration
+
+A research prototype: chat-based configuration of a complex industrial product (an elevator), built on CopilotKit v2 + LangGraph. Next.js frontend at the repo root, Python agent in `agent/`.
 
 ## Development method: discovery-framed, spec-anchored
 
-Two layers. Discovery (`docs/discovery/`) frames the design problem and sets direction, after Dan Brown's *Practical Design Discovery*. Specs (`specs/`) execute against that direction. Non-negotiable workflow:
+Everything written lives under `docs/`, in two layers. Discovery (`docs/discovery/`) frames the design problem and sets direction, after Dan Brown's *Practical Design Discovery*. Specs (`docs/specs/`) execute against that direction. Non-negotiable workflow:
 
-1. Read `specs/constitution.md` before making changes — its principles override convenience. For anything touching the interaction design, also read `docs/discovery/brief.md`.
-2. Any change that adds a capability, changes behavior, or makes an architectural choice needs a spec in `specs/NNN-feature/` (`requirements.md`, `design.md`, `tasks.md`). Write or update the spec *before* implementing; new features need user approval of `requirements.md` first. Bug fixes and mechanical changes need no spec.
-3. New specs cite the discovery principle or assertion they serve (`docs/discovery/direction.md` §2, `docs/discovery/problem-framing.md` §4). A spec that serves none is a signal the framing is stale — fix the framing, don't skip the citation.
+1. Read `docs/specs/constitution.md` before making changes — its principles override convenience. For anything touching the interaction design, also read `docs/discovery/brief.md`.
+2. Any change that adds a capability, changes behavior, or makes an architectural choice needs a spec in `docs/specs/<feature-name>/` (`requirements.md`, `design.md`, `tasks.md`) — feature directories are named, not numbered, and are cited by name: `the [nonlinear-interaction spec](…/specs/nonlinear-interaction/requirements.md)`. Write or update the spec *before* implementing; new features need user approval of `requirements.md` first. Bug fixes and mechanical changes need no spec.
+3. New specs cite the discovery principle or assertion they serve by linking its note, with the principle's own words as the link text — `Serves discovery principle [trade-offs are shown as a pair](…/principles/trade-offs-shown-as-a-pair.md)`. Never cite by code or by section number; one file each in `docs/discovery/principles/` and `docs/discovery/assertions/`, indexed in `direction.md` §2 and `problem-framing.md` §4. A spec that serves none is a signal the framing is stale — fix the framing, don't skip the citation.
 4. Specs are anchored: after implementing, update `tasks.md` and reconcile `requirements.md`/`design.md` with what was actually built. A spec that disagrees with the code is a bug. Discovery artifacts are likewise living — when work changes the framing or direction, update them in the same session.
-5. The feature index and roadmap live in `specs/README.md`; the current discovery cycle and its open questions live in `docs/discovery/phase-plan.md`; the evidence base is `docs/research/`, with what it still lacks in `docs/research/gaps.md` — check there before proposing more research.
+5. The feature index and roadmap live in `docs/specs/README.md`; the current discovery cycle and its open questions live in `docs/discovery/phase-plan.md`; the evidence base is `docs/research/`, with what it still lacks in `docs/research/gaps.md` — check there before proposing more research.
 
-## Current state of the repo
+## Gotchas
 
-This repo started from the CopilotKit todo boilerplate documented below, but is being rebuilt into a research prototype: chat-based configuration of complex industrial products (an elevator), grounded in the research notes in `docs/research/`. As of spec 003 the agent (`agent/main.py`) registers solver-backed configuration tools (`agent/src/configuration.py` over the Z3 service in `agent/src/solver/`), not the todo tools. The todo/a2ui example files remain as CopilotKit reference; the sections below describe that original boilerplate pattern, which the configurator reuses (agent-state sync, generative UI).
+*Dead starter code.* The repo began as the CopilotKit todo/A2UI starter and the example files are still here, unused by the configurator: `src/components/example-canvas/`, `src/hooks/use-generative-ui-examples.tsx`, `use-example-suggestions.tsx`, `src/components/generative-ui/{charts,meeting-time-picker.tsx}`, `agent/src/{todos,query,a2ui_fixed_schema,a2ui_dynamic_schema}.py`, `agent/src/a2ui/`, `agent/src/db.csv`. Keep them as CopilotKit reference; don't extend them and don't read them as current behavior. `src/app/declarative-generative-ui/` is starter code too, but it is still mounted as the A2UI catalog in `layout.tsx` — dead from the agent's side, live from React's. `README.md` is likewise still the upstream starter's readme: its install/run/scripts sections are correct, its framing and structure diagram describe the todo demo and are not.
 
-## Purpose
+*Running it.* `npm run dev` — UI on 3000, agent on 8123, plus a `dev:infra` step that runs first. Constitution #9 makes this the only verification UI and conversation get.
 
-This repository serves as both a **showcase** and **template** for building AI agents with CopilotKit and LangGraph. It demonstrates how CopilotKit can drive interactive UI beyond just chat, using a **collaborative todo list** as the primary example.
+*What's live.* `agent/main.py` (system prompt) → `agent/src/configuration.py` (state schema + tools) → `agent/src/solver/` (Z3) over `agent/src/product_model/elevator.json`. Frontend: `src/app/page.tsx` → `src/components/config-canvas/` and the in-chat cards in `src/components/generative-ui/{ask-choices,repair-options,frame-comparison}.tsx`.
 
-**Target audience:** Developers evaluating CopilotKit or starting new projects with AI agents.
+*Shared agent state.* State lives in the agent (constitution #3), not in React. `AgentState.configuration` is defined in `agent/src/configuration.py`; tools mutate it by returning `Command(update={"configuration": ...})`; the frontend reads `agent.state.configuration` and writes `agent.setState(...)` via `useAgent()`. There is no frontend store to keep in sync — adding one is a constitution violation.
 
-## Core Concept
+*Cards are messages, not callbacks.* Tools that render UI return a JSON payload with a `kind` field; clicking a card dispatches a visible structured user message (`Apply repair: …`, `Adopt frame "…"`) that the agent maps onto one atomic tool call. The shared staleness/dispatch behavior is in `src/components/generative-ui/card-dispatch.ts`. So agent prompt wording and card copy are coupled — change them together.
 
-The todo list demonstrates **agent-driven UI** where:
+*Thread resumption is hand-rolled.* CopilotKit v2 switches threads but never fetches their history; `src/hooks/use-thread-resumption.ts` closes the gap. It has traps (tool-call shape conversion, connect wiping the store) documented in `docs/specs/nonlinear-interaction/design.md` — read that before touching it.
 
-- The agent can manipulate application state (adding todos, updating status, organizing tasks)
-- Users can interact with the same state (editing titles, checking off tasks, deleting todos)
-- Both agent and user changes update the same shared state
-- The UI reactively updates based on agent state changes
+*Python.* uv in `agent/`, npm at the root. `uv run pytest` for solver and state-transition tests; `uv run python src/product_model/validate.py` to check the product model (satisfiability, dead options, scenario spot-checks). Conversation and UI behavior have no automated check — verify by running the app.
 
-This uses CopilotKit's **v2 agent state pattern** where state lives in the agent and syncs to the frontend.
-
-## Architecture
-
-This is a **flat npm project** with a Next.js frontend at the root and a Python agent in `agent/`.
-
-### Repository Structure
-
-```
-├── src/
-│   ├── app/
-│   │   ├── page.tsx              # Main page - wires up all components
-│   │   └── api/copilotkit/       # CopilotKit API route
-│   ├── components/
-│   │   ├── canvas/               # Todo list UI
-│   │   │   ├── index.tsx         # Canvas container
-│   │   │   ├── todo-list.tsx     # Todo list with columns
-│   │   │   ├── todo-column.tsx   # Column (pending/completed)
-│   │   │   └── todo-card.tsx     # Individual todo card
-│   │   ├── example-layout/       # Layout: chat + canvas side-by-side
-│   │   └── generative-ui/        # Example generative UI components
-│   └── hooks/
-│       ├── use-generative-ui-examples.tsx  # Example CopilotKit patterns
-│       └── use-example-suggestions.tsx     # Chat suggestions
-├── agent/                         # LangGraph Python agent
-│   ├── main.py                    # Agent entry point
-│   └── src/
-│       ├── todos.py               # Todo tools and state schema
-│       └── query.py               # Example data query tool
-├── scripts/                       # Agent setup and run scripts
-│   ├── setup-agent.sh / .bat
-│   └── run-agent.sh / .bat
-├── package.json                   # Root project config (npm + concurrently)
-└── next.config.ts
-```
-
-## Key Pattern: Agent State with CopilotKit v2
-
-The todo list uses **CopilotKit v2's agent state pattern** where state lives in the agent backend and syncs bidirectionally with the frontend.
-
-### How It Works
-
-1. **Agent defines state schema and tools** (Python)
-
-   ```python
-   # agent/src/todos.py
-   class Todo(TypedDict):
-       id: str
-       title: str
-       description: str
-       emoji: str
-       status: Literal["pending", "completed"]
-
-   class AgentState(TypedDict):
-       todos: list[Todo]
-
-   @tool
-   def manage_todos(todos: list[Todo], runtime: ToolRuntime) -> Command:
-       """Manage the current todos."""
-       return Command(update={"todos": todos, ...})
-   ```
-
-2. **Frontend reads from agent state**
-
-   ```typescript
-   // src/components/canvas/index.tsx
-   const { agent } = useAgent();
-
-   return (
-     <TodoList
-       todos={agent.state?.todos || []}
-       onUpdate={(updatedTodos) => agent.setState({ todos: updatedTodos })}
-       isAgentRunning={agent.isRunning}
-     />
-   );
-   ```
-
-3. **User interactions update agent state**
-
-   ```typescript
-   // User clicks checkbox → frontend calls agent.setState()
-   const toggleStatus = (todo) => {
-     const updated = todos.map((t) =>
-       t.id === todo.id
-         ? { ...t, status: t.status === "completed" ? "pending" : "completed" }
-         : t,
-     );
-     agent.setState({ todos: updated });
-   };
-   ```
-
-4. **Agent can manipulate state via tools**
-   - The agent calls `manage_todos` tool to update the todo list
-   - Both user and agent changes update the same `agent.state.todos`
-   - Frontend automatically re-renders when state changes
-
-### Why This Pattern?
-
-- **Single source of truth**: State lives in the agent, not duplicated in frontend
-- **Bidirectional sync**: User changes → agent state, Agent changes → UI update
-- **Simple**: No need for separate frontend state management
-- **Observable**: Agent has full visibility into state changes
-
-## Implementation Details
-
-### Agent Backend
-
-**Agent Definition** (`agent/main.py`):
-
-```python
-from langchain.agents import create_agent
-from copilotkit import CopilotKitMiddleware
-from src.todos import todo_tools, AgentState
-
-agent = create_agent(
-    model="gpt-5.2",
-    tools=[*todo_tools, ...],  # manage_todos, get_todos
-    middleware=[CopilotKitMiddleware()],
-    state_schema=AgentState,  # Defines state shape
-    system_prompt="You are a helpful assistant..."
-)
-```
-
-**Todo Tools** (`agent/src/todos.py`):
-
-```python
-@tool
-def manage_todos(todos: list[Todo], runtime: ToolRuntime) -> Command:
-    """Manage the current todos."""
-    # Ensure todos have unique IDs
-    for todo in todos:
-        if "id" not in todo or not todo["id"]:
-            todo["id"] = str(uuid.uuid4())
-
-    # Update agent state
-    return Command(update={
-        "todos": todos,
-        "messages": [ToolMessage(...)]
-    })
-
-@tool
-def get_todos(runtime: ToolRuntime):
-    """Get the current todos."""
-    return runtime.state.get("todos", [])
-```
-
-### Frontend
-
-**Canvas Component** (`src/components/canvas/index.tsx`):
-
-```typescript
-export function Canvas() {
-  const { agent } = useAgent();  // CopilotKit v2 hook
-
-  return (
-    <div className="h-full p-8 bg-gray-50">
-      <TodoList
-        // Read state from agent
-        todos={agent.state?.todos || []}
-        // Update state in agent
-        onUpdate={(updatedTodos) => agent.setState({ todos: updatedTodos })}
-        // React to agent execution
-        isAgentRunning={agent.isRunning}
-      />
-    </div>
-  );
-}
-```
-
-**Todo List** (`src/components/canvas/todo-list.tsx`):
-
-```typescript
-export function TodoList({ todos, onUpdate, isAgentRunning }: TodoListProps) {
-  const toggleStatus = (todo: Todo) => {
-    const updated = todos.map((t) =>
-      t.id === todo.id
-        ? { ...t, status: t.status === "completed" ? "pending" : "completed" }
-        : t
-    );
-    onUpdate(updated);  // Calls agent.setState()
-  };
-
-  const addTodo = () => {
-    const newTodo = { id: crypto.randomUUID(), ... };
-    onUpdate([...todos, newTodo]);
-  };
-
-  return (
-    <div className="flex gap-8">
-      <TodoColumn title="To Do" todos={pendingTodos} onAddTodo={addTodo} ... />
-      <TodoColumn title="Done" todos={completedTodos} ... />
-    </div>
-  );
-}
-```
-
-### How State Flows
-
-1. **User adds/edits todo** → Frontend calls `agent.setState({ todos: [...] })`
-2. **Agent state updates** → CopilotKit syncs to backend
-3. **Agent observes change** → Can respond via `manage_todos` tool
-4. **Agent modifies todos** → Calls `manage_todos` tool
-5. **State syncs to frontend** → `agent.state.todos` updates
-6. **UI re-renders** → React sees new state and updates display
-
-**Key insight**: State lives in the agent, frontend just reads/writes to it via CopilotKit hooks.
-
-## Tech Stack
-
-- **Frontend**: Next.js 16, React 19, TailwindCSS 4
-- **Agent**: LangGraph (Python), OpenAI GPT-5.2
-- **CopilotKit**: React hooks for agent integration (v2)
-- **Build**: npm with concurrently for parallel dev processes
-- **Other**: Recharts for generative UI examples
-
-## Development
-
-```bash
-# Install dependencies (also sets up agent via postinstall)
-npm install
-
-# Start both frontend and agent
-npm run dev
-
-# Start individually
-npm run dev:ui      # Next.js frontend on port 3000
-npm run dev:agent   # LangGraph agent on port 8123
-
-# Build
-npm run build
-```
-
-### Environment Setup
-
-```bash
-# Set OpenAI API key
-cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
-```
-
-## Design Principles
-
-1. **Simple over complex** - The todo list is intentionally simple and focused
-2. **CopilotKit v2 patterns** - Uses modern agent state management
-3. **Template-first** - Code is meant to be forked and extended
-4. **Showcasing agent-driven UI** - Demonstrates AI manipulating application state beyond chat
-
----
-
-## Key Takeaways for Developers
-
-**State Management Pattern**: This app uses CopilotKit v2's agent state pattern where:
-
-- State is defined in the agent backend (Python TypedDict)
-- Frontend reads via `agent.state.todos`
-- Frontend writes via `agent.setState({ todos: ... })`
-- Agent can modify state via tools (`manage_todos`)
-- Changes sync bidirectionally automatically
-
-**When extending this template**:
-
-- Define state schema in the agent (`AgentState`)
-- Create tools that manipulate state via `Command(update={...})`
-- Use `useAgent()` hook in frontend to read/write state
-- Let CopilotKit handle the sync - no manual state management needed
-
-This pattern works great for **agent-driven applications** where the AI needs to manipulate structured application state, not just chat.
+*Model.* The agent runs OpenAI `gpt-5.4-mini` with `parallel_tool_calls` disabled (`agent/main.py`). No spec records why parallel calls are off — treat it as deliberate (the card-click flow assumes one atomic tool call per message) until someone verifies otherwise.

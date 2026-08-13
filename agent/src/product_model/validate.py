@@ -1,7 +1,7 @@
 """
-Validate the elevator product model (specs/001-product-model).
+Validate the elevator product model (docs/specs/product-model).
 
-Uses the 002 solver service; checks:
+Uses the solver service; checks:
   1. The model is satisfiable at all.
   2. No dead options: every value of every variable appears in at least
      one complete valid configuration.

@@ -15,7 +15,7 @@ Status: desk-research hypothesis. Play: *Map the Main Job*, using the universal 
 
 ## The observation that drives everything downstream
 
-A *product* configurator serves Define through Confirm and then exits. Monitor, Modify, and Conclude — where most of the job's lifetime cost and frustration sit — are left to a separate maintenance contract the performer negotiates blind. A *service* offering keeps the configuration alive through those stages, and the prototype's nonlinear-revision machinery (spec 005: revision with ripple, candidate frames, resumption) is precisely a Modify/Conclude-stage instrument that the product frame wastes.
+A *product* configurator serves Define through Confirm and then exits. Monitor, Modify, and Conclude — where most of the job's lifetime cost and frustration sit — are left to a separate maintenance contract the performer negotiates blind. A *service* offering keeps the configuration alive through those stages, and the prototype's [nonlinear-revision machinery](../../specs/nonlinear-interaction/requirements.md) — revision with ripple, candidate frames, resumption — is precisely a Modify/Conclude-stage instrument that the product frame wastes.
 
 This is a map of the job, not of the buying experience — that is [consumption-journey.md](consumption-journey.md).
 

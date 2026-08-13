@@ -12,7 +12,7 @@ Owner or facility manager of an operating building. The job performer during the
 
 ## Why this persona reframes the design
 
-Their job — Monitor, Modify, Conclude ([job-map.md](job-map.md)) — is mostly *revision of something that already exists*. First-time configuration is the atypical case. This is what makes revision the primary interaction rather than an edge case ([../problem-framing.md](../problem-framing.md) §3: design for revisers, not for newcomers) and grounds principle P6 — changing your mind is a normal move, not a restart ([../direction.md](../direction.md) §2). The product-frame prototype underserved this persona: only the modernization demo touched them, and it still ended in a purchase.
+Their job — Monitor, Modify, Conclude ([job-map.md](job-map.md)) — is mostly *revision of something that already exists*. First-time configuration is the atypical case. This is what makes revision the primary interaction rather than an edge case ([../problem-framing.md](../problem-framing.md) §3: design for revisers, not for newcomers) and grounds [changing your mind is not a restart](../principles/revision-is-not-a-restart.md). The product-frame prototype underserved this persona: only the modernization demo touched them, and it still ended in a purchase.
 
 ## Related
 

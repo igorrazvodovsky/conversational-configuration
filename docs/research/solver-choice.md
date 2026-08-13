@@ -1,6 +1,6 @@
 # Solver choice — why Z3
 
-Status: technology evaluation, decided and implemented (spec [002](../../specs/002-solver-service/design.md)). Split from the former `docs/research-and-outline.md` §3. The one place in this folder where the research produced a settled decision rather than a standing hypothesis.
+Status: technology evaluation, decided and implemented (the [solver service](../specs/solver-service/design.md)). Split from the former `docs/research-and-outline.md` §3. The one place in this folder where the research produced a settled decision rather than a standing hypothesis.
 
 Requirements for interactive configuration (not one-shot solving): fast incremental re-solve after each choice; *consequence propagation* (which remaining values are still valid, to grey out options); *conflict explanation* (minimal unsat core → "X conflicts with Y because rule R"); optimization as a plus.
 
@@ -15,7 +15,7 @@ Runners-up: OR-Tools CP-SAT (best optimizer, but stateless per solve — valid-d
 
 Reference: Programming Z3 §4.6 (consequences, cores) — https://z3prover.github.io/papers/programmingz3.html
 
-Interaction consequence: the three operations above are what the interface may lean on and the ceiling on what it may claim ([../discovery/problem-framing.md](../discovery/problem-framing.md) §3, *Technology*; principle P4).
+Interaction consequence: the three operations above are what the interface may lean on and the ceiling on what it may claim ([../discovery/problem-framing.md](../discovery/problem-framing.md) §3, *Technology*; [every "no" carries its reason](../discovery/principles/every-no-carries-its-reason.md)).
 
 ## Related
 

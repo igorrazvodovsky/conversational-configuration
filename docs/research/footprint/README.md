@@ -1,6 +1,6 @@
 # Footprint research
 
-The evidence base for environmental footprint as a decision dimension — spec [008](../../../specs/008-environmental-footprint/requirements.md), assertion A7, principle P7. Split out of `docs/environmental-footprint-research.md`, one note per verdict.
+The evidence base for environmental footprint as a decision dimension — the [footprint spec](../../specs/environmental-footprint/requirements.md), [two objectives held as a pair](../../discovery/assertions/two-objectives-as-a-pair.md), [trade-offs shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md). Split out of `docs/environmental-footprint-research.md`, one note per verdict.
 
 Working question: what does an elevator's life-cycle carbon actually look like, which of it responds to the choices our configurator exposes, and what may we honestly say about illustrative numbers in a UI?
 

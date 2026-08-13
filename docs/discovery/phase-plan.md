@@ -10,14 +10,8 @@ Brown's four activities, applied to what this project has actually done. This se
 |---|---|---|
 | Gathering | Five research threads, industry configurator practice, standards and dimension data, solver evaluation, a JTBD analysis ([../research/](../research/README.md), [jtbd/](jtbd/README.md)) | Well served. Further reading has low marginal value |
 | Processing | Job ladder, job map, three personas, consumption journey, architecture synthesis | Adequate. The synthesis is thorough but was performed once, before anything was built |
-| Exploring | One rejected solver alternative set; three concepts named and set aside (retroactively, in [direction.md](direction.md) §1) | *Underserved.* Almost no option generation. The interaction structure was adopted from the literature rather than chosen among alternatives |
+| Exploring | Three concepts named and set aside ([direction.md](direction.md) §1). In the model layer: the surface geometry and form chosen from the industry-wide pattern field ([models/Surface architecture.md](models/Surface%20architecture.md)), the initiative default from three ([models/Conversation moves.md](models/Conversation%20moves.md) §6), the ripple's disclosure from three ([models/Ripple storyboard.md](models/Ripple%20storyboard.md) §2). In the spec design notes: a named alternative each for the canvas-edit protocol, the control vocabulary and where control selection lives, the repair cap and ripple filtering, and comparison placement, plus one rejected solver alternative set | *Partly served.* Option generation is real at the level of mechanism, usually one alternative per decision. At the level of presentation it has only just started, and only in the model layer |
 | Focusing | Constitution, eight specs, five implemented features | Well served — arguably ahead of exploring, which is the imbalance |
-
-The finding: this project went *gather → focus*, skipping exploration. Every significant interaction decision — canvas anatomy, ripple presentation, initiative default, comparison layout — was made once, inline, while implementing, without alternatives on the table. That is Brown's classic failure mode of overinvesting in one quadrant, and it is why three of the six models in [direction.md](direction.md) §3 have never been drawn.
-
-It also explains a concrete symptom: spec 006 (demo scenarios) has sat in draft awaiting approval. Scenarios are a focusing artifact, and they are hard to commit to when the direction underneath them was never explicitly chosen. [direction.md](direction.md) now supplies that direction; 006 can be judged against it.
-
-The corrective for the current cycle: *explore before building the next thing.* Not more research.
 
 ## 2. Planning constraints
 
@@ -37,16 +31,14 @@ Not a phase. A repeating cycle, with each pass required to touch all four activi
 
 | # | Task | Activity | Output |
 |---|---|---|---|
-| 1 | Draw the conversation move inventory: every move each party can make, who may initiate it, and what it does to the document | Exploring | Model + a decision on the initiative default |
-| 2 | Storyboard the revision-with-ripple flow at three levels of disclosure (full consequence set / minimal core / narrated summary) and choose one | Exploring → focusing | Ripple storyboard; resolves [problem-framing.md](problem-framing.md) §5 Q3 |
-| 3 | Sketch two alternative comparison layouts against P7 and pick one | Exploring → focusing | Comparison model |
-| 4 | Judge spec 006's four scenarios against the principle coverage table ([direction.md](direction.md) §4); add or amend a scenario to cover P5 | Focusing | 006 ready for approval |
-| 5 | Re-read specs 007 and 008 against the eight principles; note any acceptance criterion that violates one | Processing | Amendments, or a principle revised |
-| 6 | Walkthrough of the running prototype against the four scenarios, recording where the interaction contradicts a principle | Gathering | Evidence against A1–A7 — the only real evidence available without users |
+| 1 | Draw the conversation move inventory: every move each party can make, who may initiate it, and what it does to the document | Exploring | Done 2026-08-13 — [models/Conversation moves.md](models/Conversation%20moves.md); initiative default decided (§6), first-proposal objective left as a named tension |
+| 2 | Storyboard the revision-with-ripple flow at three levels of disclosure — full consequence set / minimal core / narrated summary — with the built level as candidate one, and choose | Exploring → focusing | Drafted 2026-08-13 — [models/Ripple storyboard.md](models/Ripple%20storyboard.md); minimal core first, full set one move away, narration never load-bearing. Answers [problem-framing.md](problem-framing.md) §5 Q3, subject to critique |
+| 3 | Sketch two alternative comparison layouts against [trade-offs shown as a pair](principles/trade-offs-shown-as-a-pair.md) and pick one. Needs footprint in the model first, since a one-objective comparison cannot test it | Exploring → focusing | Comparison model |
+| 4 | Judge the [demo scenarios](../specs/demo-scenarios/requirements.md) against the principle coverage table ([direction.md](direction.md) §4); add or amend a scenario to cover [any door is an entrance](principles/any-door-is-an-entrance.md) | Focusing | 006 ready for approval |
+| 5 | Re-read the [service pivot](../specs/eaas-pivot/requirements.md) and [footprint](../specs/environmental-footprint/requirements.md) specs against the eight principles; note any acceptance criterion that violates one | Processing | Amendments, or a principle revised |
+| 6 | Walkthrough of the running prototype against the four scenarios, recording where the interaction contradicts a principle | Gathering | Evidence against [the seven assertions](assertions/) — the only real evidence available without users |
 
-Task 6 is the cycle's gathering component and it is deliberately not more reading. With no access to job performers, structured self-walkthrough of the built thing is the highest-yield input available.
-
-*Next cycle, provisionally.* Whatever task 6 falsifies. If A4 survives the walkthrough, the session map and resumption flow are the next unexplored territory.
+*Next cycle, provisionally.* Whatever task 6 falsifies. If [ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md) survives the walkthrough, the session map and resumption flow are the next unexplored territory.
 
 ## 4. Milestones
 
@@ -56,14 +48,13 @@ Communication points, not gates. Shared artifacts that keep evolving, per Brown'
 |---|---|---|
 | Framing settled enough to act on | [problem-framing.md](problem-framing.md) | Reached 2026-08-13 |
 | Direction chosen and defensible | [direction.md](direction.md) | Reached 2026-08-13 — one concept, eight principles |
-| Design concept made concrete | The three missing models (§3 tasks 1–3) | Open |
-| Definition of done agreed | Spec 006 approved | Blocked on the milestone above |
+| Design concept made concrete | The models in [direction.md](direction.md) §3 | Open. [Surface architecture](models/Surface%20architecture.md), the [move inventory](models/Conversation%20moves.md) and the [ripple storyboard](models/Ripple%20storyboard.md) are drafted; the comparison view and session map are not |
+| Definition of done agreed | The [demo scenarios](../specs/demo-scenarios/requirements.md) approved | Blocked on the milestone above |
 | Standing summary current | [brief.md](brief.md) | Living; update at the end of each cycle |
 
 ## 5. Stop and continue signals
 
 Discovery stops, for now, when:
-
 - a cycle produces no revision to the framing or direction;
 - the pull toward elaborating details is stronger than the pull toward reframing;
 - the open questions in [problem-framing.md](problem-framing.md) §5 are answered by decisions rather than by more reading.
@@ -75,9 +66,4 @@ Discovery continues when:
 - a walkthrough contradicts an assertion and nothing replaces it;
 - building feels uninspired in a way that traces to weak understanding, rather than to ordinary implementation difficulty.
 
-Current read: continue. The exploration gap in §1 is unresolved, and three of the six models remain undrawn.
-
-## Related
-
-- [problem-framing.md](problem-framing.md) · [direction.md](direction.md) · [brief.md](brief.md)
-- [../../specs/README.md](../../specs/README.md) — the execution layer this feeds
+Current read: continue. The exploration gap in §1 is narrowing but unresolved on the side that matters: the comparison view is undrawn and cannot be judged against [trade-offs shown as a pair](principles/trade-offs-shown-as-a-pair.md) until footprint exists, the session map has not been started, and the first proposal's objective — the tension the move inventory left open — waits on that comparison model.

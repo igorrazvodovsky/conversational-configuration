@@ -1,8 +1,8 @@
 """
-Elevator configuration agent (specs/003-agent-tools, specs/005-nonlinear-interaction).
+Elevator configuration agent (docs/specs/agent-tools, docs/specs/nonlinear-interaction).
 
 The LLM elicits needs and negotiates; the Z3-backed solver service is the
-single source of truth for validity (specs/constitution.md #1).
+single source of truth for validity (docs/specs/constitution.md #1).
 """
 
 from copilotkit import CopilotKitMiddleware

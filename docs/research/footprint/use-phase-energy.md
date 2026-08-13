@@ -1,6 +1,6 @@
 # Use-phase energy — ISO 25745 structure, and what it says about drive and standby
 
-Status: evidence memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §2. Provenance tags as defined in [README.md](../README.md#provenance-tags). Grounds the energy model of spec [008](../../../specs/008-environmental-footprint/requirements.md).
+Status: evidence memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §2. Provenance tags as defined in [README.md](../README.md#provenance-tags). Grounds the energy model of spec [008](../../specs/environmental-footprint/requirements.md).
 
 Verdict: *the standard's machinery is fully documented in open literature even though the standard itself is paywalled. Running and standby energy are computed separately and summed; standby dominates for low-usage lifts (44–90% of the total) and is nearly irrelevant at high traffic. Class boundaries A–G could not be retrieved and should not be invented* ([gaps.md](../gaps.md#e1)).
 

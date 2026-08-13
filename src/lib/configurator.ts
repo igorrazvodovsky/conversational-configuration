@@ -1,9 +1,9 @@
 /**
- * Shared configurator types + product-model display data (specs/004).
+ * Shared configurator types + product-model display data (docs/specs/configuration-canvas).
  *
  * The model JSON is imported straight from the agent so labels/groups/prices
  * have a single source of truth. Validity NEVER comes from here — only from
- * the solver-computed statuses in agent state (specs/constitution.md #1).
+ * the solver-computed statuses in agent state (docs/specs/constitution.md #1).
  */
 import rawModel from "../../agent/src/product_model/elevator.json";
 
@@ -29,7 +29,7 @@ export interface Configuration {
   choices: Record<string, Choice>;
   statuses: Record<string, Record<string, OptionStatus>>;
   candidate: Candidate | null;
-  frames?: Frame[]; // absent on threads persisted before specs/005
+  frames?: Frame[]; // absent on threads persisted before docs/specs/nonlinear-interaction
 }
 
 export interface ModelOption {
@@ -78,7 +78,7 @@ export function formatPrice(eur: number): string {
 }
 
 /**
- * The structured canvas-edit / control-activation message (specs/004 design):
+ * The structured canvas-edit / control-activation message (docs/specs/configuration-canvas design):
  * a visible user message the agent records via set_choices. Includes both the
  * human-readable labels and the exact codes so the LLM never has to guess.
  */
@@ -93,7 +93,7 @@ export function choiceMessage(
 }
 
 /**
- * Structured messages for the specs/005 cards. Same principle as
+ * Structured messages for the docs/specs/nonlinear-interaction cards. Same principle as
  * choiceMessage: a visible user message the agent maps onto one atomic tool
  * call (revise_choices with drop+changes / adopt_frame).
  */

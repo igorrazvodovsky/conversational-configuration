@@ -1,0 +1,223 @@
+{
+  "main": {
+    "id": "5f897a6883654eb4",
+    "type": "split",
+    "children": [
+      {
+        "id": "05d5206251f8dbaa",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0a96195340f5dc8d",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "22115b5d5453c046",
+    "type": "split",
+    "children": [
+      {
+        "id": "ce532490cc51ffa6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "37f3c7ab25b8ece4",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "2b732bdca56e5ab3",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "P7",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "4881c8813ab40a2e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "967f069c580b8288",
+    "type": "split",
+    "children": [
+      {
+        "id": "7b349175d8313dfd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c8104d0b82706c61",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "52dc8a66ff4f16e6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "df070ce9417e6e49",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "bc42753a69602bfa",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "4a9b4ba136bce5cf",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "0a96195340f5dc8d",
+  "lastOpenFiles": [
+    "specs/environmental-footprint/requirements.md",
+    "specs/environmental-footprint",
+    "specs/eaas-pivot/requirements.md",
+    "specs/eaas-pivot",
+    "specs/demo-scenarios/tasks.md",
+    "specs/demo-scenarios/requirements.md",
+    "specs/demo-scenarios/design.md",
+    "specs/demo-scenarios",
+    "specs/nonlinear-interaction/tasks.md",
+    "specs/nonlinear-interaction/requirements.md",
+    "specs/nonlinear-interaction/design.md",
+    "specs/nonlinear-interaction",
+    "specs/configuration-canvas/tasks.md",
+    "specs/configuration-canvas/requirements.md",
+    "specs/configuration-canvas/design.md",
+    "specs/configuration-canvas",
+    "specs/agent-tools/tasks.md",
+    "specs/agent-tools/requirements.md",
+    "specs/agent-tools/design.md",
+    "specs/agent-tools",
+    "specs/solver-service/tasks.md",
+    "specs/solver-service/requirements.md",
+    "specs/solver-service/design.md",
+    "specs/solver-service",
+    "specs/product-model/tasks.md",
+    "specs/product-model/requirements.md",
+    "specs/product-model/design.md",
+    "specs/product-model",
+    "discovery/assertions/a4-ripple-at-the-moment-of-revision.md",
+    "discovery/assertions/two-objectives-as-a-pair.md",
+    "discovery/assertions/outcome-level-elicitation.md",
+    "discovery/assertions/cores-are-enough-for-trust.md",
+    "discovery/assertions/ripple-at-the-moment-of-revision.md",
+    "discovery/assertions/generated-controls-beat-free-text.md",
+    "discovery/assertions",
+    "discovery/principles"
+  ]
+}

@@ -1,6 +1,6 @@
 # The consensus architecture — what the literature and the repo agree on
 
-Status: synthesis, 2026-08, and the shape the prototype was built to (specs 001–005). Split from the former `docs/research-and-outline.md` §4. Kept as a note because it is the one drawing of how the layers fit; the design principles that accompanied it were decisions, and they now live in [../discovery/direction.md](../discovery/direction.md) §2 as eight interaction principles with tests.
+Status: synthesis, 2026-08, and the shape the prototype was built to (every [implemented spec](../specs/README.md)). Split from the former `docs/research-and-outline.md` §4. Kept as a note because it is the one drawing of how the layers fit; the design principles that accompanied it were decisions, and they now live in [../discovery/direction.md](../discovery/direction.md) §2 as eight interaction principles with tests.
 
 The consensus from both the research and the repo's existing pattern:
 
@@ -26,4 +26,4 @@ Each layer traces to a thread: the split of validity from language is the settle
 ## Related
 
 - [../discovery/direction.md](../discovery/direction.md) §2 — the principles this sketch used to carry, restated and sharpened
-- [../../specs/README.md](../../specs/README.md) — the same architecture as built, spec by spec
+- [../specs/README.md](../specs/README.md) — the same architecture as built, spec by spec

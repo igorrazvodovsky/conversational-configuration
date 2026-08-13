@@ -1,4 +1,4 @@
-"""Interactive configuration solver (specs/002-solver-service).
+"""Interactive configuration solver (docs/specs/solver-service).
 
 One persistent Z3 solver session per model. Choices are passed as
 assumptions, so calls are incremental and nothing is ever retracted.

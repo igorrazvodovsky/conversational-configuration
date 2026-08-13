@@ -1,6 +1,6 @@
 # Interaction literature — five threads and the gap at their intersection
 
-Status: literature review, unchanged since it was written (2026-08). Split from the former `docs/research-and-outline.md` §1. Grounds the prototype's novelty claim and assertions A1–A5 ([../discovery/problem-framing.md](../discovery/problem-framing.md) §4).
+Status: literature review, unchanged since it was written (2026-08). Split from the former `docs/research-and-outline.md` §1. Grounds the prototype's novelty claim and five of the seven [assertions](../discovery/assertions/) — all but [outcome-level elicitation](../discovery/assertions/outcome-level-elicitation.md) and [two objectives held as a pair](../discovery/assertions/two-objectives-as-a-pair.md).
 
 Working question: can a chat interface support configuration of a complex industrial product (an elevator) with thousands of parts, variants, and context-specific requirements — i.e. a complex, *nonlinear* workflow embedded in chat?
 
@@ -53,4 +53,4 @@ Nonlinearity in configuration means: revising an early choice (rated load) that 
 - [configuration-field.md](configuration-field.md) — the symbolic half of thread C, and industry practice
 - [sustainability-prior-art.md](footprint/sustainability-prior-art.md) — the same intersection question for the footprint dimension
 - [../discovery/direction.md](../discovery/direction.md) §2 — the principles this thread set produced
-- Cited by specs [004](../../specs/004-configuration-canvas/requirements.md) (thread D) and [005](../../specs/005-nonlinear-interaction/requirements.md) (thread E)
+- Cited by the [configuration canvas](../specs/configuration-canvas/requirements.md) (thread D) and [nonlinear interaction](../specs/nonlinear-interaction/requirements.md) (thread E)

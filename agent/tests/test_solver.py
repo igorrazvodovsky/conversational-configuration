@@ -1,4 +1,4 @@
-"""Acceptance tests for specs/002-solver-service."""
+"""Acceptance tests for docs/specs/solver-service."""
 
 import time
 from pathlib import Path
@@ -79,7 +79,7 @@ def test_valid_options_empty_has_no_invalid(solver):
         (var, val) for var, statuses in options.items()
         for val, s in statuses.items() if s in ("invalid", "forced")
     ]
-    assert flagged == []  # matches 001's no-dead-options guarantee
+    assert flagged == []  # matches the product model's no-dead-options guarantee
 
 
 def test_valid_options_hospital_2000(solver):
@@ -123,7 +123,7 @@ def test_valid_options_agrees_with_probes(solver, choices):
                 assert not any(solver.check({**choices, var.name: v}) for v in others)
 
 
-# -- repairs (specs/005) --------------------------------------------------
+# -- repairs (docs/specs/nonlinear-interaction) --------------------------------------------------
 
 def test_repairs_no_conflict_is_empty(solver):
     assert solver.repairs({"building_type": "hotel"}, {"region": "europe"}) == []

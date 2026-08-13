@@ -43,7 +43,7 @@ Non-objectives: production readiness, real pricing or LCA data, multi-product-fa
 
 Only the context that changes design decisions.
 
-*Business.* The offering is a service agreement, not a machine (spec 007). This is fixed. Its interaction consequence is large: what gets configured are outcome terms — handling capacity, uptime, response time, term, monthly price — with the hardware spec derived beneath them. Elicitation therefore has a natural top layer that the product frame lacked. A second fixed decision, environmental footprint as a decision dimension (spec 008), means the interface must hold *two* optimization objectives at once; a single "best" candidate is no longer meaningful.
+*Business.* The offering is a service agreement, not a machine (the [service pivot](../specs/eaas-pivot/requirements.md)). This is fixed. Its interaction consequence is large: what gets configured are outcome terms — handling capacity, uptime, response time, term, monthly price — with the hardware spec derived beneath them. Elicitation therefore has a natural top layer that the product frame lacked. A second fixed decision, environmental footprint as a decision dimension (the [footprint spec](../specs/environmental-footprint/requirements.md)), means the interface must hold *two* optimization objectives at once; a single "best" candidate is no longer meaningful.
 
 *User.* Three goal-based personas: the [delivery lead](jtbd/persona-delivery-lead.md), who needs early certainty because shaft dimensions get poured in concrete; the [design specifier](jtbd/persona-design-specifier.md), who iterates constantly on incomplete information and speaks only building language; the [building operator](jtbd/persona-building-operator.md), whose struggle sits in the stages a product configurator abandons — monitor, modify, conclude. The service frame makes the operator the primary persona, and the operator's characteristic move is *revision of an existing agreement*, not first-time configuration. Design for revisers, not for newcomers.
 
@@ -53,35 +53,33 @@ Only the context that changes design decisions.
 
 *Content.* ~20 user-facing decisions over ~30–80 constraints; footprint and price data are illustrative with plausible relative magnitudes. Small enough that the whole configuration fits on one canvas — which is a fidelity limitation to state honestly, since a real platform exposes 20–40 decisions over 250+ parameters and the canvas would not fit.
 
-*Process.* Solo prototyping, no budget, no access to job performers, spec-anchored workflow with specs 001–005 implemented and 006–008 in draft. Discovery has to be cheap and continuous; there will be no discovery phase with a start and an end date.
+*Process.* Solo prototyping, no budget, no access to job performers, spec-anchored workflow, with the five specs through nonlinear interaction implemented and the demo scenarios, service pivot and footprint specs still in draft ([../specs/README.md](../specs/README.md)). Discovery has to be cheap and continuous; there will be no discovery phase with a start and an end date.
 
 ## 4. Assertions under test
 
-The interaction-design hypotheses the prototype exists to examine. Each is provisional; the evidence column is honest about what currently supports it.
+The interaction-design hypotheses the prototype exists to examine. Each is provisional, and each is a note in [assertions/](assertions/) holding its evidence, its falsification condition, and what rests on it. Cite the note, not the section.
 
-| # | Assertion | Evidence today | How we would know it is wrong |
-|---|---|---|---|
-| A1 | The canvas, not the transcript, is the durable locus of state; the chat is for negotiation and explanation | Research (thread D/E), implemented in 004/005 | Users scroll the transcript to check what was decided, or ask the agent to restate state that is already on screen |
-| A2 | Showing a valid candidate to react to beats asking a question sequence | Strong in the recommender literature (critiquing surveys), untested here | Users ignore the proposal and answer as if interrogated; or the proposal anchors them into accepting bad defaults |
-| A3 | Generated in-chat controls beat free text when the user lacks vocabulary | Chen et al. 2025 shows large margins on comparison-heavy tasks | Users type over the controls, or controls fragment the conversation into a form-in-a-window |
-| A4 | Nonlinear revision becomes tolerable when the ripple is shown *at the moment of revision*, with repairs proposed | The design bet of spec 005; no evidence yet | Ripple explanations are ignored or overwhelm; users prefer to start a fresh configuration over repairing one |
-| A5 | Explanations grounded in unsat cores are sufficient for trust — no hallucinated justification needed | Constitution #6; consensus in the configuration literature | Rule-level explanations read as machine noise and users want a narrative the solver cannot supply |
-| A6 | Outcome-level elicitation works: people can specify an agreement in outcome terms and let hardware derive | Tacton's needs-based practice, plus the service frame | Users insist on specifying hardware directly, or cannot judge outcome terms without seeing hardware first |
-| A7 | Two objectives (cost, footprint) held as an explicit pair make the trade-off legible where a single score would hide it | Carbon-presentation literature ([../research/footprint/sustainability-prior-art.md](../research/footprint/sustainability-prior-art.md)): unanchored absolute figures are inert, anchoring by comparison works, and combining indicators into one display degrades evaluation. All from food labelling, so transfer to a capital good is itself an assumption | Users want one number and treat the pair as unresolved work |
+| Assertion | Evidence today |
+|---|---|
+| [The canvas, not the transcript, is the durable locus of state](assertions/canvas-is-the-durable-state.md); the chat is for negotiation and explanation | Research (thread D/E), implemented in 004/005 |
+| [Showing a valid candidate to react to beats asking a question sequence](assertions/candidate-beats-questions.md) | Strong in the recommender literature (critiquing surveys), untested here |
+| [Generated in-chat controls beat free text](assertions/generated-controls-beat-free-text.md) when the user lacks vocabulary | Chen et al. 2025 shows large margins on comparison-heavy tasks |
+| [Nonlinear revision becomes tolerable when the ripple is shown *at the moment of revision*](assertions/ripple-at-the-moment-of-revision.md), with repairs proposed | The design bet of [nonlinear interaction](../specs/nonlinear-interaction/requirements.md); no evidence yet |
+| [Explanations grounded in unsat cores are sufficient for trust](assertions/cores-are-enough-for-trust.md) — no hallucinated justification needed | Constitution #6; consensus in the configuration literature |
+| [Outcome-level elicitation works](assertions/outcome-level-elicitation.md): people can specify an agreement in outcome terms and let hardware derive | Tacton's needs-based practice, plus the service frame |
+| [Two objectives (cost, footprint) held as an explicit pair make the trade-off legible](assertions/two-objectives-as-a-pair.md) where a single score would hide it | Carbon-presentation literature, all of it food labelling — the transfer to a capital good is itself an assumption |
 
-A2, A4 and A7 are the load-bearing ones. If A4 fails the project loses its novelty claim; if A2 fails the conversational surface is decoration.
+Three are load-bearing: [a candidate beats a question sequence](assertions/candidate-beats-questions.md), [ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md), and [two objectives held as a pair](assertions/two-objectives-as-a-pair.md). If showing the ripple fails the project loses its novelty; if showing a candidate fails the conversational surface is decoration.
 
 ## 5. Open questions the framing does not settle
 
-- Where does initiative sit by default — does the agent propose first, or wait? (Horvitz says confidence-conditional; the prototype has to pick a default.)
 - What is the unit of revision: a single variable, a named frame, or an intent expressed in outcome terms?
-- How much of the ripple to show — the full consequence set, the minimal core, or a narrated summary?
-- Does the canvas represent one configuration with history, or several live candidates at once? (005 says frames; the visual model is unresolved.)
-
-These are exploration questions, not research questions. They belong to the direction work, not to more reading — see [phase-plan.md](phase-plan.md) §1.
+- How much of the ripple to show — the full consequence set, the minimal core, or a narrated summary? *Decided 2026-08-13: minimal core plus repair deltas by default, full set one move away, narration never load-bearing — [models/Ripple storyboard.md](models/Ripple%20storyboard.md) §3.*
+- Does the canvas represent one configuration with history, or several live candidates at once? (the [nonlinear-interaction spec](../specs/nonlinear-interaction/requirements.md) says frames; the visual model is unresolved.)
 
 ## Related
 
-- [direction.md](direction.md) — what we have committed to in response
+- [assertions/](assertions/) — one note per assertion, the §4 table expanded
+- [direction.md](direction.md) — what we have committed to in response, and [principles/](principles/)
 - [../research/](../research/README.md) — the evidence base, and [its gap register](../research/gaps.md)
 - [jtbd/](jtbd/README.md) — job, personas, journey (atomic notes)

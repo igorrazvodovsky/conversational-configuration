@@ -1,4 +1,4 @@
-"""Loader for product models following the 001 schema (specs/001-product-model)."""
+"""Loader for product models following the product-model schema (docs/specs/product-model)."""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ class ProductModel:
 
 
 class ModelError(ValueError):
-    """The model file violates the 001 schema."""
+    """The model file violates the product-model schema."""
 
 
 def load_model(path: str | Path) -> ProductModel:

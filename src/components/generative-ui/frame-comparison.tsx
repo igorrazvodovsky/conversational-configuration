@@ -2,7 +2,7 @@
 
 /**
  * Side-by-side frame comparison for the agent's compare_frames tool
- * (specs/005): only the differing variables, both values, and the price
+ * (docs/specs/nonlinear-interaction): only the differing variables, both values, and the price
  * delta — computed backend-side, valid by construction. Adopting a side
  * dispatches a structured message the agent maps onto adopt_frame.
  */

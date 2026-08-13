@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Repair cards for the agent's revise_choices tool (specs/005).
+ * Repair cards for the agent's revise_choices tool (docs/specs/nonlinear-interaction).
  *
  * When a revision collides with earlier commitments, the solver computes
  * repair options — minimal sets of existing choices to give up, ordered by

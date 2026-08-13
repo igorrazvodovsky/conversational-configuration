@@ -1,6 +1,6 @@
 # Configuration as a field — vocabulary, the elevator benchmark, industry CPQ
 
-Status: literature and practice review, unchanged since 2026-08. Split from the former `docs/research-and-outline.md` §2 (first three subsections). Grounds the propose-check-repair framing in [../discovery/problem-framing.md](../discovery/problem-framing.md) §3 and the model scale in spec [001](../../specs/001-product-model/design.md).
+Status: literature and practice review, unchanged since 2026-08. Split from the former `docs/research-and-outline.md` §2 (first three subsections). Grounds the propose-check-repair framing in [../discovery/problem-framing.md](../discovery/problem-framing.md) §3 and the model scale in spec [001](../specs/product-model/design.md).
 
 ## The research field
 
@@ -19,6 +19,6 @@ The VT system (Marcus & McDermott, AI Magazine 1988 — https://ojs.aaai.org/aim
 
 ## Related
 
-- [elevator-domain.md](elevator-domain.md) — what the model in spec 001 actually has to represent
+- [elevator-domain.md](elevator-domain.md) — what the [product model](../specs/product-model/requirements.md) actually has to represent
 - [interaction-literature.md](interaction-literature.md) — thread C, the dialogue half of the same problem
 - [solver-choice.md](solver-choice.md) — which engine gives the interaction what it needs

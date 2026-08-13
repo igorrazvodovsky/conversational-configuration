@@ -1,5 +1,5 @@
 /**
- * Chat UI registrations for the configurator (specs/004).
+ * Chat UI registrations for the configurator (docs/specs/configuration-canvas).
  */
 import { z } from "zod";
 import {
@@ -28,7 +28,7 @@ export const useConfiguratorUI = () => {
     }) => <AskChoices {...props} />,
   });
 
-  // Conflicting revisions render as repair cards (specs/005).
+  // Conflicting revisions render as repair cards (docs/specs/nonlinear-interaction).
   useRenderTool({
     name: "revise_choices",
     parameters: z.object({
@@ -43,7 +43,7 @@ export const useConfiguratorUI = () => {
     }) => <RepairOptions {...props} />,
   });
 
-  // Frame comparisons render as a two-column diff card (specs/005).
+  // Frame comparisons render as a two-column diff card (docs/specs/nonlinear-interaction).
   useRenderTool({
     name: "compare_frames",
     parameters: z.object({

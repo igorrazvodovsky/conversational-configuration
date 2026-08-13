@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Thread resumption (specs/005-nonlinear-interaction).
+ * Thread resumption (docs/specs/nonlinear-interaction).
  *
  * CopilotKit v2 (1.65.0) switches the active thread but never fetches its
  * history: the runtime exposes GET /threads/{id}/messages and /threads/{id}/state,

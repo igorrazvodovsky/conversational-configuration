@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Configuration spec-sheet canvas (specs/004-configuration-canvas;
- * frames strip from specs/005-nonlinear-interaction).
+ * Configuration spec-sheet canvas (docs/specs/configuration-canvas;
+ * frames strip from docs/specs/nonlinear-interaction).
  *
  * Reads agent.state.configuration; every edit round-trips through the agent
  * as a visible structured message handled by set_choices, so the solver stays

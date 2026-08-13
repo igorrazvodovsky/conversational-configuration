@@ -1,6 +1,6 @@
 # Job stories — the four demo scenarios in the service frame
 
-Status: desk-research hypothesis. Play: *Align Teams to Job Stories*. Aligned to the demo scenarios (spec [006](../../../specs/006-demo-scenarios/requirements.md)), recast from the product frame into the service frame; [direction.md](../direction.md) §4 maps each story to the principles it demonstrates and the assertions it exercises.
+Status: desk-research hypothesis. Play: *Align Teams to Job Stories*. Aligned to the [demo scenarios](../../specs/demo-scenarios/requirements.md), recast from the product frame into the service frame; [direction.md](../direction.md) §4 maps each story to the principles it demonstrates and the assertions it exercises.
 
 1. *Needs, not nomenclature.* When I am planning a medical building and know beds and floors but nothing about elevators, I want to state my needs in building terms and receive a guaranteed-performance proposal, so I can lock shaft dimensions early without becoming an elevator expert. (Survives the pivot nearly unchanged; the proposal gains outcome terms and a monthly price. Personas: [design specifier](persona-design-specifier.md), [delivery lead](persona-delivery-lead.md).)
 2. *Mid-contract revision.* When tenant complaints about wait times rise after my building's use changed, I want to see what different outcome terms would cost per month and what they ripple into, so I can fix the problem without a capital project. (Revision-with-repair, recast from "change the order" to "change the agreement". Persona: [building operator](persona-building-operator.md).)
@@ -10,4 +10,4 @@ Status: desk-research hypothesis. Play: *Align Teams to Job Stories*. Aligned to
 ## Related
 
 - [consumption-journey.md](consumption-journey.md) — where each story sits in the journey
-- [../direction.md](../direction.md) §4 — principle and assertion coverage per story, including the open P5 gap
+- [../direction.md](../direction.md) §4 — principle and assertion coverage per story, including the gap on [any door is an entrance](../principles/any-door-is-an-entrance.md)

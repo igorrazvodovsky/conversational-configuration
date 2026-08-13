@@ -1,6 +1,6 @@
 # Claims and vocabulary — what we may honestly say about our numbers
 
-Status: constraint memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §4. Binds spec [008](../../../specs/008-environmental-footprint/requirements.md) and any UI copy that shows a footprint figure.
+Status: constraint memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §4. Binds spec [008](../../specs/environmental-footprint/requirements.md) and any UI copy that shows a footprint figure.
 
 Verdict: *we can call our numbers an estimate, a model, or an illustration. We cannot call them an EPD, a declaration, a class, or a verified figure, and we cannot invite cross-manufacturer comparison. As of 27 September 2026 some of the tempting phrasings are not merely sloppy but unlawful in the EU.*
 
@@ -20,7 +20,7 @@ Verdict: *we can call our numbers an estimate, a model, or an illustration. We c
 
 EN 15804+A2 (2019) made cradle-to-grave including module C mandatory and switched to EF characterisation factors — which is why the two KONE EPDs are not directly comparable. Note the disclaimer printed in the 700 DX EPD itself (*retrieved*): "considering that Module C is included in this EPD, it is discouraged to use the results of modules A1-A3 without considering the results of module C."
 
-008 deliberately collapses all of this to *embodied* + *use-phase*. That is the right call for an interaction-research prototype and it is out of scope to change. But the collapsed model should be *named* against this structure in the UI — "embodied ≈ A1–A3, use-phase ≈ B6, everything else excluded" — because that one line converts a vague number into an honest, checkable simplification. What the prototype omits is not trivial: maintenance (B2) was 10.5% of the 700 DX total, and A4/A5 another 8.7%.
+The [footprint spec](../../specs/environmental-footprint/requirements.md) deliberately collapses all of this to *embodied* + *use-phase*. That is the right call for an interaction-research prototype and it is out of scope to change. But the collapsed model should be *named* against this structure in the UI — "embodied ≈ A1–A3, use-phase ≈ B6, everything else excluded" — because that one line converts a vague number into an honest, checkable simplification. What the prototype omits is not trivial: maintenance (B2) was 10.5% of the 700 DX total, and A4/A5 another 8.7%.
 
 ## 2. What would be greenwashing
 
@@ -35,10 +35,10 @@ Concretely, from illustrative data we must not imply:
 5. *That a lower-carbon configuration is "green", "eco-friendly", or "sustainable".* Generic claims, now explicitly banned. "Lower modelled footprint than the alternative" is both accurate and legal.
 6. *That savings are absolute.* Every use-phase figure is conditional on a usage profile and a grid factor; a configuration is not lower-carbon in itself, only lower-carbon under stated assumptions.
 
-The design consequence: the assumptions panel that 008 already requires is not a nicety, it is the thing that makes the feature honest. It should name service life, usage profile, grid factor, module scope, and the phrase "illustrative model, not a verified assessment" — and the agent should be able to surface it on request in chat, since chat is where an unhedged sentence is most likely to escape.
+The design consequence: the assumptions panel the spec already requires is not a nicety, it is the thing that makes the feature honest. It should name service life, usage profile, grid factor, module scope, and the phrase "illustrative model, not a verified assessment" — and the agent should be able to surface it on request in chat, since chat is where an unhedged sentence is most likely to escape.
 
 ## Related
 
 - [assumptions.md](assumptions.md) — the contents of that assumptions panel
 - [sustainability-prior-art.md](sustainability-prior-art.md) — the presentation evidence, which points the same way for different reasons
-- [../../specs/constitution.md](../../../specs/constitution.md) — the solver-grounding invariant this extends to carbon numbers
+- [../../specs/constitution.md](../../specs/constitution.md) — the solver-grounding invariant this extends to carbon numbers

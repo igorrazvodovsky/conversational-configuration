@@ -2,7 +2,7 @@
 
 /**
  * Shared behavior for in-chat action cards (ask_choices, repair options,
- * frame comparison — specs/004, 005): a card goes inert once used or once the
+ * frame comparison — docs/specs/configuration-canvas, docs/specs/nonlinear-interaction): a card goes inert once used or once the
  * conversation moves past it, and clicking dispatches a visible structured
  * user message that the agent maps onto one atomic tool call.
  */

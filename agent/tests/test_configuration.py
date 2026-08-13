@@ -1,4 +1,4 @@
-"""Acceptance tests for specs/003-agent-tools (pure state transitions)."""
+"""Acceptance tests for docs/specs/agent-tools (pure state transitions)."""
 
 import pytest
 
@@ -111,7 +111,7 @@ def test_withdraw_unknown_variable(empty):
         withdraw_choices(empty, ["colour"])
 
 
-# -- ask_choices payload (specs/004) --------------------------------------
+# -- ask_choices payload (docs/specs/configuration-canvas) --------------------------------------
 
 def test_payload_control_heuristic(empty):
     from src.configuration import build_ask_payload
@@ -146,7 +146,7 @@ def test_payload_unknown_variable(empty):
         build_ask_payload(empty, ["colour"])
 
 
-# -- revision (specs/005) --------------------------------------------------
+# -- revision (docs/specs/nonlinear-interaction) --------------------------------------------------
 
 def test_revise_passthrough_when_no_conflict(empty):
     config, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
@@ -190,7 +190,7 @@ def test_repair_payload_modernization(empty):
     assert top["rules"]
 
 
-# -- frames (specs/005) ----------------------------------------------------
+# -- frames (docs/specs/nonlinear-interaction) ----------------------------------------------------
 
 @pytest.fixture()
 def with_candidate(empty):
