@@ -17,9 +17,12 @@ import {
   Configuration,
   ModelVariable,
   choiceMessage,
+  footprintBlock,
+  formatCO2,
   formatMonthly,
   modelGroups,
   monthlyDelta,
+  optionLabel,
   productModel,
   termMonthsInEffect,
 } from "@/lib/configurator";
@@ -64,8 +67,11 @@ export function ConfigCanvas() {
                   {formatMonthly(config.candidate.price)}
                 </div>
                 <div className="text-xs text-[var(--muted-foreground)]">
-                  cheapest completion
+                  {config.candidate.objective === "co2"
+                    ? "lowest-footprint completion"
+                    : "cheapest completion"}
                 </div>
+                <FootprintSummary config={config} />
               </>
             ) : (
               <div className="text-xs text-[var(--muted-foreground)] max-w-[10rem]">
@@ -132,6 +138,74 @@ export function ConfigCanvas() {
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Cumulative lifetime footprint under the monthly figure, with the assessment
+ * assumptions behind it on demand (docs/specs/environmental-footprint decision
+ * 6): whole-configuration total only — no per-option carbon badges anywhere —
+ * and every number labelled as modelled. All values read from agent state and
+ * the model JSON; nothing is derived here.
+ */
+function FootprintSummary({ config }: { config: Configuration }) {
+  const [open, setOpen] = useState(false);
+  const footprint = config.candidate?.footprint;
+  if (!footprint) return null; // candidate persisted before the footprint feature
+
+  const usageProfile =
+    config.choices["usage_profile"]?.value ??
+    config.candidate?.assignment["usage_profile"];
+
+  return (
+    <div className="relative mt-1">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="text-xs text-[var(--muted-foreground)] underline decoration-dotted underline-offset-2 hover:text-[var(--foreground)]"
+        title="modelled estimate — click for the assumptions behind it"
+      >
+        ≈ {formatCO2(footprint.total)} over {footprintBlock.service_life_years}{" "}
+        years (modelled)
+      </button>
+      {open && (
+        <div className="absolute right-0 z-10 mt-1 w-72 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 text-left text-xs shadow-md">
+          <dl className="space-y-1">
+            <div className="flex justify-between gap-2">
+              <dt className="text-[var(--muted-foreground)]">embodied</dt>
+              <dd className="tabular-nums">{formatCO2(footprint.embodied)}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-[var(--muted-foreground)]">use-phase</dt>
+              <dd className="tabular-nums">{formatCO2(footprint.use_phase)}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-[var(--muted-foreground)]">service life</dt>
+              <dd>
+                {footprintBlock.service_life_years} years,{" "}
+                {footprintBlock.operating_days} days/year
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-[var(--muted-foreground)]">usage profile</dt>
+              <dd>
+                {usageProfile ? optionLabel("usage_profile", usageProfile) : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-[var(--muted-foreground)]">grid factor</dt>
+              <dd>
+                {footprintBlock.grid_factor} kg CO₂e/kWh (
+                {footprintBlock.grid_factor_decarbonising} if the grid
+                decarbonises)
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-2 text-[var(--muted-foreground)]">
+            {footprintBlock.module_scope}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

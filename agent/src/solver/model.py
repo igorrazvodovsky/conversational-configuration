@@ -10,6 +10,11 @@ from pathlib import Path
 # The variable whose value sets the amortization horizon (docs/specs/service-agreement).
 TERM_VAR = "contract_term"
 
+# The trio that keys the use-phase energy table (docs/specs/environmental-footprint).
+ENERGY_CLASS_VAR = "energy_class"
+USAGE_VAR = "usage_profile"
+TRAVEL_VAR = "travel"
+
 
 def _round_half_up(x: float) -> int:
     # Deliberately not round(): the frontend re-derives monthly deltas with the
@@ -23,6 +28,8 @@ class Option:
     label: str
     price: int = 0          # cost basis (EUR), amortized into the monthly fee
     monthly_price: int = 0  # recurring fee (EUR/month)
+    co2: int = 0            # embodied kg CO2e, A1-A3 before the fabrication
+                            # multiplier; negative allowed (docs/specs/environmental-footprint)
 
 
 @dataclass(frozen=True)
@@ -64,12 +71,25 @@ class Pricing:
 
 
 @dataclass(frozen=True)
+class FootprintBlock:
+    """Named assessment assumptions (docs/specs/environmental-footprint decision 5)."""
+    service_life_years: int
+    operating_days: int
+    grid_factor: float               # kg CO2e/kWh, European average
+    grid_factor_decarbonising: float # RICS-style bookend scenario, never the headline
+    fabrication_multiplier: float    # reconciles bottom-up embodied sums to the EPD anchors
+    module_scope: str
+    annual_kwh: dict[str, dict[str, dict[str, float]]]  # class -> usage -> travel -> kWh/year
+
+
+@dataclass(frozen=True)
 class ProductModel:
     product: str
     name: str
     variables: dict[str, Variable] = field(default_factory=dict)
     constraints: tuple[Constraint, ...] = ()
     pricing: Pricing | None = None
+    footprint_block: FootprintBlock | None = None
 
     def variable(self, name: str) -> Variable:
         return self.variables[name]
@@ -112,6 +132,29 @@ class ProductModel:
         months = self.months_of(assignment.get(TERM_VAR))
         return _round_half_up(hardware * self.pricing.financing_factor / months) + recurring
 
+    def footprint(self, assignment: dict[str, str]) -> dict[str, int]:
+        """Lifetime footprint of a full assignment, integer kg CO2e: embodied
+        (option co2 sum x fabrication multiplier), use-phase (annual kWh looked
+        up by the class/usage/travel trio x service life x grid factor), the
+        decarbonising-bookend use-phase, and their total. The single footprint
+        computation — solver, tools and frontend all read from here
+        (docs/specs/environmental-footprint)."""
+        fb = self.footprint_block
+        assert fb is not None
+        embodied = _round_half_up(
+            sum(self.option(v, val).co2 for v, val in assignment.items())
+            * fb.fabrication_multiplier
+        )
+        kwh = fb.annual_kwh[assignment[ENERGY_CLASS_VAR]][assignment[USAGE_VAR]][assignment[TRAVEL_VAR]]
+        lifetime_kwh = kwh * fb.service_life_years
+        use_phase = _round_half_up(lifetime_kwh * fb.grid_factor)
+        return {
+            "embodied": embodied,
+            "use_phase": use_phase,
+            "use_phase_decarbonising": _round_half_up(lifetime_kwh * fb.grid_factor_decarbonising),
+            "total": embodied + use_phase,
+        }
+
 
 class ModelError(ValueError):
     """The model file violates the product-model schema."""
@@ -122,11 +165,17 @@ def load_model(path: str | Path) -> ProductModel:
     errors: list[str] = []
 
     variables: dict[str, Variable] = {}
+    missing_co2: list[str] = []
     for v in raw.get("variables", []):
         options = tuple(
-            Option(o["value"], o.get("label", o["value"]), o.get("price", 0), o.get("monthly_price", 0))
+            Option(o["value"], o.get("label", o["value"]), o.get("price", 0),
+                   o.get("monthly_price", 0), o.get("co2", 0))
             for o in v["options"]
         )
+        missing_co2 += [
+            f"variable {v['name']}: option {o['value']!r} has no co2 value"
+            for o in v["options"] if "co2" not in o
+        ]
         if len({o.value for o in options}) != len(options):
             errors.append(f"variable {v['name']}: duplicate option values")
         for o in options:
@@ -153,6 +202,49 @@ def load_model(path: str | Path) -> ProductModel:
         if default_term not in term_months:
             errors.append(f"pricing.default_term {default_term!r} is not a {TERM_VAR} value")
         pricing = Pricing(float(p.get("financing_factor", 1.0)), term_months, default_term)
+
+    footprint_block: FootprintBlock | None = None
+    if "footprint" in raw:
+        f = raw["footprint"]
+        # co2 is mandatory on every option once the model models footprint —
+        # same enforcement point as the both-price-kinds rule.
+        errors.extend(missing_co2)
+        for key in ("service_life_years", "operating_days", "grid_factor",
+                    "grid_factor_decarbonising", "fabrication_multiplier"):
+            if not isinstance(f.get(key), (int, float)) or isinstance(f.get(key), bool):
+                errors.append(f"footprint.{key} must be a number, got {f.get(key)!r}")
+
+        def check_kwh_domain(context: str, keys, var_name: str) -> None:
+            if var_name not in variables:
+                errors.append(f"footprint.annual_kwh: variable {var_name!r} is not defined")
+                return
+            domain = set(variables[var_name].values)
+            if set(keys) != domain:
+                errors.append(
+                    f"footprint.annual_kwh {context} must cover the {var_name} domain "
+                    f"exactly: got {sorted(keys)}, domain {sorted(domain)}"
+                )
+
+        annual = f.get("annual_kwh", {})
+        check_kwh_domain("classes", annual.keys(), ENERGY_CLASS_VAR)
+        for cls, by_usage in annual.items():
+            check_kwh_domain(f"class {cls!r} usages", by_usage.keys(), USAGE_VAR)
+            for usage, by_travel in by_usage.items():
+                check_kwh_domain(f"class {cls!r} usage {usage!r} travel bands",
+                                 by_travel.keys(), TRAVEL_VAR)
+                for travel, kwh in by_travel.items():
+                    if not isinstance(kwh, (int, float)) or isinstance(kwh, bool):
+                        errors.append(
+                            f"footprint.annual_kwh[{cls}][{usage}][{travel}] "
+                            f"must be a number, got {kwh!r}"
+                        )
+        if not errors:
+            footprint_block = FootprintBlock(
+                int(f["service_life_years"]), int(f["operating_days"]),
+                float(f["grid_factor"]), float(f["grid_factor_decarbonising"]),
+                float(f["fabrication_multiplier"]), str(f.get("module_scope", "")),
+                annual,
+            )
 
     def check_ref(cid: str, var: str, values: list[str] | tuple[str, ...]) -> None:
         if var not in variables:
@@ -190,4 +282,5 @@ def load_model(path: str | Path) -> ProductModel:
     if errors:
         raise ModelError("invalid product model:\n  " + "\n  ".join(errors))
 
-    return ProductModel(raw.get("product", ""), raw.get("name", ""), variables, tuple(constraints), pricing)
+    return ProductModel(raw.get("product", ""), raw.get("name", ""), variables,
+                        tuple(constraints), pricing, footprint_block)

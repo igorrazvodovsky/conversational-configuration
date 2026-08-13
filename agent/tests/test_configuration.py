@@ -273,6 +273,89 @@ def test_compare_unknown_frame(with_candidate):
         frame_comparison(with_candidate, "premium")
 
 
+# -- footprint (docs/specs/environmental-footprint) -----------------------
+
+def test_candidate_carries_footprint(with_candidate):
+    from src.configuration import MODEL
+    cand = with_candidate["candidate"]
+    fp = MODEL.footprint(cand["assignment"])
+    assert cand["footprint"] == {"embodied": fp["embodied"], "use_phase": fp["use_phase"],
+                                 "total": fp["total"]}
+
+
+def test_candidate_with_co2_objective(empty):
+    from src.configuration import MODEL
+    config, _ = apply_choices(empty, {"building_type": "office", "usage_profile": "medium"}, "user")
+    cheapest = make_candidate(config, "price")["candidate"]
+    greenest = make_candidate(config, "co2")["candidate"]
+    assert greenest["footprint"]["total"] <= cheapest["footprint"]["total"]
+    assert SOLVER.check(greenest["assignment"])
+
+
+def test_comparison_footprint_delta(empty):
+    config, _ = apply_choices(empty, {"building_type": "office", "usage_profile": "medium"}, "user")
+    config = save_frame(make_candidate(config, "price"), "Cheapest")
+    config = make_candidate(config, "co2")
+    payload = frame_comparison(config, "Cheapest")
+    a, b = payload["a"]["footprint"], payload["b"]["footprint"]
+    assert a and b
+    assert payload["footprintDelta"] == b["total"] - a["total"]
+
+
+def test_comparison_pre_footprint_frame_fallback(empty):
+    """A frame persisted before the footprint feature has no footprint key:
+    the payload carries None for that side and a delta of 0."""
+    config, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
+    config = save_frame(make_candidate(config), "old")
+    del config["frames"][0]["footprint"]
+    payload = frame_comparison(config, "old")
+    assert payload["a"]["footprint"] is None
+    assert payload["b"]["footprint"] is not None
+    assert payload["footprintDelta"] == 0
+
+
+def test_completion_message_teaser(empty):
+    """When the two objectives disagree, the propose message ends with the
+    pair teaser: how many variables differ and both deltas."""
+    from src.configuration import MODEL, _chosen_values, completion_message
+    config, _ = apply_choices(
+        empty, {"building_type": "office", "travel": "mid_15_30", "usage_profile": "medium"},
+        "user")
+    config = make_candidate(config, "price")
+    other_assignment, other_price = SOLVER.complete(_chosen_values(config), "co2")
+    message = completion_message(config["candidate"], "price", other_assignment, other_price)
+    assert "cheapest monthly completion" in message
+    teaser = message.splitlines()[-1]
+    n = sum(1 for v, val in other_assignment.items()
+            if config["candidate"]["assignment"][v] != val)
+    assert f"lowest-footprint completion differs in {n} variable" in teaser
+    assert "t CO₂e" in teaser and "EUR/month" in teaser and "offer to show the pair" in teaser
+
+
+def test_completion_message_no_teaser_when_objectives_agree(empty):
+    """A fully-specified configuration completes identically under both
+    objectives — no teaser line."""
+    from src.configuration import _chosen_values, completion_message
+    full = {
+        "service_level": "basic", "contract_term": "y10", "usage_profile": "low",
+        "connectivity_package": "none", "building_type": "residential",
+        "region": "europe", "installation": "new_build", "accessibility": "none",
+        "rated_load": "kg630", "rated_speed": "mps1_0", "travel": "low_0_15",
+        "stops": "s2_6", "platform": "mrl_m500", "drive": "gearless_mrl",
+        "energy_package": "standard", "energy_class": "c",
+        "car_size": "c1100x1400", "shaft": "t1_1800x1700", "pit_depth": "p1100",
+        "headroom": "h3400", "door_type": "telescopic_2", "door_width": "d800",
+        "door_finish": "painted", "fire_rating": "none",
+        "wall_finish": "painted_steel", "floor": "rubber", "cop": "standard",
+        "mirror": "none", "handrail": "none",
+    }
+    config, _ = apply_choices(empty, full, "user")
+    config = make_candidate(config)
+    other_assignment, other_price = SOLVER.complete(_chosen_values(config), "co2")
+    message = completion_message(config["candidate"], "price", other_assignment, other_price)
+    assert "offer to show the pair" not in message
+
+
 def test_adopt_frame_replaces_atomically(with_candidate):
     config = save_frame(with_candidate, "practical")
     config, _ = apply_choices(config, {"building_type": "office"}, "user")
@@ -280,6 +363,8 @@ def test_adopt_frame_replaces_atomically(with_candidate):
     frame = config["frames"][0]
     assert {v: c["value"] for v, c in adopted["choices"].items()} == frame["assignment"]
     assert all(c["source"] == "user" for c in adopted["choices"].values())
-    assert adopted["candidate"] == {"assignment": frame["assignment"], "price": frame["price"]}
+    assert adopted["candidate"] == {"assignment": frame["assignment"], "price": frame["price"],
+                                    "footprint": frame["footprint"],
+                                    "objective": frame["objective"]}
     # the frame remains stored after adoption
     assert [f["name"] for f in adopted["frames"]] == ["practical"]

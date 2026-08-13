@@ -10,7 +10,7 @@
  */
 
 import { Spinner } from "@/components/ui/spinner";
-import { adoptMessage, formatMonthly } from "@/lib/configurator";
+import { Footprint, adoptMessage, formatCO2, formatMonthly } from "@/lib/configurator";
 import { useCardDispatch } from "./card-dispatch";
 
 interface SideValue {
@@ -21,10 +21,12 @@ interface SideValue {
 
 interface Payload {
   kind: "frame_comparison";
-  a: { name: string; price: number };
-  b: { name: string; price: number; isCurrent: boolean };
+  // footprint is null on frames persisted before docs/specs/environmental-footprint
+  a: { name: string; price: number; footprint: Footprint | null };
+  b: { name: string; price: number; isCurrent: boolean; footprint: Footprint | null };
   differences: { variable: string; label: string; a: SideValue; b: SideValue }[];
   priceDelta: number;
+  footprintDelta: number; // 0 when either side lacks a footprint
 }
 
 interface FrameComparisonProps {
@@ -57,9 +59,22 @@ export function FrameComparison({
   }
 
   const sides = [
-    { key: "a" as const, name: payload.a.name, price: payload.a.price, isCurrent: false },
-    { key: "b" as const, name: payload.b.name, price: payload.b.price, isCurrent: payload.b.isCurrent },
+    {
+      key: "a" as const,
+      name: payload.a.name,
+      price: payload.a.price,
+      footprint: payload.a.footprint ?? null,
+      isCurrent: false,
+    },
+    {
+      key: "b" as const,
+      name: payload.b.name,
+      price: payload.b.price,
+      footprint: payload.b.footprint ?? null,
+      isCurrent: payload.b.isCurrent,
+    },
   ];
+  const footprintDelta = payload.footprintDelta ?? 0;
 
   return (
     <div
@@ -109,6 +124,16 @@ export function FrameComparison({
               </td>
             ))}
           </tr>
+          <tr className="border-t border-[var(--border)]">
+            <td className="py-1.5 pr-2 text-xs text-[var(--muted-foreground)]">
+              footprint (modelled)
+            </td>
+            {sides.map((s) => (
+              <td key={s.key} className="py-1.5 pr-2 tabular-nums">
+                {s.footprint ? formatCO2(s.footprint.total) : "—"}
+              </td>
+            ))}
+          </tr>
         </tbody>
       </table>
       <div className="mt-2 flex gap-2">
@@ -116,6 +141,8 @@ export function FrameComparison({
           {payload.priceDelta === 0
             ? "same monthly price"
             : `${payload.b.isCurrent ? "current" : payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
+          {footprintDelta !== 0 &&
+            ` · ${formatCO2(Math.abs(footprintDelta))} ${footprintDelta > 0 ? "more" : "less"}`}
         </span>
         {sides
           .filter((s) => !s.isCurrent)

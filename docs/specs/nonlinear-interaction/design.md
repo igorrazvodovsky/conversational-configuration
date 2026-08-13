@@ -13,7 +13,7 @@ New `ConfigSolver.repairs(choices, changes, limit=3)`: assert the changed values
 ## Frontend
 
 - `RepairOptions` renderer (fixed-schema, `revise_choices` tool result): one card per repair — "Keep 3.0 m/s → switch to new build (pit 2100, headroom 4600)" — plus the abandon option; same inert-after-use behavior as `ask_choices`.
-- `FrameComparison` renderer (`compare_frames` result): two-column diff of differing variables with price footer and an "adopt" button per side (dispatches structured message).
+- `FrameComparison` renderer (`compare_frames` result): two-column diff of differing variables with price footer (joined by a modelled-footprint row and delta since the [environmental-footprint spec](../environmental-footprint/design.md)) and an "adopt" button per side (dispatches structured message).
 - Canvas: a small frames strip under the price header (name chips; active candidate unnamed). No other canvas changes.
 
 ## System prompt

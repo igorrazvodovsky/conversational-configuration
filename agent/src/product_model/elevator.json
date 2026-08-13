@@ -13,9 +13,9 @@
       "label": "Service level",
       "group": "agreement",
       "options": [
-        { "value": "basic", "label": "Business-hours support, next-day response", "monthly_price": 150 },
-        { "value": "standard", "label": "24/7 call-out, 8 h response, 99.5 % uptime", "monthly_price": 300 },
-        { "value": "premium", "label": "99.9 % uptime, 4 h response, remote diagnostics", "monthly_price": 550 }
+        { "value": "basic", "label": "Business-hours support, next-day response", "monthly_price": 150, "co2": 0 },
+        { "value": "standard", "label": "24/7 call-out, 8 h response, 99.5 % uptime", "monthly_price": 300, "co2": 0 },
+        { "value": "premium", "label": "99.9 % uptime, 4 h response, remote diagnostics", "monthly_price": 550, "co2": 0 }
       ]
     },
     {
@@ -23,9 +23,9 @@
       "label": "Contract term",
       "group": "agreement",
       "options": [
-        { "value": "y5", "label": "5 years" },
-        { "value": "y10", "label": "10 years" },
-        { "value": "y15", "label": "15 years" }
+        { "value": "y5", "label": "5 years", "co2": 0 },
+        { "value": "y10", "label": "10 years", "co2": 0 },
+        { "value": "y15", "label": "15 years", "co2": 0 }
       ]
     },
     {
@@ -33,9 +33,9 @@
       "label": "Usage profile",
       "group": "agreement",
       "options": [
-        { "value": "low", "label": "A few trips an hour", "monthly_price": 50 },
-        { "value": "medium", "label": "Steady traffic through the day", "monthly_price": 120 },
-        { "value": "heavy", "label": "Near-continuous traffic", "monthly_price": 260 }
+        { "value": "low", "label": "A few trips an hour", "monthly_price": 50, "co2": 0 },
+        { "value": "medium", "label": "Steady traffic through the day", "monthly_price": 120, "co2": 0 },
+        { "value": "heavy", "label": "Near-continuous traffic", "monthly_price": 260, "co2": 0 }
       ]
     },
     {
@@ -43,8 +43,8 @@
       "label": "Connectivity package",
       "group": "agreement",
       "options": [
-        { "value": "none", "label": "Not connected" },
-        { "value": "connected", "label": "Remote monitoring and diagnostics", "monthly_price": 80 }
+        { "value": "none", "label": "Not connected", "co2": 0 },
+        { "value": "connected", "label": "Remote monitoring and diagnostics", "monthly_price": 80, "co2": 0 }
       ]
     },
     {
@@ -52,11 +52,11 @@
       "label": "Building type",
       "group": "context",
       "options": [
-        { "value": "residential", "label": "Residential" },
-        { "value": "office", "label": "Office" },
-        { "value": "hotel", "label": "Hotel" },
-        { "value": "hospital", "label": "Hospital" },
-        { "value": "retail", "label": "Retail" }
+        { "value": "residential", "label": "Residential", "co2": 0 },
+        { "value": "office", "label": "Office", "co2": 0 },
+        { "value": "hotel", "label": "Hotel", "co2": 0 },
+        { "value": "hospital", "label": "Hospital", "co2": 0 },
+        { "value": "retail", "label": "Retail", "co2": 0 }
       ]
     },
     {
@@ -65,8 +65,8 @@
       "group": "context",
       "note": "Drives applicable code: EN 81-20/50 + EN 81-70 in Europe, ASME A17.1 + ADA in North America.",
       "options": [
-        { "value": "europe", "label": "Europe (EN 81-20)" },
-        { "value": "north_america", "label": "North America (ASME A17.1)" }
+        { "value": "europe", "label": "Europe (EN 81-20)", "co2": 0 },
+        { "value": "north_america", "label": "North America (ASME A17.1)", "co2": 0 }
       ]
     },
     {
@@ -74,8 +74,8 @@
       "label": "Installation type",
       "group": "context",
       "options": [
-        { "value": "new_build", "label": "New building" },
-        { "value": "modernization", "label": "Modernization (existing shaft)" }
+        { "value": "new_build", "label": "New building", "co2": 0 },
+        { "value": "modernization", "label": "Modernization (existing shaft)", "co2": 0 }
       ]
     },
     {
@@ -83,9 +83,9 @@
       "label": "Accessibility package",
       "group": "context",
       "options": [
-        { "value": "none", "label": "None" },
-        { "value": "en81_70", "label": "EN 81-70 accessibility", "price": 1800 },
-        { "value": "ada", "label": "ADA accessibility", "price": 1800 }
+        { "value": "none", "label": "None", "co2": 0 },
+        { "value": "en81_70", "label": "EN 81-70 accessibility", "price": 1800, "co2": 25 },
+        { "value": "ada", "label": "ADA accessibility", "price": 1800, "co2": 25 }
       ]
     },
     {
@@ -93,13 +93,13 @@
       "label": "Rated load",
       "group": "performance",
       "options": [
-        { "value": "kg630", "label": "630 kg / 8 persons", "price": 0 },
-        { "value": "kg800", "label": "800 kg / 10 persons", "price": 1500 },
-        { "value": "kg1000", "label": "1000 kg / 13 persons", "price": 3000 },
-        { "value": "kg1250", "label": "1250 kg / 16 persons", "price": 5000 },
-        { "value": "kg1600", "label": "1600 kg / 21 persons", "price": 8000 },
-        { "value": "kg2000", "label": "2000 kg / 26 persons", "price": 12000 },
-        { "value": "kg2500", "label": "2500 kg / 33 persons", "price": 17000 }
+        { "value": "kg630", "label": "630 kg / 8 persons", "price": 0, "co2": 0 },
+        { "value": "kg800", "label": "800 kg / 10 persons", "price": 1500, "co2": 40 },
+        { "value": "kg1000", "label": "1000 kg / 13 persons", "price": 3000, "co2": 90 },
+        { "value": "kg1250", "label": "1250 kg / 16 persons", "price": 5000, "co2": 140 },
+        { "value": "kg1600", "label": "1600 kg / 21 persons", "price": 8000, "co2": 220 },
+        { "value": "kg2000", "label": "2000 kg / 26 persons", "price": 12000, "co2": 320 },
+        { "value": "kg2500", "label": "2500 kg / 33 persons", "price": 17000, "co2": 430 }
       ]
     },
     {
@@ -107,11 +107,11 @@
       "label": "Rated speed",
       "group": "performance",
       "options": [
-        { "value": "mps0_63", "label": "0.63 m/s", "price": 0 },
-        { "value": "mps1_0", "label": "1.0 m/s", "price": 1000 },
-        { "value": "mps1_6", "label": "1.6 m/s", "price": 4000 },
-        { "value": "mps2_5", "label": "2.5 m/s", "price": 12000 },
-        { "value": "mps3_0", "label": "3.0 m/s", "price": 22000 }
+        { "value": "mps0_63", "label": "0.63 m/s", "price": 0, "co2": 0 },
+        { "value": "mps1_0", "label": "1.0 m/s", "price": 1000, "co2": 20 },
+        { "value": "mps1_6", "label": "1.6 m/s", "price": 4000, "co2": 60 },
+        { "value": "mps2_5", "label": "2.5 m/s", "price": 12000, "co2": 150 },
+        { "value": "mps3_0", "label": "3.0 m/s", "price": 22000, "co2": 250 }
       ]
     },
     {
@@ -119,11 +119,11 @@
       "label": "Travel height",
       "group": "performance",
       "options": [
-        { "value": "low_0_15", "label": "Up to 15 m" },
-        { "value": "mid_15_30", "label": "15–30 m" },
-        { "value": "high_30_50", "label": "30–50 m" },
-        { "value": "very_high_50_75", "label": "50–75 m" },
-        { "value": "tower_75_100", "label": "75–100 m" }
+        { "value": "low_0_15", "label": "Up to 15 m", "co2": 1300 },
+        { "value": "mid_15_30", "label": "15–30 m", "co2": 2600 },
+        { "value": "high_30_50", "label": "30–50 m", "co2": 4300 },
+        { "value": "very_high_50_75", "label": "50–75 m", "co2": 6400 },
+        { "value": "tower_75_100", "label": "75–100 m", "co2": 8500 }
       ]
     },
     {
@@ -131,9 +131,9 @@
       "label": "Number of stops",
       "group": "performance",
       "options": [
-        { "value": "s2_6", "label": "2–6 stops" },
-        { "value": "s7_12", "label": "7–12 stops" },
-        { "value": "s13_24", "label": "13–24 stops" }
+        { "value": "s2_6", "label": "2–6 stops", "co2": 550 },
+        { "value": "s7_12", "label": "7–12 stops", "co2": 1350 },
+        { "value": "s13_24", "label": "13–24 stops", "co2": 2600 }
       ]
     },
     {
@@ -141,10 +141,10 @@
       "label": "Product platform",
       "group": "platform",
       "options": [
-        { "value": "hydro_s300", "label": "S300 (hydraulic, low-rise)", "price": 45000 },
-        { "value": "mrl_m500", "label": "M500 (machine-room-less, mid-rise)", "price": 58000 },
-        { "value": "mrl_m700", "label": "M700 (machine-room-less, high-rise)", "price": 78000 },
-        { "value": "highrise_h900", "label": "H900 (machine room, tower)", "price": 125000 }
+        { "value": "hydro_s300", "label": "S300 (hydraulic, low-rise)", "price": 45000, "co2": 2200 },
+        { "value": "mrl_m500", "label": "M500 (machine-room-less, mid-rise)", "price": 58000, "co2": 2350 },
+        { "value": "mrl_m700", "label": "M700 (machine-room-less, high-rise)", "price": 78000, "co2": 2600 },
+        { "value": "highrise_h900", "label": "H900 (machine room, tower)", "price": 125000, "co2": 3200 }
       ]
     },
     {
@@ -152,9 +152,30 @@
       "label": "Drive type",
       "group": "platform",
       "options": [
-        { "value": "hydraulic", "label": "Hydraulic" },
-        { "value": "gearless_mrl", "label": "Gearless traction, machine-room-less" },
-        { "value": "gearless_mr", "label": "Gearless traction, machine room" }
+        { "value": "hydraulic", "label": "Hydraulic", "co2": 0 },
+        { "value": "gearless_mrl", "label": "Gearless traction, machine-room-less", "co2": 0 },
+        { "value": "gearless_mr", "label": "Gearless traction, machine room", "co2": 0 }
+      ]
+    },
+    {
+      "name": "energy_package",
+      "label": "Energy package",
+      "group": "platform",
+      "options": [
+        { "value": "standard", "label": "Standard", "price": 0, "co2": 0 },
+        { "value": "eco", "label": "LED lighting + deep standby", "price": 900, "co2": 0 },
+        { "value": "regen", "label": "Regenerative drive (includes eco measures)", "price": 4500, "co2": 120 }
+      ]
+    },
+    {
+      "name": "energy_class",
+      "label": "Energy class (modelled)",
+      "group": "platform",
+      "options": [
+        { "value": "a", "label": "A", "co2": 0 },
+        { "value": "b", "label": "B", "co2": 0 },
+        { "value": "c", "label": "C", "co2": 0 },
+        { "value": "d", "label": "D", "co2": 0 }
       ]
     },
     {
@@ -162,15 +183,15 @@
       "label": "Car dimensions (width × depth)",
       "group": "dimensions",
       "options": [
-        { "value": "c1100x1400", "label": "1100 × 1400 mm", "price": 0 },
-        { "value": "c1350x1400", "label": "1350 × 1400 mm", "price": 800 },
-        { "value": "c1600x1400", "label": "1600 × 1400 mm", "price": 1500 },
-        { "value": "c1950x1400", "label": "1950 × 1400 mm (wide)", "price": 2500 },
-        { "value": "c1200x2300", "label": "1200 × 2300 mm (deep)", "price": 2500 },
-        { "value": "c2100x1600", "label": "2100 × 1600 mm (wide)", "price": 3000 },
-        { "value": "c1400x2400", "label": "1400 × 2400 mm (stretcher)", "price": 3500 },
-        { "value": "c1500x2700", "label": "1500 × 2700 mm (bed)", "price": 5000 },
-        { "value": "c1800x2700", "label": "1800 × 2700 mm (bed)", "price": 7000 }
+        { "value": "c1100x1400", "label": "1100 × 1400 mm", "price": 0, "co2": 0 },
+        { "value": "c1350x1400", "label": "1350 × 1400 mm", "price": 800, "co2": 80 },
+        { "value": "c1600x1400", "label": "1600 × 1400 mm", "price": 1500, "co2": 160 },
+        { "value": "c1950x1400", "label": "1950 × 1400 mm (wide)", "price": 2500, "co2": 270 },
+        { "value": "c1200x2300", "label": "1200 × 2300 mm (deep)", "price": 2500, "co2": 280 },
+        { "value": "c2100x1600", "label": "2100 × 1600 mm (wide)", "price": 3000, "co2": 420 },
+        { "value": "c1400x2400", "label": "1400 × 2400 mm (stretcher)", "price": 3500, "co2": 420 },
+        { "value": "c1500x2700", "label": "1500 × 2700 mm (bed)", "price": 5000, "co2": 580 },
+        { "value": "c1800x2700", "label": "1800 × 2700 mm (bed)", "price": 7000, "co2": 770 }
       ]
     },
     {
@@ -178,12 +199,12 @@
       "label": "Shaft size (width × depth)",
       "group": "dimensions",
       "options": [
-        { "value": "t1_1800x1700", "label": "1800 × 1700 mm" },
-        { "value": "t2_2000x1800", "label": "2000 × 1800 mm" },
-        { "value": "t3_2200x2000", "label": "2200 × 2000 mm" },
-        { "value": "t4_2500x2200", "label": "2500 × 2200 mm" },
-        { "value": "t5_2700x2900", "label": "2700 × 2900 mm" },
-        { "value": "t6_3000x3000", "label": "3000 × 3000 mm" }
+        { "value": "t1_1800x1700", "label": "1800 × 1700 mm", "co2": 0 },
+        { "value": "t2_2000x1800", "label": "2000 × 1800 mm", "co2": 20 },
+        { "value": "t3_2200x2000", "label": "2200 × 2000 mm", "co2": 40 },
+        { "value": "t4_2500x2200", "label": "2500 × 2200 mm", "co2": 70 },
+        { "value": "t5_2700x2900", "label": "2700 × 2900 mm", "co2": 110 },
+        { "value": "t6_3000x3000", "label": "3000 × 3000 mm", "co2": 150 }
       ]
     },
     {
@@ -191,10 +212,10 @@
       "label": "Pit depth",
       "group": "dimensions",
       "options": [
-        { "value": "p1100", "label": "1100 mm" },
-        { "value": "p1400", "label": "1400 mm" },
-        { "value": "p1600", "label": "1600 mm" },
-        { "value": "p2100", "label": "2100 mm" }
+        { "value": "p1100", "label": "1100 mm", "co2": 0 },
+        { "value": "p1400", "label": "1400 mm", "co2": 10 },
+        { "value": "p1600", "label": "1600 mm", "co2": 20 },
+        { "value": "p2100", "label": "2100 mm", "co2": 40 }
       ]
     },
     {
@@ -202,10 +223,10 @@
       "label": "Headroom",
       "group": "dimensions",
       "options": [
-        { "value": "h3400", "label": "3400 mm" },
-        { "value": "h3800", "label": "3800 mm" },
-        { "value": "h4200", "label": "4200 mm" },
-        { "value": "h4600", "label": "4600 mm" }
+        { "value": "h3400", "label": "3400 mm", "co2": 0 },
+        { "value": "h3800", "label": "3800 mm", "co2": 10 },
+        { "value": "h4200", "label": "4200 mm", "co2": 20 },
+        { "value": "h4600", "label": "4600 mm", "co2": 40 }
       ]
     },
     {
@@ -213,9 +234,9 @@
       "label": "Door opening type",
       "group": "doors",
       "options": [
-        { "value": "telescopic_2", "label": "Side-opening telescopic, 2 panels", "price": 0 },
-        { "value": "center_2", "label": "Center-opening, 2 panels", "price": 1200 },
-        { "value": "center_4", "label": "Center-opening, 4 panels", "price": 3500 }
+        { "value": "telescopic_2", "label": "Side-opening telescopic, 2 panels", "price": 0, "co2": 95 },
+        { "value": "center_2", "label": "Center-opening, 2 panels", "price": 1200, "co2": 110 },
+        { "value": "center_4", "label": "Center-opening, 4 panels", "price": 3500, "co2": 160 }
       ]
     },
     {
@@ -223,11 +244,11 @@
       "label": "Door width",
       "group": "doors",
       "options": [
-        { "value": "d800", "label": "800 mm", "price": 0 },
-        { "value": "d900", "label": "900 mm", "price": 300 },
-        { "value": "d1000", "label": "1000 mm", "price": 600 },
-        { "value": "d1100", "label": "1100 mm", "price": 1200 },
-        { "value": "d1300", "label": "1300 mm", "price": 2500 }
+        { "value": "d800", "label": "800 mm", "price": 0, "co2": 0 },
+        { "value": "d900", "label": "900 mm", "price": 300, "co2": 10 },
+        { "value": "d1000", "label": "1000 mm", "price": 600, "co2": 20 },
+        { "value": "d1100", "label": "1100 mm", "price": 1200, "co2": 35 },
+        { "value": "d1300", "label": "1300 mm", "price": 2500, "co2": 60 }
       ]
     },
     {
@@ -235,9 +256,9 @@
       "label": "Door finish",
       "group": "doors",
       "options": [
-        { "value": "painted", "label": "Painted steel", "price": 0 },
-        { "value": "brushed_ss", "label": "Brushed stainless steel", "price": 900 },
-        { "value": "glass", "label": "Framed glass", "price": 2800 }
+        { "value": "painted", "label": "Painted steel", "price": 0, "co2": 0 },
+        { "value": "brushed_ss", "label": "Brushed stainless steel", "price": 900, "co2": 330 },
+        { "value": "glass", "label": "Framed glass", "price": 2800, "co2": 230 }
       ]
     },
     {
@@ -245,9 +266,9 @@
       "label": "Landing door fire rating",
       "group": "doors",
       "options": [
-        { "value": "none", "label": "Not fire rated", "price": 0 },
-        { "value": "e120", "label": "E120", "price": 1800 },
-        { "value": "ei60", "label": "EI60", "price": 3200 }
+        { "value": "none", "label": "Not fire rated", "price": 0, "co2": 0 },
+        { "value": "e120", "label": "E120", "price": 1800, "co2": 200 },
+        { "value": "ei60", "label": "EI60", "price": 3200, "co2": 350 }
       ]
     },
     {
@@ -255,10 +276,10 @@
       "label": "Car wall finish",
       "group": "cabin",
       "options": [
-        { "value": "painted_steel", "label": "Painted steel", "price": 0 },
-        { "value": "laminate", "label": "Laminate", "price": 1200 },
-        { "value": "brushed_ss", "label": "Brushed stainless steel", "price": 2400 },
-        { "value": "glass_panoramic", "label": "Panoramic glass back wall", "price": 9500 }
+        { "value": "painted_steel", "label": "Painted steel", "price": 0, "co2": 150 },
+        { "value": "laminate", "label": "Laminate", "price": 1200, "co2": 155 },
+        { "value": "brushed_ss", "label": "Brushed stainless steel", "price": 2400, "co2": 525 },
+        { "value": "glass_panoramic", "label": "Panoramic glass back wall", "price": 9500, "co2": 300 }
       ]
     },
     {
@@ -266,9 +287,9 @@
       "label": "Car floor",
       "group": "cabin",
       "options": [
-        { "value": "rubber", "label": "Studded rubber", "price": 0 },
-        { "value": "pvc", "label": "PVC", "price": 400 },
-        { "value": "granite", "label": "Granite composite", "price": 2200 }
+        { "value": "rubber", "label": "Studded rubber", "price": 0, "co2": 0 },
+        { "value": "pvc", "label": "PVC", "price": 400, "co2": -6 },
+        { "value": "granite", "label": "Granite composite", "price": 2200, "co2": 38 }
       ]
     },
     {
@@ -276,9 +297,9 @@
       "label": "Car operating panel",
       "group": "cabin",
       "options": [
-        { "value": "standard", "label": "Standard buttons", "price": 0 },
-        { "value": "vandal", "label": "Vandal-resistant", "price": 700 },
-        { "value": "touch_premium", "label": "Premium touchscreen", "price": 2600 }
+        { "value": "standard", "label": "Standard buttons", "price": 0, "co2": 10 },
+        { "value": "vandal", "label": "Vandal-resistant", "price": 700, "co2": 15 },
+        { "value": "touch_premium", "label": "Premium touchscreen", "price": 2600, "co2": 40 }
       ]
     },
     {
@@ -286,9 +307,9 @@
       "label": "Mirror",
       "group": "cabin",
       "options": [
-        { "value": "none", "label": "None", "price": 0 },
-        { "value": "half", "label": "Half-height rear wall", "price": 350 },
-        { "value": "full", "label": "Full-height rear wall", "price": 700 }
+        { "value": "none", "label": "None", "price": 0, "co2": 0 },
+        { "value": "half", "label": "Half-height rear wall", "price": 350, "co2": 10 },
+        { "value": "full", "label": "Full-height rear wall", "price": 700, "co2": 20 }
       ]
     },
     {
@@ -296,9 +317,9 @@
       "label": "Handrail",
       "group": "cabin",
       "options": [
-        { "value": "none", "label": "None", "price": 0 },
-        { "value": "one_side", "label": "One side", "price": 250 },
-        { "value": "three_sides", "label": "Three sides", "price": 650 }
+        { "value": "none", "label": "None", "price": 0, "co2": 0 },
+        { "value": "one_side", "label": "One side", "price": 250, "co2": 15 },
+        { "value": "three_sides", "label": "Three sides", "price": 650, "co2": 40 }
       ]
     }
   ],
@@ -638,6 +659,90 @@
       "type": "implication",
       "if_all": [{ "var": "building_type", "in": ["hospital"] }],
       "then": { "var": "service_level", "in": ["standard", "premium"] }
+    },
+    {
+      "id": "R35",
+      "label": "A regenerative drive requires a gearless traction machine",
+      "type": "implication",
+      "if_all": [{ "var": "energy_package", "in": ["regen"] }],
+      "then": { "var": "drive", "in": ["gearless_mrl", "gearless_mr"] }
+    },
+    {
+      "id": "R36",
+      "label": "Hydraulic drive with the standard package rates modelled class D",
+      "type": "implication",
+      "if_all": [
+        { "var": "drive", "in": ["hydraulic"] },
+        { "var": "energy_package", "in": ["standard"] }
+      ],
+      "then": { "var": "energy_class", "in": ["d"] }
+    },
+    {
+      "id": "R37",
+      "label": "Hydraulic drive with the eco package rates modelled class C",
+      "type": "implication",
+      "if_all": [
+        { "var": "drive", "in": ["hydraulic"] },
+        { "var": "energy_package", "in": ["eco"] }
+      ],
+      "then": { "var": "energy_class", "in": ["c"] }
+    },
+    {
+      "id": "R38",
+      "label": "Gearless traction with the standard package rates modelled class C",
+      "type": "implication",
+      "if_all": [
+        { "var": "drive", "in": ["gearless_mrl", "gearless_mr"] },
+        { "var": "energy_package", "in": ["standard"] }
+      ],
+      "then": { "var": "energy_class", "in": ["c"] }
+    },
+    {
+      "id": "R39",
+      "label": "Gearless traction with the eco package rates modelled class B",
+      "type": "implication",
+      "if_all": [
+        { "var": "drive", "in": ["gearless_mrl", "gearless_mr"] },
+        { "var": "energy_package", "in": ["eco"] }
+      ],
+      "then": { "var": "energy_class", "in": ["b"] }
+    },
+    {
+      "id": "R40",
+      "label": "A regenerative drive rates modelled class A",
+      "type": "implication",
+      "if_all": [{ "var": "energy_package", "in": ["regen"] }],
+      "then": { "var": "energy_class", "in": ["a"] }
     }
-  ]
+  ],
+  "footprint": {
+    "service_life_years": 25,
+    "operating_days": 365,
+    "grid_factor": 0.22,
+    "grid_factor_decarbonising": 0.11,
+    "fabrication_multiplier": 1.9,
+    "module_scope": "Embodied ≈ EN 15804 A1–A3 with a fabrication multiplier; use-phase ≈ B6. Installation, maintenance and end-of-life are not modelled. All figures are illustrative modelled estimates, not a verified assessment.",
+    "annual_kwh": {
+      "a": {
+        "low": { "low_0_15": 631, "mid_15_30": 948, "high_30_50": 1323, "very_high_50_75": 1702, "tower_75_100": 2159 },
+        "medium": { "low_0_15": 1397, "mid_15_30": 2556, "high_30_50": 3920, "very_high_50_75": 5282, "tower_75_100": 6909 },
+        "heavy": { "low_0_15": 3562, "mid_15_30": 7066, "high_30_50": 11154, "very_high_50_75": 15184, "tower_75_100": 19944 }
+      },
+      "b": {
+        "low": { "low_0_15": 664, "mid_15_30": 1048, "high_30_50": 1540, "very_high_50_75": 2088, "tower_75_100": 2800 },
+        "medium": { "low_0_15": 1621, "mid_15_30": 3154, "high_30_50": 5125, "very_high_50_75": 7315, "tower_75_100": 10162 },
+        "heavy": { "low_0_15": 4614, "mid_15_30": 9724, "high_30_50": 16294, "very_high_50_75": 23594, "tower_75_100": 33084 }
+      },
+      "c": {
+        "low": { "low_0_15": 1057, "mid_15_30": 1555, "high_30_50": 2195, "very_high_50_75": 2907, "tower_75_100": 3832 },
+        "medium": { "low_0_15": 2283, "mid_15_30": 4276, "high_30_50": 6838, "very_high_50_75": 9685, "tower_75_100": 13386 },
+        "heavy": { "low_0_15": 6132, "mid_15_30": 12775, "high_30_50": 21316, "very_high_50_75": 30806, "tower_75_100": 43143 }
+      },
+      "d": {
+        "low": { "low_0_15": 1752, "mid_15_30": 2327, "high_30_50": 3066, "very_high_50_75": 3887, "tower_75_100": 4955 },
+        "medium": { "low_0_15": 3121, "mid_15_30": 5420, "high_30_50": 8377, "very_high_50_75": 11662, "tower_75_100": 15932 },
+        "heavy": { "low_0_15": 7446, "mid_15_30": 15111, "high_30_50": 24966, "very_high_50_75": 35916, "tower_75_100": 50151 }
+      }
+    }
+  }
 }

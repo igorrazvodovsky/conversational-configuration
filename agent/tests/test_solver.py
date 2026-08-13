@@ -51,6 +51,76 @@ def test_loader_rejects_incomplete_term_months(tmp_path):
         load_model(path)
 
 
+# -- loader (footprint block, docs/specs/environmental-footprint) ---------
+
+def _footprint_model(tmp_path, *, drop_co2_on=None, annual_kwh=None):
+    """A minimal model with a footprint block: the energy trio plus one
+    hardware variable to hang co2/prices on."""
+    variables = [
+        {"name": "contract_term", "label": "Term", "group": "agreement",
+         "options": [{"value": "y5", "label": "5 years", "co2": 0}]},
+        {"name": "usage_profile", "label": "Usage", "group": "agreement",
+         "options": [{"value": "low", "label": "Low", "co2": 0}]},
+        {"name": "travel", "label": "Travel", "group": "performance",
+         "options": [{"value": "low", "label": "Low", "co2": 900}]},
+        {"name": "energy_class", "label": "Class (modelled)", "group": "platform",
+         "options": [{"value": "b", "label": "B", "co2": 0}]},
+        {"name": "x", "label": "X", "group": "g",
+         "options": [{"value": "cheap", "label": "Cheap", "price": 100, "co2": 500},
+                     {"value": "dear", "label": "Dear", "price": 900, "co2": 500}]},
+    ]
+    if drop_co2_on:
+        for v in variables:
+            for o in v["options"]:
+                if (v["name"], o["value"]) == drop_co2_on:
+                    del o["co2"]
+    return _write_model(
+        tmp_path,
+        variables=variables,
+        footprint={
+            "service_life_years": 25, "operating_days": 365,
+            "grid_factor": 0.2, "grid_factor_decarbonising": 0.1,
+            "fabrication_multiplier": 2.0, "module_scope": "test",
+            "annual_kwh": annual_kwh if annual_kwh is not None
+            else {"b": {"low": {"low": 1000}}},
+        },
+    )
+
+
+def test_loader_rejects_missing_co2_when_footprint_present(tmp_path):
+    path = _footprint_model(tmp_path, drop_co2_on=("x", "dear"))
+    with pytest.raises(ModelError, match="no co2"):
+        load_model(path)
+
+
+def test_loader_accepts_missing_co2_without_footprint(tmp_path):
+    path = _write_model(tmp_path)  # no footprint block, no co2 anywhere
+    assert load_model(path).footprint_block is None
+
+
+def test_loader_rejects_incomplete_annual_kwh_domain(tmp_path):
+    path = _footprint_model(tmp_path, annual_kwh={"b": {"low": {}}})
+    with pytest.raises(ModelError, match="annual_kwh.*travel"):
+        load_model(path)
+
+
+def test_loader_rejects_non_numeric_kwh(tmp_path):
+    path = _footprint_model(tmp_path, annual_kwh={"b": {"low": {"low": "lots"}}})
+    with pytest.raises(ModelError, match="must be a number"):
+        load_model(path)
+
+
+def test_footprint_arithmetic_including_bookend(tmp_path):
+    model = load_model(_footprint_model(tmp_path))
+    assignment = {"contract_term": "y5", "usage_profile": "low", "travel": "low",
+                  "energy_class": "b", "x": "cheap"}
+    fp = model.footprint(assignment)
+    assert fp["embodied"] == (900 + 500) * 2  # co2 sum x fabrication multiplier
+    assert fp["use_phase"] == 1000 * 25 * 0.2  # kWh x service life x grid factor
+    assert fp["use_phase_decarbonising"] == 1000 * 25 * 0.1
+    assert fp["total"] == fp["embodied"] + fp["use_phase"]
+
+
 @pytest.fixture(scope="module")
 def solver():
     return ConfigSolver(load_model(MODEL_PATH))
@@ -296,6 +366,100 @@ def test_complete_tiebreak_prefers_shorter_term(tmp_path):
     assignment, monthly = tiny_solver.complete({})
     assert monthly == 100
     assert assignment["contract_term"] == "y5"
+
+
+# -- complete (co2 objective, docs/specs/environmental-footprint) ---------
+
+def test_complete_unknown_objective_raises(solver):
+    with pytest.raises(ValueError, match="unknown objective"):
+        solver.complete({}, objective="mass")
+
+
+def test_complete_co2_extends_choices_validly(solver):
+    choices = {"building_type": "office", "travel": "mid_15_30", "usage_profile": "medium"}
+    assignment, monthly = solver.complete(choices, objective="co2")
+    assert {k: assignment[k] for k in choices} == choices
+    assert set(assignment) == set(solver.model.variables)
+    assert solver.check(assignment)
+    assert monthly == solver.model.monthly(assignment)
+
+
+def test_complete_co2_never_beaten_by_price_objective(solver):
+    for choices in [{}, {"building_type": "hotel"},
+                    {"building_type": "office", "usage_profile": "heavy"},
+                    {"platform": "highrise_h900"}]:
+        greenest, _ = solver.complete(choices, objective="co2")
+        cheapest, _ = solver.complete(choices, objective="price")
+        assert (solver.model.footprint(greenest)["total"]
+                <= solver.model.footprint(cheapest)["total"])
+
+
+def test_complete_co2_brute_force_cross_check(solver):
+    """Pin down all but three variables, enumerate every completion by brute
+    force, and confirm the solver's minimum matches."""
+    from itertools import product
+    choices = {
+        "service_level": "basic", "contract_term": "y10", "usage_profile": "low",
+        "connectivity_package": "none", "building_type": "residential",
+        "region": "europe", "installation": "new_build", "accessibility": "none",
+        "rated_load": "kg630", "rated_speed": "mps1_0", "travel": "low_0_15",
+        "stops": "s2_6", "platform": "mrl_m500", "drive": "gearless_mrl",
+        "car_size": "c1100x1400", "shaft": "t1_1800x1700", "pit_depth": "p1100",
+        "headroom": "h3400", "door_type": "telescopic_2", "door_width": "d800",
+        "door_finish": "painted", "fire_rating": "none",
+        "wall_finish": "painted_steel", "cop": "standard",
+        "mirror": "none", "handrail": "none",
+    }
+    free = ["energy_package", "energy_class", "floor"]
+    assert set(choices) | set(free) == set(solver.model.variables)
+
+    best = None
+    for combo in product(*(solver.model.variable(v).values for v in free)):
+        full = {**choices, **dict(zip(free, combo))}
+        if not solver.check(full):
+            continue
+        total = solver.model.footprint(full)["total"]
+        if best is None or total < best:
+            best = total
+
+    assignment, _ = solver.complete(choices, objective="co2")
+    assert solver.model.footprint(assignment)["total"] == best
+
+
+def test_complete_co2_monthly_tiebreak(tmp_path):
+    """Two options with identical co2 but different prices: the co2 objective
+    must break the tie toward the cheaper monthly fee."""
+    import json
+    tiny = {
+        "product": "tiny", "name": "Tiny",
+        "pricing": {"financing_factor": 1.0,
+                    "term_months": {"y5": 60}, "default_term": "y5"},
+        "variables": [
+            {"name": "contract_term", "label": "Term", "group": "agreement",
+             "options": [{"value": "y5", "label": "5 years", "co2": 0}]},
+            {"name": "usage_profile", "label": "Usage", "group": "agreement",
+             "options": [{"value": "low", "label": "Low", "co2": 0}]},
+            {"name": "travel", "label": "Travel", "group": "performance",
+             "options": [{"value": "low", "label": "Low", "co2": 100}]},
+            {"name": "energy_class", "label": "Class (modelled)", "group": "platform",
+             "options": [{"value": "b", "label": "B", "co2": 0}]},
+            {"name": "x", "label": "X", "group": "g",
+             "options": [{"value": "dear", "label": "Dear", "price": 900, "co2": 50},
+                         {"value": "cheap", "label": "Cheap", "price": 100, "co2": 50}]},
+        ],
+        "constraints": [],
+        "footprint": {
+            "service_life_years": 25, "operating_days": 365,
+            "grid_factor": 0.2, "grid_factor_decarbonising": 0.1,
+            "fabrication_multiplier": 2.0, "module_scope": "test",
+            "annual_kwh": {"b": {"low": {"low": 1000}}},
+        },
+    }
+    path = tmp_path / "tiny.json"
+    path.write_text(json.dumps(tiny))
+    tiny_solver = ConfigSolver(load_model(path))
+    assignment, monthly = tiny_solver.complete({}, objective="co2")
+    assert assignment["x"] == "cheap"
 
 
 # -- performance ----------------------------------------------------------

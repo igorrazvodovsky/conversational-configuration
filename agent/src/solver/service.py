@@ -11,7 +11,7 @@ from typing import Literal
 
 from z3 import And, Bool, BoolRef, If, Implies, Not, Optimize, Or, Solver, is_true, sat, unsat
 
-from .model import TERM_VAR, Constraint, ProductModel
+from .model import ENERGY_CLASS_VAR, TERM_VAR, TRAVEL_VAR, USAGE_VAR, Constraint, ProductModel
 
 Status = Literal["chosen", "forced", "open", "invalid"]
 
@@ -227,21 +227,56 @@ class ConfigSolver:
             opt.add(Or([self.sel[c] for c in dropped]))
         return out
 
+    def _lifetime_co2_grams(self):
+        """Lifetime CO2e in grams as a Z3 integer term: embodied is separable
+        per option (co2 × fabrication multiplier); use-phase belongs to the
+        (energy class, usage profile, travel band) trio, one If-term per
+        annual_kwh cell (docs/specs/environmental-footprint)."""
+        fb = self.model.footprint_block
+        mult_g = round(fb.fabrication_multiplier * 1000)
+        embodied = sum(
+            If(self.sel[(var.name, o.value)], o.co2 * mult_g, 0)
+            for var in self.model.variables.values()
+            for o in var.options
+        )
+        use_phase = sum(
+            If(
+                And(self.sel[(ENERGY_CLASS_VAR, cls)],
+                    self.sel[(USAGE_VAR, usage)],
+                    self.sel[(TRAVEL_VAR, travel)]),
+                round(kwh * fb.service_life_years * fb.grid_factor * 1000),
+                0,
+            )
+            for cls, by_usage in fb.annual_kwh.items()
+            for usage, by_travel in by_usage.items()
+            for travel, kwh in by_travel.items()
+        )
+        return embodied + use_phase
+
     def complete(self, choices: dict[str, str], objective: str = "price") -> tuple[dict[str, str], int]:
-        """Cheapest-monthly full valid configuration extending `choices`.
-        Returns (assignment, monthly fee in EUR/month).
+        """Cheapest-monthly (objective="price") or lowest-lifetime-footprint
+        (objective="co2") full valid configuration extending `choices`.
+        Returns (assignment, monthly fee in EUR/month) either way; the caller
+        derives the footprint from the model.
 
         For a fixed contract term, minimizing the monthly fee is the linear
         objective Σ cost_basis × financing_factor + months × Σ monthly_price
         (scaled to integers). When the term is unchosen, each term the solver
         hasn't ruled out is solved separately (≤ len(domain) Optimize calls)
         and the lowest monthly wins; ties go to the shorter term.
+
+        The co2 objective minimizes lexicographically: lifetime CO2e first,
+        the monthly fee second (CO2e is term-independent, so the secondary
+        objective is what makes the result deterministic); across terms the
+        best (co2, monthly) pair wins, ties to the shorter term.
         """
-        if objective != "price":
+        if objective not in ("price", "co2"):
             raise ValueError(f"unknown objective {objective!r}")
         pricing = self.model.pricing
         if pricing is None:
             raise ValueError("model has no pricing block — cannot derive a monthly fee")
+        if objective == "co2" and self.model.footprint_block is None:
+            raise ValueError("model has no footprint block — cannot derive a footprint")
         conflict = self.explain(choices)
         if conflict is not None:
             raise ConflictError(conflict, conflict.describe(self.model))
@@ -257,6 +292,7 @@ class ConfigSolver:
 
         factor_scaled = round(pricing.financing_factor * 100)
         best: tuple[dict[str, str], int] | None = None
+        best_key: tuple | None = None
         for term in terms:
             opt = Optimize()
             self._add_structure(opt)
@@ -264,7 +300,7 @@ class ConfigSolver:
             for var, val in choices.items():
                 opt.add(self.sel[(var, val)])
             opt.add(self.sel[(TERM_VAR, term)])
-            total = sum(
+            monthly_total = sum(
                 If(
                     self.sel[(var.name, o.value)],
                     o.price * factor_scaled + o.monthly_price * 100 * pricing.term_months[term],
@@ -273,7 +309,9 @@ class ConfigSolver:
                 for var in self.model.variables.values()
                 for o in var.options
             )
-            opt.minimize(total)
+            if objective == "co2":
+                opt.minimize(self._lifetime_co2_grams())  # lexicographic: co2 first,
+            opt.minimize(monthly_total)                   # then the monthly fee
             assert opt.check() == sat
             m = opt.model()
             assignment = {
@@ -281,7 +319,11 @@ class ConfigSolver:
                 for var in self.model.variables.values()
             }
             monthly = self.model.monthly(assignment)
-            if best is None or monthly < best[1]:  # strict: ties keep the shorter term
-                best = (assignment, monthly)
+            if objective == "co2":
+                key = (self.model.footprint(assignment)["total"], monthly)
+            else:
+                key = (monthly,)
+            if best_key is None or key < best_key:  # strict: ties keep the shorter term
+                best, best_key = (assignment, monthly), key
         assert best is not None
         return best

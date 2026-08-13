@@ -14,15 +14,28 @@ export interface Choice {
   source: "user" | "agent";
 }
 
+/** Lifetime kg CO₂e (docs/specs/environmental-footprint). Absent on threads
+ * persisted before the footprint feature — render "—" then. */
+export interface Footprint {
+  embodied: number;
+  use_phase: number;
+  total: number;
+}
+
 export interface Candidate {
   assignment: Record<string, string>;
   price: number;
+  footprint?: Footprint;
+  // which completion this is; absent on pre-footprint threads (always cheapest)
+  objective?: "price" | "co2";
 }
 
 export interface Frame {
   name: string;
   assignment: Record<string, string>;
   price: number;
+  footprint?: Footprint;
+  objective?: "price" | "co2";
 }
 
 export interface Configuration {
@@ -52,14 +65,29 @@ export interface Pricing {
   default_term: string;
 }
 
+/** Named assessment assumptions, rendered by the canvas assumptions panel
+ * (docs/specs/environmental-footprint decision 5). No arithmetic happens
+ * frontend-side — footprint totals ride in agent state. */
+export interface FootprintBlock {
+  service_life_years: number;
+  operating_days: number;
+  grid_factor: number;
+  grid_factor_decarbonising: number;
+  fabrication_multiplier: number;
+  module_scope: string;
+  annual_kwh: Record<string, Record<string, Record<string, number>>>;
+}
+
 export const productModel = rawModel as unknown as {
   product: string;
   name: string;
   pricing: Pricing;
+  footprint: FootprintBlock;
   variables: ModelVariable[];
 };
 
 export const pricing = productModel.pricing;
+export const footprintBlock = productModel.footprint;
 
 export const variablesByName: Map<string, ModelVariable> = new Map(
   productModel.variables.map((v) => [v.name, v]),
@@ -89,6 +117,13 @@ export function formatPrice(eur: number): string {
 
 export function formatMonthly(eurPerMonth: number): string {
   return `${formatPrice(eurPerMonth)}/mo`;
+}
+
+/** kg CO₂e → "12.4 t CO₂e" (or "540 kg CO₂e" below a tonne). */
+export function formatCO2(kg: number): string {
+  return Math.abs(kg) >= 1000
+    ? `${(kg / 1000).toLocaleString("en-IE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} t CO₂e`
+    : `${kg} kg CO₂e`;
 }
 
 /**

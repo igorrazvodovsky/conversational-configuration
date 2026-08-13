@@ -183,6 +183,12 @@
   },
   "active": "0a96195340f5dc8d",
   "lastOpenFiles": [
+    "specs/environmental-footprint/tasks.md",
+    "specs/environmental-footprint/design.md",
+    "specs/service-agreement/tasks.md",
+    "specs/service-agreement/requirements.md",
+    "specs/service-agreement/design.md",
+    "specs/service-agreement",
     "specs/eaas-pivot/tasks.md",
     "specs/eaas-pivot/design.md",
     "specs/environmental-footprint/requirements.md",
@@ -211,13 +217,7 @@
     "specs/solver-service",
     "specs/product-model/tasks.md",
     "specs/product-model/requirements.md",
-    "specs/product-model/design.md",
     "specs/product-model",
-    "discovery/assertions/a4-ripple-at-the-moment-of-revision.md",
-    "discovery/assertions/two-objectives-as-a-pair.md",
-    "discovery/assertions/outcome-level-elicitation.md",
-    "discovery/assertions/cores-are-enough-for-trust.md",
-    "discovery/assertions",
-    "discovery/principles"
+    "discovery/assertions"
   ]
 }

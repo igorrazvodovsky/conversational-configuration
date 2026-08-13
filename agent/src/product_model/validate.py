@@ -7,6 +7,11 @@ Uses the solver service; checks:
      one complete valid configuration.
   3. Scenario spot-checks: intended forcings hold and intended conflicts
      are UNSAT with a sensible explanation.
+  4. Pricing sanity.
+  5. Footprint (docs/specs/environmental-footprint): energy-class
+     determinacy, the R35 coupling, the evidence-mandated energy-table
+     shapes (standby inversion, conditional regeneration, class
+     monotonicity), and embodied calibration against the EPD anchor.
 
 Run from agent/:  uv run python src/product_model/validate.py
 """
@@ -116,6 +121,89 @@ def main():
         print(f"     {term}: {monthly} EUR/month")
     ok = monthlies == sorted(monthlies, reverse=True)
     print(f"  [{'ok' if ok else 'FAIL'}] monthly fee decreases with term length")
+    failures += not ok
+
+    print("5. Footprint (docs/specs/environmental-footprint):")
+
+    # Determinacy: every feasible (drive, energy package) pair forces exactly
+    # one energy class — R36–R40 are checked, not trusted.
+    for drv in model.variable("drive").values:
+        for ep in model.variable("energy_package").values:
+            if not solver.check({"drive": drv, "energy_package": ep}):
+                continue
+            statuses = solver.valid_options({"drive": drv, "energy_package": ep})["energy_class"]
+            live = [v for v, s in statuses.items() if s != "invalid"]
+            ok = len(live) == 1 and statuses[live[0]] == "forced"
+            print(f"  [{'ok' if ok else 'FAIL'}] {drv} + {ep} forces exactly one class: {live}")
+            failures += not ok
+
+    failures += not scenario(
+        solver, "Regenerative drive on the hydraulic platform — conflict",
+        {"platform": "hydro_s300", "energy_package": "regen"}, "unsat")
+    conflict = solver.explain({"platform": "hydro_s300", "energy_package": "regen"})
+    ok = conflict is not None and "R35" in {rid for rid, _ in conflict.rules}
+    print(f"  [{'ok' if ok else 'FAIL'}] the explanation names R35")
+    failures += not ok
+
+    kwh = model.footprint_block.annual_kwh
+    travel_bands = model.variable("travel").values
+    usages = model.variable("usage_profile").values  # low → heavy in model order
+
+    def saving(hi: str, lo: str, usage: str, travel: str) -> float:
+        return (kwh[hi][usage][travel] - kwh[lo][usage][travel]) / kwh[hi][usage][travel]
+
+    # Standby inversion: the eco step (D→C hydraulic, C→B gearless) saves
+    # proportionally more at low usage than at heavy, in every travel band.
+    ok = all(
+        saving(hi, lo, "low", t) > saving(hi, lo, "heavy", t)
+        for t in travel_bands for hi, lo in (("d", "c"), ("c", "b"))
+    )
+    print(f"  [{'ok' if ok else 'FAIL'}] standby inversion: eco saves proportionally more at low usage")
+    failures += not ok
+
+    # Conditional regeneration: the regen step (B→A) saves strictly more with
+    # each usage step and each travel band.
+    by_usage = all(
+        saving("b", "a", usages[i], t) < saving("b", "a", usages[i + 1], t)
+        for t in travel_bands for i in range(len(usages) - 1)
+    )
+    by_travel = all(
+        saving("b", "a", u, travel_bands[i]) < saving("b", "a", u, travel_bands[i + 1])
+        for u in usages for i in range(len(travel_bands) - 1)
+    )
+    ok = by_usage and by_travel
+    print(f"  [{'ok' if ok else 'FAIL'}] conditional regeneration: saving grows with usage and travel")
+    failures += not ok
+
+    ok = all(
+        kwh["a"][u][t] <= kwh["b"][u][t] <= kwh["c"][u][t] <= kwh["d"][u][t]
+        for u in usages for t in travel_bands
+    )
+    print(f"  [{'ok' if ok else 'FAIL'}] class monotonicity: A ≤ B ≤ C ≤ D in every cell")
+    failures += not ok
+
+    # Calibration: the 630 kg / 12 m reference configuration reconciles to the
+    # ~8.5 t A1–A3 EPD anchor (embodied-carbon.md §2) within ±25%.
+    reference = {
+        "service_level": "basic", "contract_term": "y10", "usage_profile": "low",
+        "connectivity_package": "none", "building_type": "residential",
+        "region": "europe", "installation": "new_build", "accessibility": "none",
+        "rated_load": "kg630", "rated_speed": "mps1_0", "travel": "low_0_15",
+        "stops": "s2_6", "platform": "mrl_m500", "drive": "gearless_mrl",
+        "energy_package": "standard", "energy_class": "c",
+        "car_size": "c1100x1400", "shaft": "t1_1800x1700", "pit_depth": "p1100",
+        "headroom": "h3400", "door_type": "telescopic_2", "door_width": "d800",
+        "door_finish": "painted", "fire_rating": "none",
+        "wall_finish": "painted_steel", "floor": "rubber", "cop": "standard",
+        "mirror": "none", "handrail": "none",
+    }
+    ok = solver.check(reference)
+    print(f"  [{'ok' if ok else 'FAIL'}] reference configuration is valid")
+    failures += not ok
+    embodied = model.footprint(reference)["embodied"]
+    anchor = 8500
+    ok = abs(embodied - anchor) / anchor <= 0.25
+    print(f"  [{'ok' if ok else 'FAIL'}] reference embodied {embodied} kg within ±25% of the {anchor} kg anchor")
     failures += not ok
 
     if dead or failures:

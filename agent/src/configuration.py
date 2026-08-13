@@ -4,7 +4,7 @@ docs/specs/nonlinear-interaction)."""
 
 import json
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 from langchain.agents import AgentState as BaseAgentState
 from langchain.messages import ToolMessage
@@ -25,18 +25,37 @@ class Choice(TypedDict):
     source: Source
 
 
+# Lifetime kg CO2e (docs/specs/environmental-footprint). Stored on candidates
+# and frames; absent on threads persisted before the footprint feature —
+# always read with .get.
+class Footprint(TypedDict):
+    embodied: int
+    use_phase: int
+    total: int
+
+
+Objective = Literal["price", "co2"]
+
+
 # "price" means EUR/month since docs/specs/service-agreement. The key name is
 # deliberately unchanged: renaming would break threads persisted by
 # docs/specs/nonlinear-interaction thread resumption.
+# `objective` names which completion the candidate is, so the canvas header
+# never labels a lowest-footprint completion "cheapest"; absent on
+# pre-footprint threads, which were always cheapest.
 class Candidate(TypedDict):
     assignment: dict[str, str]
     price: int
+    footprint: NotRequired[Footprint]
+    objective: NotRequired[Objective]
 
 
 class Frame(TypedDict):
     name: str
     assignment: dict[str, str]
     price: int
+    footprint: NotRequired[Footprint]
+    objective: NotRequired[Objective]
 
 
 class Configuration(TypedDict):
@@ -137,11 +156,20 @@ def withdraw_choices(config: Configuration, variables: list[str]) -> Configurati
     }
 
 
-def make_candidate(config: Configuration) -> Configuration:
-    assignment, price = SOLVER.complete(_chosen_values(config))
+def _state_footprint(assignment: dict[str, str]) -> Footprint:
+    """The footprint keys stored in shared state — the decarbonising bookend
+    stays in the model data, surfaced by the assumptions panel, not in state."""
+    fp = MODEL.footprint(assignment)
+    return {"embodied": fp["embodied"], "use_phase": fp["use_phase"], "total": fp["total"]}
+
+
+def make_candidate(config: Configuration, objective: Objective = "price") -> Configuration:
+    assignment, price = SOLVER.complete(_chosen_values(config), objective)
     return {
         **config,
-        "candidate": {"assignment": assignment, "price": price},
+        "candidate": {"assignment": assignment, "price": price,
+                      "footprint": _state_footprint(assignment),
+                      "objective": objective},
         "frames": _frames(config),
     }
 
@@ -181,6 +209,10 @@ def save_frame(config: Configuration, name: str) -> Configuration:
         "assignment": dict(candidate["assignment"]),
         "price": candidate["price"],
     }
+    if "footprint" in candidate:
+        frame["footprint"] = candidate["footprint"]
+    if "objective" in candidate:
+        frame["objective"] = candidate["objective"]
     frames = [f for f in _frames(config) if f["name"] != frame["name"]] + [frame]
     return {**config, "frames": frames}
 
@@ -204,8 +236,7 @@ def frame_comparison(config: Configuration, a: str, b: str | None = None) -> dic
     if b is not None:
         side_b: Frame | dict = _find_frame(config, b)
     elif config["candidate"]:
-        side_b = {"name": "current", "assignment": config["candidate"]["assignment"],
-                  "price": config["candidate"]["price"]}
+        side_b = {"name": "current", **config["candidate"]}
     else:
         raise ValueError(
             "nothing to compare against — name a second frame or call "
@@ -234,13 +265,20 @@ def frame_comparison(config: Configuration, a: str, b: str | None = None) -> dic
             "a": _side(var_name, val_a, months_a),
             "b": _side(var_name, val_b, months_b),
         })
+    # Pair-level footprint only — no per-variable co2 column: an option-level
+    # column is the badge format decision 6 of docs/specs/environmental-footprint
+    # bans, and use-phase is not attributable to single options at all.
+    fp_a = side_a.get("footprint")
+    fp_b = side_b.get("footprint")
     return {
         "kind": "frame_comparison",
-        "a": {"name": side_a["name"], "price": side_a["price"]},
+        "a": {"name": side_a["name"], "price": side_a["price"], "footprint": fp_a},
         "b": {"name": side_b["name"], "price": side_b["price"],
-              "isCurrent": b is None},
+              "isCurrent": b is None, "footprint": fp_b},
         "differences": differences,
         "priceDelta": side_b["price"] - side_a["price"],
+        # 0 when either side predates the footprint feature — the card shows "—"
+        "footprintDelta": (fp_b["total"] - fp_a["total"]) if fp_a and fp_b else 0,
     }
 
 
@@ -250,10 +288,15 @@ def adopt_frame(config: Configuration, name: str) -> Configuration:
     stored."""
     frame = _find_frame(config, name)
     assignment = dict(frame["assignment"])
+    candidate: Candidate = {"assignment": assignment, "price": frame["price"]}
+    if "footprint" in frame:
+        candidate["footprint"] = frame["footprint"]
+    if "objective" in frame:
+        candidate["objective"] = frame["objective"]
     return {
         "choices": {v: {"value": val, "source": "user"} for v, val in assignment.items()},
         "statuses": SOLVER.valid_options(assignment),
-        "candidate": {"assignment": assignment, "price": frame["price"]},
+        "candidate": candidate,
         "frames": _frames(config),
     }
 
@@ -366,6 +409,45 @@ def build_repair_payload(config: Configuration, changes: dict[str, str]) -> dict
 
 def _label(var: str, val: str) -> str:
     return next(o.label for o in MODEL.variables[var].options if o.value == val)
+
+
+def _format_co2(kg: int) -> str:
+    return f"{kg / 1000:.1f} t CO₂e" if abs(kg) >= 1000 else f"{kg} kg CO₂e"
+
+
+def _signed_co2(kg: int) -> str:
+    return ("+" if kg >= 0 else "−") + _format_co2(abs(kg))
+
+
+def completion_message(candidate: Candidate, objective: Objective,
+                       other_assignment: dict[str, str], other_price: int) -> str:
+    """Tool message for propose_completion: the candidate under its objective,
+    plus — whenever the two objectives disagree — a one-line teaser for the
+    other completion, so the trade-off is disclosed at the moment of proposal
+    (docs/specs/environmental-footprint design)."""
+    term = _label(TERM_VAR, candidate["assignment"][TERM_VAR])
+    objective_name = ("cheapest monthly completion" if objective == "price"
+                      else "lowest-footprint completion")
+    fp = candidate["footprint"]
+    lines = [
+        f"Candidate service agreement, {candidate['price']} EUR/month over the "
+        f"{term} term ({objective_name} of the current choices), modelled "
+        f"lifetime footprint {_format_co2(fp['total'])} (embodied "
+        f"{_format_co2(fp['embodied'])}, use-phase {_format_co2(fp['use_phase'])}):\n"
+        + _describe_assignment(candidate["assignment"])
+    ]
+    differing = [v for v, val in other_assignment.items()
+                 if candidate["assignment"].get(v) != val]
+    if differing:
+        other_fp = MODEL.footprint(other_assignment)
+        other_name = "lowest-footprint" if objective == "price" else "cheapest-monthly"
+        lines.append(
+            f"A {other_name} completion differs in {len(differing)} "
+            f"variable{'s' if len(differing) != 1 else ''}: "
+            f"{_signed_co2(other_fp['total'] - fp['total'])}, "
+            f"{other_price - candidate['price']:+d} EUR/month — offer to show the pair."
+        )
+    return "\n".join(lines)
 
 
 def _describe_assignment(assignment: dict[str, str]) -> str:
@@ -500,19 +582,20 @@ def clear_choices(variables: list[str], runtime: ToolRuntime) -> Command:
 
 
 @tool
-def propose_completion(runtime: ToolRuntime) -> Command:
-    """Compute the cheapest-monthly complete valid service agreement extending
-    the current choices. Stores it as the candidate and returns it with its
-    monthly fee."""
+def propose_completion(runtime: ToolRuntime, objective: Objective = "price") -> Command:
+    """Compute a complete valid service agreement extending the current
+    choices and store it as the candidate, with its monthly fee and modelled
+    lifetime footprint. objective="price" (the default) minimizes the monthly
+    fee; objective="co2" minimizes the modelled lifetime CO2e. The other
+    objective is always solved too — when the two disagree, the result says
+    how many variables differ and both deltas; offer to show the pair
+    (save_frame the first, propose the other, compare_frames)."""
     config = _get_config(runtime)
-    new_config = make_candidate(config)
-    candidate = new_config["candidate"]
-    term = _label(TERM_VAR, candidate["assignment"][TERM_VAR])
-    content = (
-        f"Candidate service agreement, {candidate['price']} EUR/month over the "
-        f"{term} term (cheapest monthly completion of the current choices):\n"
-        + _describe_assignment(candidate["assignment"])
-    )
+    new_config = make_candidate(config, objective)
+    other: Objective = "co2" if objective == "price" else "price"
+    other_assignment, other_price = SOLVER.complete(_chosen_values(config), other)
+    content = completion_message(new_config["candidate"], objective,
+                                 other_assignment, other_price)
     return Command(update={
         "configuration": new_config,
         "messages": [ToolMessage(content=content, tool_call_id=runtime.tool_call_id)],
@@ -593,7 +676,11 @@ def get_configuration(runtime: ToolRuntime) -> str:
         lines.append("Forced by rules: " + ", ".join(f"{v}={val}" for v, val in forced.items()))
     lines.append("Undecided: " + (", ".join(undecided) or "none"))
     if config["candidate"]:
-        lines.append(f"Candidate agreement at {config['candidate']['price']} EUR/month is stored.")
+        line = f"Candidate agreement at {config['candidate']['price']} EUR/month"
+        fp = config["candidate"].get("footprint")
+        if fp:
+            line += f", modelled lifetime footprint {_format_co2(fp['total'])}"
+        lines.append(line + " is stored.")
     if _frames(config):
         lines.append("Saved frames: " + ", ".join(
             f"{f['name']} ({f['price']} EUR/month)" for f in _frames(config)
@@ -619,13 +706,16 @@ def ask_choices(variables: list[str], runtime: ToolRuntime, prompt: str = "") ->
 
 @tool
 def describe_product() -> str:
-    """The service catalog: every variable, its option value codes, labels and
-    monthly prices, and the product rules. Call this before your first
-    set_choices."""
+    """The service catalog: every variable, its option value codes, labels,
+    monthly prices and modelled embodied CO2e deltas, the product rules, and
+    the footprint assessment assumptions. Call this before your first
+    set_choices. Quote footprint figures only from here or from tool results —
+    never estimate them yourself."""
     # All prices shown are EUR/month — the LLM never sees a capex figure it
     # could leak (docs/specs/service-agreement).
     default_months = MODEL.months_of(None)
     default_label = _label(TERM_VAR, MODEL.pricing.default_term)
+    fb = MODEL.footprint_block
 
     def _price_note(var_name: str, o) -> str:
         if o.monthly_price:
@@ -634,6 +724,14 @@ def describe_product() -> str:
             delta = MODEL.monthly_option_delta(var_name, o.value, default_months)
             return f", ≈+{delta} EUR/month"
         return ""
+
+    def _co2_note(o) -> str:
+        # Quoted after the fabrication multiplier so per-option figures
+        # reconcile with candidate totals (docs/specs/environmental-footprint).
+        if not o.co2:
+            return ""
+        kg = round(o.co2 * fb.fabrication_multiplier)
+        return f", ≈{'+' if kg >= 0 else ''}{kg} kg CO₂e embodied"
 
     lines = [
         f"Product: {MODEL.name} — offered as a service agreement, priced per month.",
@@ -649,13 +747,26 @@ def describe_product() -> str:
             group = var.group
             lines.append(f"\n[{group}]")
         opts = ", ".join(
-            f"{o.value} ({o.label}{_price_note(var.name, o)})"
+            f"{o.value} ({o.label}{_price_note(var.name, o)}{_co2_note(o)})"
             for o in var.options
         )
         lines.append(f"- {var.name} — {var.label}: {opts}")
     lines.append("\nRules:")
     for c in MODEL.constraints:
         lines.append(f"- {c.id}: {c.label}")
+    lines += [
+        "",
+        "Assessment assumptions (all footprint figures are modelled, illustrative "
+        "estimates from this data — not a verified assessment, and the energy "
+        "class is never a certified rating):",
+        f"- Service life {fb.service_life_years} years, {fb.operating_days} operating days/year",
+        f"- Grid factor {fb.grid_factor} kg CO₂e/kWh (European average); "
+        f"decarbonising-scenario bookend {fb.grid_factor_decarbonising} kg CO₂e/kWh",
+        f"- Embodied values carry a fabrication multiplier of ×{fb.fabrication_multiplier}",
+        f"- Module scope: {fb.module_scope}",
+        "- Use-phase energy is looked up by (energy class, usage profile, travel "
+        "band) — it is a property of the building's usage as much as of the product.",
+    ]
     return "\n".join(lines)
 
 
