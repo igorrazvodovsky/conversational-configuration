@@ -75,22 +75,46 @@ export interface RegisterEntry extends Requirement {
   status: RegisterStatus;
 }
 
+/** How a value came to be in the agreement: its provenance if someone chose
+ * it, else the rules, else the candidate's proposal, else nothing yet. */
+export type ValueKind = Source | "forced" | "proposed" | "open";
+
+export interface ResolvedValue {
+  value: string | null;
+  kind: ValueKind;
+}
+
 /**
- * What the agreement currently says for a variable: the recorded choice, else
- * the value the rules force, else the candidate's. Never a validity judgment —
- * every status here comes from the solver (docs/specs/constitution.md #1).
+ * What the agreement currently says for a variable, and on whose authority:
+ * the recorded choice, else the value the rules force, else the candidate's.
+ * Never a validity judgment — every status here comes from the solver
+ * (docs/specs/constitution.md #1).
+ *
+ * The single resolver behind every surface: the register compares against it,
+ * and all three document layers render from it, so what the document shows and
+ * what the register measures cannot diverge.
  */
+export function resolveValue(
+  config: Configuration,
+  variable: string,
+): ResolvedValue {
+  const chosen = config.choices[variable];
+  if (chosen) return { value: chosen.value, kind: chosen.source };
+  const forced = Object.entries(config.statuses[variable] ?? {}).find(
+    ([, s]) => s === "forced",
+  );
+  if (forced) return { value: forced[0], kind: "forced" };
+  const proposed = config.candidate?.assignment[variable];
+  if (proposed) return { value: proposed, kind: "proposed" };
+  return { value: null, kind: "open" };
+}
+
+/** `resolveValue` without the provenance. */
 export function liveValue(
   config: Configuration,
   variable: string,
 ): string | null {
-  const chosen = config.choices[variable];
-  if (chosen) return chosen.value;
-  const forced = Object.entries(config.statuses[variable] ?? {}).find(
-    ([, s]) => s === "forced",
-  );
-  if (forced) return forced[0];
-  return config.candidate?.assignment[variable] ?? null;
+  return resolveValue(config, variable).value;
 }
 
 /**
@@ -123,6 +147,11 @@ export interface ModelOption {
   label: string;
   price?: number; // cost basis (EUR), amortized into the monthly fee — never shown raw
   monthly_price?: number; // recurring fee (EUR/month)
+  /** Situational gloss — what this value means at the building, in the
+   * building's language (docs/specs/agreement-document). Declarative product
+   * knowledge, never composed at render time; only the options that carry one
+   * are glossed, so the model's own data is the list. */
+  note?: string;
 }
 
 export interface ModelVariable {
@@ -177,11 +206,46 @@ export const modelGroups: { name: string; variables: ModelVariable[] }[] = (() =
   return groups;
 })();
 
+function modelOption(variable: string, value: string): ModelOption | undefined {
+  return variablesByName.get(variable)?.options.find((o) => o.value === value);
+}
+
 export function optionLabel(variable: string, value: string): string {
-  return (
-    variablesByName.get(variable)?.options.find((o) => o.value === value)?.label ??
-    value
-  );
+  return modelOption(variable, value)?.label ?? value;
+}
+
+/** The situational gloss for a value, if the model carries one. */
+export function optionNote(variable: string, value: string): string | undefined {
+  return modelOption(variable, value)?.note;
+}
+
+/**
+ * The three document layers (docs/specs/agreement-document), mapped onto the
+ * model's own groups. A presentation heuristic that lives here beside the
+ * control-selection one, not in the product model: adding a variable to a group
+ * needs no layout decision, and UI concerns stay out of product data
+ * (docs/specs/constitution.md #2).
+ */
+export type Layer = "recitals" | "terms" | "schedules";
+
+const LAYER_OF_GROUP: Record<string, Layer> = {
+  context: "recitals",
+  agreement: "terms",
+  performance: "terms",
+};
+
+export function layerOf(group: string): Layer {
+  return LAYER_OF_GROUP[group] ?? "schedules";
+}
+
+/** Groups of one layer, in model order. */
+export function layerGroups(layer: Layer): { name: string; variables: ModelVariable[] }[] {
+  return modelGroups.filter((g) => layerOf(g.name) === layer);
+}
+
+/** Variables of one layer, in model order. */
+export function layerVariables(layer: Layer): ModelVariable[] {
+  return layerGroups(layer).flatMap((g) => g.variables);
 }
 
 export function formatPrice(eur: number): string {

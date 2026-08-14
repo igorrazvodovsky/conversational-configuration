@@ -1,0 +1,441 @@
+"use client";
+
+/**
+ * The pieces every layer of the agreement document is built from
+ * (docs/specs/agreement-document).
+ *
+ * One option editor, one dispatch path, one value resolver. Recitals prose,
+ * operative-term clauses and schedule rows all edit through the parts here, so
+ * an inline token in a sentence and a row in the annex reach the solver by
+ * exactly the same route — including the choice between a hidden `Canvas edit:`
+ * and a visible `Reconcile deviation:` message, which the shell decides per
+ * variable and none of the layers may bypass.
+ */
+
+import { useState, type ReactNode } from "react";
+import { Check, FileText, Lock, Sparkles, User } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Configuration,
+  RegisterEntry,
+  ResolvedValue,
+  ValueKind,
+  acceptOfferedMessage,
+  formatMonthly,
+  leaveOpenMessage,
+  monthlyDelta,
+  optionLabel,
+  optionNote,
+  resolveValue,
+  variablesByName,
+} from "@/lib/configurator";
+import { cn } from "@/lib/utils";
+
+/**
+ * Everything a layer needs to render and edit the agreement. Held by the
+ * shell and threaded down whole — in particular the optimistic `pending`
+ * overlay, which has to reach the deepest inline token or a click in prose
+ * would show nothing until the run ends.
+ */
+export interface DocumentView {
+  config: Configuration;
+  termMonths: number;
+  /** the agent is running — every editor is inert until it finishes */
+  disabled: boolean;
+  pending: Record<string, string>;
+  requirementsFor: (variable: string) => RegisterEntry[] | undefined;
+  /** the shell's routed dispatch — canvas edit or reconciliation, per variable */
+  onSelect: (variable: string, value: string) => void;
+  onDispatch: (content: string) => void;
+}
+
+/** The resolved value with the optimistic overlay laid over it. */
+export function displayOf(doc: DocumentView, variable: string): ResolvedValue {
+  const pending = doc.pending[variable];
+  return pending
+    ? { value: pending, kind: "user" }
+    : resolveValue(doc.config, variable);
+}
+
+const KIND_TITLE: Record<ValueKind, string> = {
+  user: "you chose this",
+  agent: "the agent chose this",
+  document: "your requirements document states this",
+  forced: "the rules force this value",
+  proposed: "proposed — not yet agreed",
+  open: "not yet decided",
+};
+
+export const KIND_BADGE: Partial<
+  Record<ValueKind, { label: string; icon?: ReactNode }>
+> = {
+  user: { label: "you", icon: <User /> },
+  agent: { label: "agent", icon: <Sparkles /> },
+  document: { label: "document", icon: <FileText /> },
+  forced: { label: "auto", icon: <Lock /> },
+  proposed: { label: "proposed" },
+};
+
+/**
+ * The option list behind every editable value, wherever it is opened from.
+ * Invalid options are unclickable and say why; deltas are monthly at the term
+ * in effect; a value's situational gloss rides along as its title, so the
+ * choice can be made in the building's language rather than the catalogue's.
+ */
+export function OptionEditor({
+  variable,
+  doc,
+  onDone,
+}: {
+  variable: string;
+  doc: DocumentView;
+  onDone?: () => void;
+}) {
+  const model = variablesByName.get(variable);
+  if (!model) return null;
+  const display = displayOf(doc, variable);
+  const statuses = doc.config.statuses[variable] ?? {};
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {model.options.map((option) => {
+        const invalid = (statuses[option.value] ?? "open") === "invalid";
+        const isCurrent = display.value === option.value;
+        const delta = monthlyDelta(option, doc.termMonths);
+        return (
+          <Button
+            key={option.value}
+            size="xs"
+            variant={isCurrent ? "default" : "outline"}
+            disabled={invalid}
+            title={
+              invalid
+                ? "ruled out by your other choices — ask why in chat"
+                : option.note
+            }
+            onClick={() => {
+              onDone?.();
+              doc.onSelect(variable, option.value);
+            }}
+            // pointer-events-auto: Button disables them, which would suppress
+            // the native title — and with it the option's reason for being
+            // unavailable (docs/specs/ui-component-library, decision 4).
+            className={
+              invalid
+                ? "cursor-not-allowed line-through opacity-40 disabled:pointer-events-auto"
+                : isCurrent
+                  ? ""
+                  : "font-normal hover:border-primary"
+            }
+          >
+            {isCurrent && <Check />}
+            {option.label}
+            {delta ? (
+              <span className="opacity-70">+{formatMonthly(delta)}</span>
+            ) : null}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Four renderings for the four distinctions the sheet draws, so a value's
+ * standing is legible inside a sentence: agreed, proposed, forced, open. */
+const TOKEN_STYLE: Record<ValueKind, string> = {
+  user: "font-medium text-foreground decoration-dotted",
+  agent: "font-medium text-foreground decoration-dotted",
+  document: "font-medium text-foreground decoration-dotted",
+  forced: "font-medium text-foreground decoration-dotted opacity-90",
+  proposed: "italic text-muted-foreground decoration-dotted",
+  open: "italic text-muted-foreground decoration-dashed",
+};
+
+/**
+ * A configurable value rendered inside running text, editable in place: the
+ * document's editable island (canvas anatomy §4). It opens the same option
+ * editor a schedule row does and dispatches through the same routed handler —
+ * the document genre costs no revision access.
+ *
+ * A rule-forced value is not editable, exactly as on the sheet: it is a
+ * consequence of other choices, and the chat explains it.
+ */
+export function ValueToken({
+  variable,
+  doc,
+  placeholder = "not yet decided",
+  phrasing,
+}: {
+  variable: string;
+  doc: DocumentView;
+  placeholder?: string;
+  /**
+   * How this value reads in running text, when the catalogue's label does not
+   * fit a sentence — "Office" is a column heading, "an office building" is
+   * prose. A total function over the model's values, written beside the
+   * sentence it serves; the token still edits the same variable, and a value
+   * with no phrasing falls back to its label.
+   */
+  phrasing?: Record<string, string>;
+}) {
+  const [open, setOpen] = useState(false);
+  const model = variablesByName.get(variable);
+  const display = displayOf(doc, variable);
+  const label = display.value
+    ? phrasing?.[display.value] ?? optionLabel(variable, display.value)
+    : placeholder;
+  const style = cn(
+    TOKEN_STYLE[display.kind],
+    "underline underline-offset-4 decoration-muted-foreground/40",
+  );
+
+  if (display.kind === "forced" || doc.disabled) {
+    return (
+      <span className={style} title={KIND_TITLE[display.kind]}>
+        {label}
+      </span>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(style, "hover:decoration-foreground")}
+          title={`${KIND_TITLE[display.kind]} — click to change`}
+        >
+          {label}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-80 max-w-[calc(100vw-2rem)] p-3"
+      >
+        <p className="mb-2 text-xs text-muted-foreground">{model?.label}</p>
+        <OptionEditor
+          variable={variable}
+          doc={doc}
+          onDone={() => setOpen(false)}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** The situational gloss for whatever value is currently shown, when the model
+ * carries one — sense-making attached to the thing being explained, and never
+ * composed at render time (canvas anatomy §3). */
+export function Gloss({
+  variable,
+  doc,
+  className,
+}: {
+  variable: string;
+  doc: DocumentView;
+  className?: string;
+}) {
+  const { value } = displayOf(doc, variable);
+  const note = value ? optionNote(variable, value) : undefined;
+  if (!note) return null;
+  return (
+    <span className={cn("text-xs text-muted-foreground", className)}>
+      {note}
+    </span>
+  );
+}
+
+/**
+ * "Why is this value here?" answered with "your document, clause N" — the
+ * third provenance source's popover (docs/specs/rfq-reconciliation). The
+ * clause and its quote are the frozen block's own words; nothing is derived.
+ */
+function ClausePopover({
+  entries,
+  children,
+}: {
+  entries: RegisterEntry[];
+  children: ReactNode;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent align="end" className="p-3 text-xs">
+        <p className="mb-2 text-muted-foreground">Your document asks:</p>
+        <dl className="space-y-2">
+          {entries.map((entry) => (
+            <div key={entry.clause + entry.quote}>
+              <dt className="font-medium">
+                clause {entry.clause} — {optionLabel(entry.variable, entry.value)}
+              </dt>
+              <dd className="text-muted-foreground italic">“{entry.quote}”</dd>
+            </div>
+          ))}
+        </dl>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Who put this value here, as a mark rather than a column. */
+export function ProvenanceBadge({
+  variable,
+  doc,
+}: {
+  variable: string;
+  doc: DocumentView;
+}) {
+  const badge = KIND_BADGE[displayOf(doc, variable).kind];
+  if (!badge) return null;
+  const requirements = doc.requirementsFor(variable);
+  const className =
+    "gap-1 px-2 py-0.5 text-[10px] font-normal text-muted-foreground";
+
+  if (!requirements?.length) {
+    return (
+      <Badge variant="secondary" className={className}>
+        {badge.icon}
+        {badge.label}
+      </Badge>
+    );
+  }
+  return (
+    <ClausePopover entries={requirements}>
+      <Badge asChild variant="secondary" className={className}>
+        <button
+          title="why this value is here"
+          className="underline decoration-dotted underline-offset-2"
+        >
+          {badge.icon}
+          {badge.label}
+        </button>
+      </Badge>
+    </ClausePopover>
+  );
+}
+
+/**
+ * What the customer's document asked, against what the agreement now says, and
+ * the moves that answer it. Shown while the requirement is an open deviation,
+ * while it is waived and while it is revised: a mark is not a reason to stop
+ * showing the document's ask. The *reason* a value cannot be reached is not
+ * here — it traces to a solver core the agent narrates in chat, where every
+ * other grounded explanation in this app lives.
+ *
+ * In the document this is a margin mark on the affected term
+ * (docs/specs/agreement-document); the schedules keep it as a row strip.
+ */
+export function DeviationMark({
+  entries,
+  doc,
+}: {
+  entries: RegisterEntry[];
+  doc: DocumentView;
+}) {
+  const first = entries[0];
+  const waived = first.status === "waived";
+  // Grouped by requested value, never flattened onto the first one: a document
+  // may ask two different values of one term, and joining every clause number
+  // under one label would misquote the customer's own document.
+  const asks = [...new Set(entries.map((e) => e.value))].map((value) => ({
+    value,
+    clauses: entries
+      .filter((e) => e.value === value)
+      .map((e) => e.clause)
+      .filter(Boolean),
+  }));
+
+  return (
+    <div className="border-l-2 border-muted-foreground/40 pl-2 text-xs">
+      <p className="text-muted-foreground">
+        {asks.map(({ value, clauses }, i) => (
+          <span key={value}>
+            {i > 0 && "; "}
+            {clauses.length
+              ? `Clause ${clauses.join(", ")} asked `
+              : "Your document asked "}
+            <span className="font-medium text-foreground">
+              {optionLabel(first.variable, value)}
+            </span>
+          </span>
+        ))}
+        {first.offered && (
+          <>
+            {" · offered "}
+            <span className="font-medium text-foreground">
+              {optionLabel(first.variable, first.offered)}
+            </span>
+          </>
+        )}
+        {waived && " · waived, still listed"}
+        {first.status === "revised" && " · you revised this"}
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {!waived && first.offered && (
+          <Button
+            size="xs"
+            variant="outline"
+            disabled={doc.disabled}
+            className="font-normal hover:border-primary"
+            onClick={() =>
+              doc.onDispatch(
+                acceptOfferedMessage(first.variable, first.offered!),
+              )
+            }
+          >
+            Accept {optionLabel(first.variable, first.offered)}
+          </Button>
+        )}
+        <Button
+          size="xs"
+          variant="ghost"
+          disabled={doc.disabled}
+          className="font-normal text-muted-foreground"
+          onClick={() => doc.onDispatch(leaveOpenMessage(first.variable))}
+        >
+          {waived ? "Reopen" : "Leave open"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Every requirement of the customer's document the agreement does not
+ * currently meet, however it was answered: waived and revised requirements are
+ * answered, never forgotten. */
+export function unmetFor(
+  doc: DocumentView,
+  variable: string,
+): RegisterEntry[] | undefined {
+  const unmet = doc.requirementsFor(variable)?.filter((e) => e.status !== "met");
+  return unmet?.length ? unmet : undefined;
+}
+
+/**
+ * The document's two-column body: the clause and its margin. The margin is
+ * where the genre puts attribution and tracked changes, so that is where
+ * provenance badges and deviation marks go — beside the term they qualify,
+ * out of the reading line. It only becomes a column when the canvas is wide
+ * enough to spare one; narrower, the marks flow under the clause they mark.
+ * A container query, not a viewport one: the canvas is a resizable panel.
+ */
+export function Clause({
+  children,
+  margin,
+}: {
+  children: ReactNode;
+  margin?: ReactNode;
+}) {
+  return (
+    <div className="grid gap-x-6 gap-y-2 py-3 @2xl:grid-cols-[minmax(0,1fr)_11rem]">
+      <div className="min-w-0">{children}</div>
+      <div className="flex flex-col items-start gap-2">{margin}</div>
+    </div>
+  );
+}

@@ -47,9 +47,9 @@ Service frame:
 
 ## Relationship to the agreement document
 
-The RFQ and the agreement are a genre pair: a request and a response, joined clause by clause. The deviation register is that join, in the form of a compliance matrix of requested versus offered. The [agreement-document spec](../agreement-document/requirements.md) (draft) renders the agreement in this genre, and its layers define the stage boundary structurally. A stage-1 RFQ speaks only the customer-legible layers (recitals and operative terms, i.e. the `agreement`, `context`, `performance` groups) and lacks the schedules, which the vendor derives; a prescriptive RFQ is one that enters the schedule layer.
+The RFQ and the agreement are a genre pair: a request and a response, joined clause by clause. The deviation register is that join, in the form of a compliance matrix of requested versus offered. The [agreement-document spec](../agreement-document/requirements.md) renders the agreement in this genre, and its layers define the stage boundary structurally. A stage-1 RFQ speaks only the customer-legible layers (recitals and operative terms, i.e. the `agreement`, `context`, `performance` groups) and lacks the schedules, which the vendor derives; a prescriptive RFQ is one that enters the schedule layer.
 
-Both specs record the seam between them. This spec landed first, so the agreement-document spec will reconcile how the register is rendered when it lands: on a document-genre canvas, deviations should render as document-native marks on the affected terms ("your document asked X, clause N") rather than as row decoration. The RFQ itself is never rendered as a surface either way. It stays reference text, and what deserves rendering is the register on the agreement (constitution #10).
+Both specs record the seam between them. This spec landed first and the agreement-document spec closed it: a deviation on a recital or an operative term is now a margin mark on that clause ("your document asked X, clause N"), while a deviation in the schedules keeps the row strip designed here. The register's own content and moves are the same in both. The RFQ itself is never rendered as a surface either way. It stays reference text, and what deserves rendering is the register on the agreement (constitution #10).
 
 ## Out of scope
 

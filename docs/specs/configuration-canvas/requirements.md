@@ -15,13 +15,13 @@ Serves discovery principle [the canvas holds the state and the chat explains it]
 
 ## Acceptance criteria
 
-Canvas (read):
+Canvas (read) — *what* the canvas shows. Where it shows each part, and in what genre, is the [agreement-document spec](../agreement-document/requirements.md)'s: the sheet these criteria describe is now that document's schedule layer.
 
-- GIVEN agent state with choices, statuses, and a candidate, WHEN the canvas renders, THEN every variable appears under its group with its current value and a status badge distinguishing: chosen by user, chosen/derived by agent, forced by rules, and open; open variables show the candidate's proposed value (visually distinct) when a candidate exists.
+- GIVEN agent state with choices, statuses, and a candidate, WHEN the canvas renders, THEN every variable appears with its current value and a mark distinguishing: chosen by user, chosen/derived by agent, forced by rules, and open; open variables show the candidate's proposed value (visually distinct) when a candidate exists.
 - GIVEN a candidate in state, WHEN the canvas renders, THEN the total price is prominently visible; GIVEN no candidate, THEN the canvas indicates none has been proposed yet.
-- GIVEN an empty configuration, WHEN the canvas renders, THEN all groups show as undecided with a hint to describe the project in chat.
+- GIVEN an empty configuration, WHEN the canvas renders, THEN everything shows as undecided with a hint to describe the project in chat.
 
-Canvas (write):
+Canvas (write) — the edit protocol, which this spec remains the authority on, and which the document genre left unchanged. "Row" below means any editable value, wherever it renders:
 
 - GIVEN a variable's editor is open, WHEN statuses mark options invalid, THEN those options are visibly disabled and unselectable; selectable options show labels and price deltas.
 - GIVEN the user selects a valid option on the canvas, WHEN the edit is dispatched, THEN it is recorded through the same solver-validated `set_choices` path as chat input (source "user"), and the canvas subsequently reflects refreshed statuses — including any newly forced cascade — without further user action.

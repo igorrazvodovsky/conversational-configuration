@@ -102,13 +102,13 @@
       "label": "Rated load",
       "group": "performance",
       "options": [
-        { "value": "kg630", "label": "630 kg / 8 persons", "price": 0, "co2": 0 },
-        { "value": "kg800", "label": "800 kg / 10 persons", "price": 1500, "co2": 40 },
-        { "value": "kg1000", "label": "1000 kg / 13 persons", "price": 3000, "co2": 90 },
-        { "value": "kg1250", "label": "1250 kg / 16 persons", "price": 5000, "co2": 140 },
-        { "value": "kg1600", "label": "1600 kg / 21 persons", "price": 8000, "co2": 220 },
-        { "value": "kg2000", "label": "2000 kg / 26 persons", "price": 12000, "co2": 320 },
-        { "value": "kg2500", "label": "2500 kg / 33 persons", "price": 17000, "co2": 430 }
+        { "value": "kg630", "label": "630 kg / 8 persons", "price": 0, "co2": 0, "note": "no stretcher fits" },
+        { "value": "kg800", "label": "800 kg / 10 persons", "price": 1500, "co2": 40, "note": "a wheelchair and a companion turn inside" },
+        { "value": "kg1000", "label": "1000 kg / 13 persons", "price": 3000, "co2": 90, "note": "a stretcher fits" },
+        { "value": "kg1250", "label": "1250 kg / 16 persons", "price": 5000, "co2": 140, "note": "furniture moves in one trip" },
+        { "value": "kg1600", "label": "1600 kg / 21 persons", "price": 8000, "co2": 220, "note": "a bed with attendants" },
+        { "value": "kg2000", "label": "2000 kg / 26 persons", "price": 12000, "co2": 320, "note": "beds and goods trolleys together" },
+        { "value": "kg2500", "label": "2500 kg / 33 persons", "price": 17000, "co2": 430, "note": "loading-dock traffic" }
       ]
     },
     {
@@ -116,11 +116,11 @@
       "label": "Rated speed",
       "group": "performance",
       "options": [
-        { "value": "mps0_63", "label": "0.63 m/s", "price": 0, "co2": 0 },
-        { "value": "mps1_0", "label": "1.0 m/s", "price": 1000, "co2": 20 },
-        { "value": "mps1_6", "label": "1.6 m/s", "price": 4000, "co2": 60 },
-        { "value": "mps2_5", "label": "2.5 m/s", "price": 12000, "co2": 150 },
-        { "value": "mps3_0", "label": "3.0 m/s", "price": 22000, "co2": 250 }
+        { "value": "mps0_63", "label": "0.63 m/s", "price": 0, "co2": 0, "note": "fine for a few floors, noticeable above six" },
+        { "value": "mps1_0", "label": "1.0 m/s", "price": 1000, "co2": 20, "note": "comfortable to about ten floors" },
+        { "value": "mps1_6", "label": "1.6 m/s", "price": 4000, "co2": 60, "note": "keeps waits short in a mid-rise" },
+        { "value": "mps2_5", "label": "2.5 m/s", "price": 12000, "co2": 150, "note": "express service in a tower" },
+        { "value": "mps3_0", "label": "3.0 m/s", "price": 22000, "co2": 250, "note": "top-of-tower express" }
       ]
     },
     {
@@ -201,15 +201,15 @@
       "label": "Car dimensions (width × depth)",
       "group": "dimensions",
       "options": [
-        { "value": "c1100x1400", "label": "1100 × 1400 mm", "price": 0, "co2": 0 },
-        { "value": "c1350x1400", "label": "1350 × 1400 mm", "price": 800, "co2": 80 },
-        { "value": "c1600x1400", "label": "1600 × 1400 mm", "price": 1500, "co2": 160 },
-        { "value": "c1950x1400", "label": "1950 × 1400 mm (wide)", "price": 2500, "co2": 270 },
-        { "value": "c1200x2300", "label": "1200 × 2300 mm (deep)", "price": 2500, "co2": 280 },
-        { "value": "c2100x1600", "label": "2100 × 1600 mm (wide)", "price": 3000, "co2": 420 },
-        { "value": "c1400x2400", "label": "1400 × 2400 mm (stretcher)", "price": 3500, "co2": 420 },
-        { "value": "c1500x2700", "label": "1500 × 2700 mm (bed)", "price": 5000, "co2": 580 },
-        { "value": "c1800x2700", "label": "1800 × 2700 mm (bed)", "price": 7000, "co2": 770 }
+        { "value": "c1100x1400", "label": "1100 × 1400 mm", "price": 0, "co2": 0, "note": "one wheelchair, no companion" },
+        { "value": "c1350x1400", "label": "1350 × 1400 mm", "price": 800, "co2": 80, "note": "a wheelchair and one companion" },
+        { "value": "c1600x1400", "label": "1600 × 1400 mm", "price": 1500, "co2": 160, "note": "prams and trolleys pass each other" },
+        { "value": "c1950x1400", "label": "1950 × 1400 mm (wide)", "price": 2500, "co2": 270, "note": "several people abreast, short depth" },
+        { "value": "c1200x2300", "label": "1200 × 2300 mm (deep)", "price": 2500, "co2": 280, "note": "long loads, single file" },
+        { "value": "c2100x1600", "label": "2100 × 1600 mm (wide)", "price": 3000, "co2": 420, "note": "peak-hour crowds board in one wave" },
+        { "value": "c1400x2400", "label": "1400 × 2400 mm (stretcher)", "price": 3500, "co2": 420, "note": "a stretcher lies flat" },
+        { "value": "c1500x2700", "label": "1500 × 2700 mm (bed)", "price": 5000, "co2": 580, "note": "a bed with attendants on both sides" },
+        { "value": "c1800x2700", "label": "1800 × 2700 mm (bed)", "price": 7000, "co2": 770, "note": "a bed, attendants and equipment" }
       ]
     },
     {
@@ -262,11 +262,11 @@
       "label": "Door width",
       "group": "doors",
       "options": [
-        { "value": "d800", "label": "800 mm", "price": 0, "co2": 0 },
-        { "value": "d900", "label": "900 mm", "price": 300, "co2": 10 },
-        { "value": "d1000", "label": "1000 mm", "price": 600, "co2": 20 },
-        { "value": "d1100", "label": "1100 mm", "price": 1200, "co2": 35 },
-        { "value": "d1300", "label": "1300 mm", "price": 2500, "co2": 60 }
+        { "value": "d800", "label": "800 mm", "price": 0, "co2": 0, "note": "tight for a wheelchair" },
+        { "value": "d900", "label": "900 mm", "price": 300, "co2": 10, "note": "a wheelchair passes" },
+        { "value": "d1000", "label": "1000 mm", "price": 600, "co2": 20, "note": "a stretcher passes" },
+        { "value": "d1100", "label": "1100 mm", "price": 1200, "co2": 35, "note": "a bed passes" },
+        { "value": "d1300", "label": "1300 mm", "price": 2500, "co2": 60, "note": "beds and trolleys pass without slowing" }
       ]
     },
     {
@@ -315,10 +315,10 @@
       "label": "Car wall finish",
       "group": "cabin",
       "options": [
-        { "value": "painted_steel", "label": "Painted steel", "price": 0, "co2": 150 },
-        { "value": "laminate", "label": "Laminate", "price": 1200, "co2": 155 },
-        { "value": "brushed_ss", "label": "Brushed stainless steel", "price": 2400, "co2": 525 },
-        { "value": "glass_panoramic", "label": "Panoramic glass back wall", "price": 9500, "co2": 300 }
+        { "value": "painted_steel", "label": "Painted steel", "price": 0, "co2": 150, "note": "cheapest to make good after a knock" },
+        { "value": "laminate", "label": "Laminate", "price": 1200, "co2": 155, "note": "warm finish, scratches show" },
+        { "value": "brushed_ss", "label": "Brushed stainless steel", "price": 2400, "co2": 525, "note": "survives heavy traffic, shows fingerprints" },
+        { "value": "glass_panoramic", "label": "Panoramic glass back wall", "price": 9500, "co2": 300, "note": "the lobby stays in view from the car" }
       ]
     },
     {
@@ -326,9 +326,9 @@
       "label": "Car floor",
       "group": "cabin",
       "options": [
-        { "value": "rubber", "label": "Studded rubber", "price": 0, "co2": 0 },
-        { "value": "pvc", "label": "PVC", "price": 400, "co2": -6 },
-        { "value": "granite", "label": "Granite composite", "price": 2200, "co2": 38 }
+        { "value": "rubber", "label": "Studded rubber", "price": 0, "co2": 0, "note": "quiet and non-slip, scuffs over time" },
+        { "value": "pvc", "label": "PVC", "price": 400, "co2": -6, "note": "easy to clean, wears at the doors" },
+        { "value": "granite", "label": "Granite composite", "price": 2200, "co2": 38, "note": "hard-wearing and heavy, cold underfoot" }
       ]
     },
     {

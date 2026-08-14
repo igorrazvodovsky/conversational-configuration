@@ -1,4 +1,4 @@
-Status: drafted 2026-08-14, for critique. Answers *how does one screen show a whole agreement plus its validity?* — the canvas-anatomy row of [direction.md](../direction.md) §3 — sharpened into a genre question. The direction committed to *a negotiation over a living document*; what is built is a parameter sheet with an agreement header. This model decides what genre the agreement is rendered in, which readings each part serves, and what "editable" means for a document that is a projection of solver state.
+Status: drafted 2026-08-14, for critique. Answers *how does one screen show a whole agreement plus its validity?* — the canvas-anatomy row of [direction.md](../direction.md) §3 — sharpened into a genre question. The direction committed to *a negotiation over a living document*; what was built at the time was a parameter sheet with an agreement header, and the [agreement-document spec](../../specs/agreement-document/requirements.md) has since realigned it on this model. This model decides what genre the agreement is rendered in, which readings each part serves, and what "editable" means for a document that is a projection of solver state.
 
 ## 1. The readings
 
@@ -58,8 +58,8 @@ Document genre connotes finality, and the direction has no start and no finish. 
 
 ## 6. What this changes downstream
 
-- Spec work: the [agreement-document spec](../../specs/agreement-document/requirements.md) (draft) builds the layered document with editable islands; typed edits are its named follow-on, specified separately once there is a document to type into.
-- The pending amendment moving repair sets document-side ([surface-architecture.md](Surface%20architecture.md) §2) gains its target surface: the terms layer.
+- Spec work: the [agreement-document spec](../../specs/agreement-document/requirements.md) built the layered document with editable islands; typed edits are its named follow-on, specified separately now that there is a document to type into.
+- The pending amendment moving repair sets document-side ([surface-architecture.md](Surface%20architecture.md) §2) has its target surface: the terms layer, now built.
 - The session map (the missing model, [direction.md](../direction.md) §3) inherits a likely answer: re-entry as a narrative "state of the agreement since you left", hosted by the recitals.
 - The comparison view inherits the layering as hypothesis: two documents differ at the terms level first, schedule diff one move down — the same shape the [ripple storyboard](Ripple%20storyboard.md) §3 chose.
 
