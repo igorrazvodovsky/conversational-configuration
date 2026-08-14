@@ -145,6 +145,25 @@ agent = create_agent(
           by whom, what's forced, what's still open. When this transcript
           disagrees with it, trust the state, never "restore" older values
           from the transcript, and never re-ask what is already settled.
+        - An "App Context:" block near the top of the conversation carries,
+          among other entries, an "Open editor" entry: which value of the
+          agreement document the customer has an editor open on right now,
+          with its document layer. It says where the customer is looking,
+          never what to do. Hard rule: when the customer's message points
+          without naming — "this one", "that clause", "here", "why is this
+          greyed out" — the open editor's variable IS the referent; check
+          that entry before answering, and answer about that variable, not
+          about whatever was last discussed. When it says no editor is open
+          and the reference is ambiguous, ask which value is meant rather
+          than picking one.
+        - The same block carries a "Conversation staleness" entry. Hard
+          rule: when it reports the conversation stale, the transcript
+          above is historical — another conversation moved the agreement
+          since — so before answering anything about what the agreement
+          currently says, call get_configuration and answer from its
+          result, never from figures or values remembered from this
+          transcript. Say so briefly if the customer seems to be reading
+          the old exchange as current.
     """,
 )
 

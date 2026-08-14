@@ -11,6 +11,7 @@ import { use } from "react";
 import Link from "next/link";
 import {
   CopilotChatConfigurationProvider,
+  useAgentContext,
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 
@@ -61,6 +62,18 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   useConfiguratorSuggestions();
   const { workspace, workspaceName, staleThread, notFound } =
     useWorkspaceAttachment(workspaceId);
+  // The second (and last) entry of the shared-attention read channel
+  // (docs/specs/shared-attention): the staleness the attachment hook already
+  // computes, told to the agent so it does not reason from a transcript the
+  // agreement has moved past. The canvas publishes the first entry — the open
+  // editor — and nothing else may join this channel.
+  useAgentContext({
+    description:
+      "Conversation staleness: whether the transcript above predates the current agreement.",
+    value: staleThread
+      ? "stale — the agreement was changed in another conversation after this transcript's last turn; treat the transcript above as historical and rely on the configuration state"
+      : "current",
+  });
   const configuration = useCopilotChatConfiguration();
   // The chat's geometry is the user's, and only the user's
   // (docs/specs/chat-surface): nothing below may set it, and it is not

@@ -1,6 +1,6 @@
 # Shared attention: the agent and the user looking at the same place
 
-Status: draft — awaiting approval.
+Status: implemented.
 
 The document is three layers deep with its schedules collapsed, and the agent cannot see any of it. It does not know which value the operator has an editor open on, and it does not know whether the term it just changed is on screen or two screens down. It answers as though the agreement were one flat sheet, always fully visible.
 
@@ -33,7 +33,7 @@ What the agent may read:
 What the document may do:
 
 - GIVEN the agent's turn changes or proposes one or more values, WHEN the run ends, THEN the document brings the affected values into view if they are not already, expanding the schedule that holds them, and marks them transiently so they can be found on arrival.
-- GIVEN several values changed, WHEN the reveal happens, THEN the view goes to the topmost affected value in document order and the rest are marked in place. The document does not tour them.
+- GIVEN several values changed, WHEN the reveal happens, THEN the view goes to the topmost affected value in document order that is not already in view, and the rest are marked in place. The document does not tour them.
 - GIVEN every affected value is already in view, WHEN the run ends, THEN nothing moves.
 - GIVEN the operator has explicitly collapsed a schedule, WHEN a change lands inside it, THEN it stays collapsed and the schedule header carries the mark instead. An explicit collapse is a decision, and revealing over it would be the tool overruling the user about their own screen.
 - GIVEN the operator has an editor open, WHEN the run ends, THEN no reveal moves the page under the open editor.
@@ -41,11 +41,9 @@ What the document may do:
 - GIVEN the agent's turn changed nothing, THEN nothing moves. Directing attention is a consequence of a move, never a move of its own; an agent that wants the operator to look somewhere without changing anything says so in words.
 - GIVEN a reveal, THEN it is not a move: it does not appear in the transcript, does not enter the undo history, and leaves no trace in state once the mark fades.
 
-## Proposed discovery amendment
+## Discovery amendment — applied
 
-The [conversation move inventory](../../discovery/models/Conversation%20moves.md) §3 has no move for directing the operator's attention, and its never-moves forbid restating in chat what the canvas already shows. Between them the agent has no legal way to point at a value below the fold, which is a gap in the model rather than a restriction anyone intended.
-
-On approval, §3 gains one row — *reveal a change it just made*, unasked yes, bounded to values it changed in that turn, with no effect on the document beyond what is visible — and §7's open edge about the returning operator gains a note that the read half of this channel is the first thing the session map has to work with.
+The [conversation move inventory](../../discovery/models/Conversation%20moves.md) §3 had no move for directing the operator's attention, and its never-moves forbid restating in chat what the canvas already shows; between them the agent had no legal way to point at a value below the fold. On approval of this spec, §3 gained one row — *reveal a change it just made*, unasked yes, bounded to values its turn changed, with no effect on the document beyond what is visible — and §7's open edge about the returning operator now notes that the read half of this channel is the first signal a session map has to work with.
 
 ## Relationship to other specs
 

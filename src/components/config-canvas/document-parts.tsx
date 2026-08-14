@@ -12,7 +12,7 @@
  * variable and none of the layers may bypass.
  */
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Check, FileText, Lock, Sparkles, User } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,13 @@ export interface DocumentView {
   /** the shell's routed dispatch — canvas edit or reconciliation, per variable */
   onSelect: (variable: string, value: string) => void;
   onDispatch: (content: string) => void;
+  /** Values the last run changed, marked transiently on the document and
+   * discarded when the mark fades (docs/specs/shared-attention). */
+  revealed: ReadonlySet<string>;
+  /** Editor lifecycle, reported from OptionEditor's mount/unmount — the read
+   * half of docs/specs/shared-attention. The shell keeps the last one open. */
+  onEditorOpen: (variable: string) => void;
+  onEditorClose: (variable: string) => void;
 }
 
 /** The resolved value with the optimistic overlay laid over it. */
@@ -98,6 +105,15 @@ export function OptionEditor({
   doc: DocumentView;
   onDone?: () => void;
 }) {
+  // Every layer's editor renders this component exactly while it is open —
+  // schedule rows and prose tokens alike — so its mount is the single place
+  // the operator's open editor can be read from (docs/specs/shared-attention).
+  const { onEditorOpen, onEditorClose } = doc;
+  useEffect(() => {
+    onEditorOpen(variable);
+    return () => onEditorClose(variable);
+  }, [variable, onEditorOpen, onEditorClose]);
+
   const model = variablesByName.get(variable);
   if (!model) return null;
   const display = displayOf(doc, variable);
@@ -194,11 +210,16 @@ export function ValueToken({
   const style = cn(
     TOKEN_STYLE[display.kind],
     "underline underline-offset-4 decoration-muted-foreground/40",
+    // The transient reveal mark (docs/specs/shared-attention): highlighted
+    // while the value is in the last run's changed set, faded by transition
+    // when the shell drops the set.
+    "transition-colors duration-1000",
+    doc.revealed.has(variable) && "bg-primary/10",
   );
 
   if (display.kind === "forced" || doc.disabled) {
     return (
-      <span className={style} title={KIND_TITLE[display.kind]}>
+      <span className={style} title={KIND_TITLE[display.kind]} data-reveal={variable}>
         {label}
       </span>
     );
@@ -208,6 +229,7 @@ export function ValueToken({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
+          data-reveal={variable}
           className={cn(style, "hover:decoration-foreground")}
           title={`${KIND_TITLE[display.kind]} — click to change`}
         >

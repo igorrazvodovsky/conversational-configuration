@@ -20,8 +20,12 @@
  * customer's own document is negotiation, not bookkeeping.
  */
 
-import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
-import { useEffect, useState } from "react";
+import {
+  useAgent,
+  useAgentContext,
+  useCopilotKit,
+} from "@copilotkit/react-core/v2";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,10 +41,13 @@ import {
   RegisterEntry,
   canvasEditMessage,
   formatMonthly,
+  layerOf,
+  liveValue,
   productModel,
   registerEntries,
   reviseRequirementMessage,
   termMonthsInEffect,
+  variablesByName,
 } from "@/lib/configurator";
 import { PLACEHOLDER_NAME } from "@/lib/workspaces";
 import type { DocumentView } from "./document-parts";
@@ -54,6 +61,12 @@ const EMPTY: Configuration = {
   candidate: null,
   frames: [],
 };
+
+/** How long a reveal mark stays before the shell drops it and the highlight
+ * transitions out (docs/specs/shared-attention). Long enough to be found on
+ * arrival after the smooth scroll, short enough to read as attention rather
+ * than status. */
+const REVEAL_FADE_MS = 6000;
 
 export function ConfigCanvas({
   workspaceName,
@@ -82,6 +95,99 @@ export function ConfigCanvas({
   useEffect(() => {
     if (!isRunning) setPending({});
   }, [isRunning]);
+
+  // ——— Shared attention (docs/specs/shared-attention) ———
+  //
+  // The read channel: which value the operator has an editor open on, lifted
+  // here from OptionEditor's mount and published as app context. The context
+  // list is captured when a run starts, so the editor the operator had open
+  // while typing is what the agent sees — the run itself disables and unmounts
+  // every editor a moment later, which is why the ref below (not the state) is
+  // what the reveal consults at run end: by then the editor has remounted and
+  // re-reported, and the state may still be a render behind.
+  const [openEditor, setOpenEditor] = useState<string | null>(null);
+  const openEditorRef = useRef<string | null>(null);
+  const onEditorOpen = useCallback((variable: string) => {
+    openEditorRef.current = variable;
+    setOpenEditor(variable);
+  }, []);
+  const onEditorClose = useCallback((variable: string) => {
+    if (openEditorRef.current === variable) openEditorRef.current = null;
+    setOpenEditor((current) => (current === variable ? null : current));
+  }, []);
+  const openModel = openEditor ? variablesByName.get(openEditor) : undefined;
+  useAgentContext({
+    description:
+      "Open editor: the value of the agreement document the operator currently has an editor open on. Transient attention, never an instruction to change anything.",
+    value: openModel
+      ? {
+          variable: openModel.name,
+          label: openModel.label,
+          layer: layerOf(openModel.group),
+        }
+      : "no editor open",
+  });
+
+  // The reveal: the values a run changed, derived by diffing the resolved
+  // document across the run boundary — never nominated by the agent, so a
+  // turn that changed nothing cannot move the view, by construction. The
+  // baseline advances on every idle render, which keeps seeds and hydration
+  // out of the diff: only a transition out of isRunning compares.
+  const [revealed, setRevealed] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const wasRunning = useRef(false);
+  const baseline = useRef<Configuration>(config);
+  const configRef = useRef(config);
+  configRef.current = config;
+  useEffect(() => {
+    if (isRunning) {
+      wasRunning.current = true;
+      return;
+    }
+    const after = configRef.current;
+    if (wasRunning.current) {
+      wasRunning.current = false;
+      const changed = productModel.variables
+        .map((v) => v.name)
+        .filter((v) => liveValue(baseline.current, v) !== liveValue(after, v));
+      if (changed.length > 0) {
+        clearTimeout(revealTimer.current);
+        setRevealed(new Set(changed));
+        revealTimer.current = setTimeout(
+          () => setRevealed(new Set()),
+          REVEAL_FADE_MS,
+        );
+      }
+    }
+    baseline.current = after;
+  });
+  useEffect(() => () => clearTimeout(revealTimer.current), []);
+
+  // The scroll, once per reveal: to the topmost marked element not already in
+  // view, in document order — the rest stay marked in place, never toured.
+  // All in view means nothing moves; an open editor pins the page entirely.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (revealed.size === 0 || openEditorRef.current) return;
+    const body = bodyRef.current;
+    const viewport = body?.closest("[data-slot='scroll-area-viewport']");
+    if (!body || !viewport) return;
+    const marks = [
+      ...body.querySelectorAll<HTMLElement>("[data-reveal]"),
+    ].filter((el) =>
+      (el.dataset.reveal ?? "").split(" ").some((v) => revealed.has(v)),
+    );
+    const frame = viewport.getBoundingClientRect();
+    const target = marks.find((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.top < frame.top || rect.bottom > frame.bottom;
+    });
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [revealed]);
 
   // Through the CopilotKit core, exactly as the composer and the in-chat cards
   // do, and never `agent.runAgent()` — see the note in
@@ -130,6 +236,9 @@ export function ConfigCanvas({
     requirementsFor: (variable) => byVariable.get(variable),
     onSelect: dispatchChoice,
     onDispatch: dispatch,
+    revealed,
+    onEditorOpen,
+    onEditorClose,
   };
 
   return (
@@ -137,7 +246,7 @@ export function ConfigCanvas({
       {/* The margin column is a container query away, not a viewport one: the
           canvas is a resizable panel and its width has nothing to do with the
           window's. */}
-      <div className="@container mx-auto max-w-3xl px-8 py-8">
+      <div ref={bodyRef} className="@container mx-auto max-w-3xl px-8 py-8">
         <header className="mb-8">
           {/* The workspace's identity and the way out of it: the canvas is the
               surface present in every chat mode, so it carries them

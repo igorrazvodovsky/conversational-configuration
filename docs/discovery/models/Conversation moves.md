@@ -49,6 +49,7 @@ The column that matters is *unasked?* — what the agent may do without being in
 | Propose a complete candidate | Yes, once anchored (§6) | Puts a whole valid draft on the canvas for reaction ([always show a valid whole](../principles/always-show-a-valid-whole.md), [showing a candidate works better than asking a sequence of questions](../assertions/candidate-works-better-than-questions.md)) |
 | Propose repairs on a ripple | Yes to propose; applies only on acceptance | Shows what a revision breaks and how to fix it, atomically ([revision is an ordinary move, not a restart](../principles/revision-is-an-ordinary-move.md)) |
 | Flag a dead end or conflict | Yes | No change; the named rules that caused it, from the core ([every refusal names the rules that caused it](../principles/refusals-name-their-rules.md)) |
+| Reveal a change it just made | Yes | None beyond visibility: the document scrolls to and transiently marks the values this turn changed — bounded to that turn's changes, derived from them rather than chosen ([shared-attention](../../specs/shared-attention/requirements.md)) |
 | Ask a question | Only when a discretionary value has no defensible default | Critique over interrogation (constitution #5): a question is the fallback move, not the default move |
 | Explain | On request, and with every no | No change |
 | Escalate a delegated decision | Yes — obligatory when triggered (§5) | Returns a decision to the user with the options laid out |
@@ -103,7 +104,7 @@ Failure signals to watch in the walkthrough ([phase-plan.md](../phase-plan.md) �
 ## 7. Edges this model does not settle
 
 - How a mandate is *afforded* — a canvas control on a section, a chat utterance, or both. Canvas anatomy territory, as is the per-artifact canvas form of the document-side artifacts named in §1.
-- Whether delegation should deepen for the returning operator (the primary persona). Session-map territory.
+- Whether delegation should deepen for the returning operator (the primary persona). Session-map territory. The read half of the [shared-attention](../../specs/shared-attention/requirements.md) channel — what the operator has open, and whether the transcript is stale — is the first signal a session map has to work with.
 - The accountability framing: an *agent-chosen* term in a signed service agreement carries a weight the provenance tag alone may not discharge.
 - Unit of revision and ripple disclosure (both in [problem-framing.md](../problem-framing.md) §5) — the ripple storyboard's job, though §5's review move constrains it: whatever disclosure level is chosen must also work for reviewing delegated work.
 

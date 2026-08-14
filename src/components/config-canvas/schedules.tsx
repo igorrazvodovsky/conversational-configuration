@@ -16,7 +16,7 @@
  * `workspace-split.tsx` documents.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -56,7 +56,12 @@ function ScheduleRow({
       open={open && !doc.disabled && editable}
       onOpenChange={setOpen}
       disabled={doc.disabled || !editable}
-      className="px-3 py-2"
+      data-reveal={variable.name}
+      className={cn(
+        "px-3 py-2 transition-colors duration-1000",
+        // The transient reveal mark (docs/specs/shared-attention).
+        doc.revealed.has(variable.name) && "bg-primary/10",
+      )}
     >
       {/* The badge is a sibling of the trigger, never a child: a document
           badge is itself a popover trigger, and a button inside a button is
@@ -120,11 +125,38 @@ function Schedule({
   const deviating = group.variables.some(
     (v) => unmetFor(doc, v.name) !== undefined,
   );
-  const expanded = open ?? deviating;
+  // A reveal (docs/specs/shared-attention) is the same argument as the
+  // deviation fallback, applied to the agent's own moves: a change the
+  // operator cannot see is a change they cannot react to. An untouched
+  // schedule holding a revealed value opens in the reveal's own render (the
+  // shell's scroll fires in that commit and needs the rows in the DOM); an
+  // explicitly collapsed one stays collapsed and the header carries the mark.
+  const holdsReveal = group.variables.some((v) => doc.revealed.has(v.name));
+  const expanded = open ?? (deviating || holdsReveal);
+  // The expansion must outlive the mark — a schedule that re-collapsed when
+  // the mark faded would be the reveal hiding things, which it may never do.
+  // Latching also keeps the operator in charge: from here on the header obeys
+  // them exactly as if they had opened it themselves.
+  useEffect(() => {
+    if (holdsReveal) setOpen((o) => o ?? true);
+  }, [holdsReveal]);
+  const headerMarks = !expanded
+    ? group.variables.filter((v) => doc.revealed.has(v.name))
+    : [];
 
   return (
     <Collapsible open={expanded} onOpenChange={setOpen} className="mb-2">
-      <CollapsibleTrigger className="flex w-full items-center gap-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground">
+      <CollapsibleTrigger
+        data-reveal={
+          headerMarks.length
+            ? headerMarks.map((v) => v.name).join(" ")
+            : undefined
+        }
+        className={cn(
+          "flex w-full items-center gap-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors duration-1000 hover:text-foreground",
+          headerMarks.length > 0 && "bg-primary/10 text-foreground",
+        )}
+      >
         <ChevronRight
           className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")}
         />
@@ -132,6 +164,11 @@ function Schedule({
         {deviating && (
           <span className="font-normal normal-case tracking-normal">
             · your document speaks to this
+          </span>
+        )}
+        {headerMarks.length > 0 && (
+          <span className="font-normal normal-case tracking-normal">
+            · changed in here
           </span>
         )}
       </CollapsibleTrigger>
