@@ -190,6 +190,13 @@
   },
   "active": "37f3c7ab25b8ece4",
   "lastOpenFiles": [
+    "research/copilotkit-surface.md",
+    "specs/suggested-moves/design.md",
+    "specs/suggested-moves/requirements.md",
+    "specs/suggested-moves",
+    "specs/shared-attention/design.md",
+    "specs/shared-attention/requirements.md",
+    "specs/shared-attention",
     "research/interaction-literature.md.tmp.59267.1940252726b2",
     "discovery/assertions/generated-controls-work-better-than-free-text.md",
     "discovery/assertions/seeded-candidate-with-named-deviations.md",
@@ -217,14 +224,7 @@
     "specs/chat-surface/requirements.md",
     "specs/chat-surface",
     "specs/agreement-document/tasks.md",
-    "specs/agreement-document/design.md",
-    "specs/agreement-document/requirements.md",
     "specs/agreement-document",
-    "discovery/assertions/representation-selects-moves.md",
-    "discovery/models/Canvas anatomy.md",
-    "specs/rfq-reconciliation",
-    "specs/chat-attachments",
-    "specs/ui-component-library",
-    "specs/agreement-workspace"
+    "specs/rfq-reconciliation"
   ]
 }

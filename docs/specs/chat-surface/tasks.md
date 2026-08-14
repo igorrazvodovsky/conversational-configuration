@@ -50,4 +50,4 @@ The unchecked items all need a transcript with several turns, and the browser au
 - [x] [ui-component-library](../ui-component-library/design.md) — `dropdown-menu` added to the installed set, with the hydration rule it brought
 - [x] `docs/specs/README.md` status; `CLAUDE.md` *What's live* and the workspace page's two rules
 - [x] [agreement-workspace](../agreement-workspace/design.md) *Frontend* and *The split* — two surfaces, not three columns; the name renders in the canvas header
-- [x] [configuration-canvas](../configuration-canvas/design.md) — the agreement header now opens with the workspace breadcrumb
+- [x] [agreement-document](../agreement-document/design.md) — the agreement header now opens with the workspace breadcrumb

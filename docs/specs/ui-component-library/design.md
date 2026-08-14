@@ -10,7 +10,7 @@ Components come from `npx shadcn@latest add`, never hand-written. That is what m
 
 The prototype ran on the CopilotKit starter's brand hexes. They were placeholder branding, so they are gone, replaced by shadcn's zinc scale in oklch, taken verbatim from `@shadcn/theme-zinc`. Zinc is a neutral grey with no hue commitment, which suits a tool whose colour should carry meaning — chosen / proposed / unavailable — rather than identity.
 
-Two brand values survive because something still references them: `--cpk-lilac-400` and `--cpk-mint-400`, used by the showcase pill rules. The rest of the `--cpk-*` accents and the ambient gradient were unreferenced and were deleted rather than translated.
+Two brand values survive because something still references them: `--cpk-lilac-400` and `--cpk-mint-400`, used by the showcase pill rules — which are reached only from `use-example-suggestions.tsx`, starter code no surface mounts, so both the rules and the two hexes go whenever that file does. The rest of the `--cpk-*` accents and the ambient gradient were unreferenced and were deleted rather than translated.
 
 Tailwind v4 still needs the `@theme inline` bridge: `bg-background`, `text-muted-foreground` and `border-input` are utilities only if `--color-*` is declared there. This is the one edit that can fail silently — an unmapped token is not an error, just an unstyled element — so it is verified against the compiled stylesheet before any call site is touched.
 
@@ -39,7 +39,7 @@ The style reaches the chat pane too, through composition rather than override �
 | `ScaleControl`'s segmented row | `ToggleGroup type="single" spacing={0}` | keeps per-segment `disabled` and `title` |
 | bordered list wrappers | `Card` / `CardContent` | canvas groups, in-chat cards |
 | dashed-border empty states | `Empty` | elevator list, canvas, workspace-not-found |
-| chat/app switch | `Tabs` | |
+| chat/app switch | `Tabs` | both are gone: the switch left with the split ([agreement-workspace](../agreement-workspace/design.md)), and `tabs.tsx` stays installed but unused |
 | scrolling panes | `ScrollArea` | canvas, sidebar |
 | the workspace's two-pane split | `Resizable` | added later, with the placement change in the [agreement-workspace design](../agreement-workspace/design.md); replaces the fixed `w-1/2` halves and the Chat/App toggle that hid one of them |
 

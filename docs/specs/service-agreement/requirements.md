@@ -29,7 +29,7 @@ Scope decision: the service frame is the prototype's single offering (constituti
 ## Relationship to other specs
 
 - [Product model](../product-model/requirements.md): carries the service variables, coupling constraints, and monthly pricing data; there is no customer-facing capex price — hardware option prices are a cost basis amortized into the fee.
-- [Agent tools](../agent-tools/requirements.md) and [canvas](../configuration-canvas/requirements.md): elicitation and canvas grouping follow the service frame; the tool surface is unchanged by it.
+- [Agent tools](../agent-tools/requirements.md) and [canvas](../agreement-document/requirements.md): elicitation and canvas grouping follow the service frame; the tool surface is unchanged by it.
 - [Demo scenarios](../demo-scenarios/requirements.md): the five scenarios are to be recast to the job stories in `docs/discovery/jtbd/job-stories.md` — still outstanding as of that spec's approval.
 - [Environmental footprint](../environmental-footprint/requirements.md) (implemented): shares the `usage_profile` variable, introduced here. Since footprint landed, the agreement comparison carries a footprint delta beside the monthly-price delta ([trade-offs are shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md)), and the first proposal's objective no longer defaults silently to cheapest — it is cheapest with the lowest-footprint alternative always solved and disclosed ([its design](../environmental-footprint/design.md)).
 

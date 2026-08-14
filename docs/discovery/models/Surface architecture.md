@@ -31,13 +31,13 @@ The chosen patterns compose: the living document is the geometry, static compone
 
 *Valid by construction.* Each card's payload is computed from solver state at call time — `ask_choices` returns per-variable options with invalid values flagged for greying in place and the cheapest completion marked; repair cards carry their own ripple. What the user can click is what the solver admits, which is how constitution #5 holds on a clickable surface.
 
-*One grammar.* Every activation — a chip, a repair card, a canvas row edit — dispatches the same visible structured user message through the same validated path. The alternative, a silent programmatic run, was set aside: it is faster, but it hides user actions from the dialogue and creates a second interaction grammar (the [canvas design](../../specs/configuration-canvas/design.md)).
+*One grammar.* Every activation — a chip, a repair card, a canvas row edit — dispatches the same visible structured user message through the same validated path. The alternative, a silent programmatic run, was set aside: it is faster, but it hides user actions from the dialogue and creates a second interaction grammar (the [canvas design](../../specs/agreement-document/design.md)).
 
 *Presentation stays out of product data.* Which control renders a variable is a server-side heuristic over the model's structure (ordered groups → scale, small domains → chips, consequence-heavy → detail list, several at once → form card), not metadata in the product model. Constitution #2 holds: adding a component needs no UI decision.
 
 *Controls accelerate, never gate.* Free text remains available for every question a control answers. This is what keeps the pattern a conversation with controls in it rather than a form with a chat window attached — the failure mode [generated in-chat controls work better than free text](../assertions/generated-controls-work-better-than-free-text.md) names.
 
-*Where each artifact lives* is settled per-move in [conversation-moves.md](Conversation%20moves.md) §1: the artifacts moves produce — a pending question, an active repair set, a comparison — are document-side objects that appear, evolve and retire on the canvas, with chat carrying their narration. The built frontend still returns all three as chat cards; realigning it is a pending amendment to the [canvas](../../specs/configuration-canvas/requirements.md) and [nonlinear interaction](../../specs/nonlinear-interaction/requirements.md).
+*Where each artifact lives* is settled per-move in [conversation-moves.md](Conversation%20moves.md) §1: the artifacts moves produce — a pending question, an active repair set, a comparison — are document-side objects that appear, evolve and retire on the canvas, with chat carrying their narration. The built frontend still returns all three as chat cards; realigning it is a pending amendment to the [canvas](../../specs/agreement-document/requirements.md) and [nonlinear interaction](../../specs/nonlinear-interaction/requirements.md).
 
 ## 3. Edges this model does not settle
 

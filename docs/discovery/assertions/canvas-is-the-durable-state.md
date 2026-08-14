@@ -2,7 +2,7 @@
 
 The canvas, rather than the transcript, is the durable locus of state; the chat is for negotiation and explanation.
 
-*Evidence today.* Research threads D and E ([../../research/interaction-literature.md](../../research/interaction-literature.md)), implemented by the [configuration canvas](../../specs/configuration-canvas/requirements.md) and [nonlinear interaction](../../specs/nonlinear-interaction/requirements.md).
+*Evidence today.* Research threads D and E ([../../research/interaction-literature.md](../../research/interaction-literature.md)), implemented by the [agreement document](../../specs/agreement-document/requirements.md) and [nonlinear interaction](../../specs/nonlinear-interaction/requirements.md).
 
 *How we would know it is wrong.* Users scroll the transcript to check what was decided, or ask the agent to restate state that is already on screen.
 

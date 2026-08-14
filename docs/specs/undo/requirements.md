@@ -21,4 +21,4 @@ The reading this seed waits on is already registered: [gaps E6](../../research/g
 
 - [nonlinear-interaction](../nonlinear-interaction/requirements.md): owns the frames machinery that is the smallest-mechanism candidate substrate.
 - [agreement-workspace](../agreement-workspace/requirements.md): owns the store any workspace-level history would live in, and the last-write-wins concurrency stance undo must not silently complicate.
-- [configuration-canvas](../configuration-canvas/requirements.md): owns the dispatch grammar an undo affordance would join.
+- [agreement-document](../agreement-document/requirements.md): owns the dispatch grammar an undo affordance would join.

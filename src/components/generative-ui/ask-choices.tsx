@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * In-chat controls for the agent's ask_choices tool (docs/specs/configuration-canvas).
+ * In-chat controls for the agent's ask_choices tool (docs/specs/agreement-document).
  *
  * The payload is computed server-side from solver state — valid options only
  * are selectable; invalid values render greyed in place. Option prices are

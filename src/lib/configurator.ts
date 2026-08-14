@@ -1,5 +1,5 @@
 /**
- * Shared configurator types + product-model display data (docs/specs/configuration-canvas).
+ * Shared configurator types + product-model display data (docs/specs/agreement-document).
  *
  * The model JSON is imported straight from the agent so labels/groups/prices
  * have a single source of truth. Validity NEVER comes from here — only from
@@ -286,7 +286,7 @@ export function termMonthsInEffect(config: Configuration): number {
 }
 
 /**
- * The structured control-activation message (docs/specs/configuration-canvas design):
+ * The structured control-activation message (docs/specs/agreement-document design):
  * a visible user message the agent records via set_choices. Includes both the
  * human-readable labels and the exact codes so the LLM never has to guess.
  */
@@ -303,7 +303,7 @@ export function choiceMessage(
 /**
  * Marks a canvas-originated edit. The chat renders nothing for messages
  * carrying this prefix, and the agent prompt keys on it to stay quiet when
- * the edit applies cleanly (docs/specs/configuration-canvas design) — the
+ * the edit applies cleanly (docs/specs/agreement-document design) — the
  * sheet already shows the change, so the conversation doesn't repeat it.
  */
 export const CANVAS_EDIT_PREFIX = "Canvas edit: ";

@@ -20,7 +20,7 @@
 
 Built around the elicitation strategy: needs-first questions, record commitments as they are made, announce forced values, surface conflicts with the rule labels verbatim, offer a priced candidate early and refine by critique. Explicit prohibition: never claim feasibility/infeasibility without a tool result. Per the [service-agreement spec](../service-agreement/design.md) the frame is a service agreement: elicitation targets the building and its outcomes (traffic, budget per month, uptime, commitment length), candidates are presented as "€X/month over the N-year term", and a second prohibition applies — never quote a one-off capex figure. The [environmental-footprint spec](../environmental-footprint/design.md) adds the claims discipline: footprint figures only from tool results, always "modelled, under these assumptions", the energy class never presented as certified, no "green"/"eco-friendly"/"sustainable" vocabulary, and the offer of the cheapest/greenest pair when the customer signals footprint interest — the four-step frames sequence itself lives in `propose_completion`'s docstring.
 
-It is organized in five headed blocks — method, grounding, voice, messages that are not conversation, state — rather than one flat list, so that each instruction sits with the others that fire at the same moment.
+It is organized in five headed blocks — method, requirements documents, voice, messages that are not conversation, state — rather than one flat list, so that each instruction sits with the others that fire at the same moment.
 
 ## Where guidance lives: one home per instruction
 
@@ -37,11 +37,11 @@ The rule is about *static* context only. Runtime tool results still carry their 
 
 ## State streaming
 
-Register `StateItem(state_key="configuration", tool="set_choices", tool_argument=...)`? — `StateStreamingMiddleware` streams tool args as they generate; for configuration the authoritative state comes from the solver-validated Command update, so streaming raw args would flash unvalidated values. Decision: no streaming middleware for configuration; revisited and upheld in the [configuration-canvas design](../configuration-canvas/design.md).
+Register `StateItem(state_key="configuration", tool="set_choices", tool_argument=...)`? — `StateStreamingMiddleware` streams tool args as they generate; for configuration the authoritative state comes from the solver-validated Command update, so streaming raw args would flash unvalidated values. Decision: no streaming middleware for configuration; revisited and upheld in the [agreement-document design](../agreement-document/design.md).
 
 ## Notes from implementation
 
-- Deviation from the draft: *all* example tools (todos, a2ui, flight search, query_data) were unregistered from `main.py`, not just todos — the elevator-focused system prompt would have contradicted their guidance. The example files remain in the repo; the [configuration-canvas spec](../configuration-canvas/design.md) reintroduced a generative-UI path deliberately (`ask_choices`).
+- Deviation from the draft: *all* example tools (todos, a2ui, flight search, query_data) were unregistered from `main.py`, not just todos — the elevator-focused system prompt would have contradicted their guidance. The example files remain in the repo; the [agreement-document spec](../agreement-document/design.md) reintroduced a generative-UI path deliberately (`ask_choices`).
 - Smoke-tested against gpt-5.4-mini: "6-storey hotel in Munich, 20 m travel" → agent recorded hotel/europe/new_build/mid-travel choices, the rules forced EN 81-70 accessibility and gearless MRL drive, and it proposed a €61,700 candidate into shared state. "Modernization + 3.0 m/s" → atomic REJECTED with R04+R28, agent verbalized the headroom explanation and offered ways forward.
 - Rejection is batch-atomic: if one choice in a `set_choices` call conflicts, the whole batch is rejected; the LLM can re-record the innocent subset on the next call.
 

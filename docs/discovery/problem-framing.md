@@ -63,7 +63,7 @@ The interaction-design hypotheses the prototype exists to examine. Each is provi
 
 | Assertion | Evidence today |
 |---|---|
-| [The canvas, rather than the transcript, is the durable locus of state](assertions/canvas-is-the-durable-state.md); the chat is for negotiation and explanation | Research (thread D/E), implemented by the [configuration canvas](../specs/configuration-canvas/requirements.md) and [nonlinear interaction](../specs/nonlinear-interaction/requirements.md) |
+| [The canvas, rather than the transcript, is the durable locus of state](assertions/canvas-is-the-durable-state.md); the chat is for negotiation and explanation | Research (thread D/E), implemented by the [agreement document](../specs/agreement-document/requirements.md) and [nonlinear interaction](../specs/nonlinear-interaction/requirements.md) |
 | [Showing a valid candidate to react to works better than asking a sequence of questions](assertions/candidate-works-better-than-questions.md) | Strong in the recommender literature (critiquing surveys), untested here |
 | [Generated in-chat controls work better than free text](assertions/generated-controls-work-better-than-free-text.md) when the user lacks vocabulary | Chen et al. 2025 shows large margins on comparison-heavy tasks |
 | [Nonlinear revision becomes workable when the ripple is shown *at the moment of revision*](assertions/ripple-at-the-moment-of-revision.md), with repairs proposed | The design bet of [nonlinear interaction](../specs/nonlinear-interaction/requirements.md); no evidence yet |

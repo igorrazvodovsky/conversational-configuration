@@ -15,7 +15,6 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [product-model](product-model/) | Mock elevator product model + validator | Implemented |
 | [solver-service](solver-service/) | Interactive Z3 solver service | Implemented |
 | [agent-tools](agent-tools/) | Configuration state + solver-backed agent tools | Implemented |
-| [configuration-canvas](configuration-canvas/) | Spec-sheet canvas + in-chat generated controls | Implemented |
 | [nonlinear-interaction](nonlinear-interaction/) | Revision with ripple, candidate frames, resumption | Implemented |
 | [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Approved; harness and scenario 2 built. Remaining: scenarios 1, 3, 4, the presenter document, and scenario 5 (now unblocked — rfq-reconciliation is built). Still to be recast to the service frame's job stories |
 | [service-agreement](service-agreement/) | Elevator as a service: outcome terms, monthly price, derived hardware | Implemented |

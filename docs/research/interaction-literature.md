@@ -53,4 +53,4 @@ Nonlinearity in configuration means: revising an early choice (rated load) that 
 - [configuration-field.md](configuration-field.md) — the symbolic half of thread C, and industry practice
 - [sustainability-prior-art.md](footprint/sustainability-prior-art.md) — the same intersection question for the footprint dimension
 - [../discovery/direction.md](../discovery/direction.md) §2 — the principles this thread set produced
-- Cited by the [configuration canvas](../specs/configuration-canvas/requirements.md) (thread D) and [nonlinear interaction](../specs/nonlinear-interaction/requirements.md) (thread E)
+- Cited by the [agreement document](../specs/agreement-document/requirements.md) (thread D) and [nonlinear interaction](../specs/nonlinear-interaction/requirements.md) (thread E)

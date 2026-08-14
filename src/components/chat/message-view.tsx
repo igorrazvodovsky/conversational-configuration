@@ -73,7 +73,7 @@ function rows(messageElements: ReactElement[]): Row[] {
 
 /**
  * Canvas edits round-trip through the conversation but are not part of it
- * (docs/specs/configuration-canvas design): the sheet is the record of the
+ * (docs/specs/agreement-document design): the sheet is the record of the
  * edit, so the chat renders neither the structured message that carries it nor
  * the agent's wordless bookkeeping in reply. An assistant message that does
  * carry text (a forced cascade, a conflict) still shows — the chat keeps the

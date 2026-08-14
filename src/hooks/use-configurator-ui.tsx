@@ -1,5 +1,5 @@
 /**
- * Chat UI registrations for the configurator (docs/specs/configuration-canvas).
+ * Chat UI registrations for the configurator (docs/specs/agreement-document).
  */
 import { z } from "zod";
 import {

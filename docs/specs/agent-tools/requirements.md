@@ -2,14 +2,14 @@
 
 Status: implemented.
 
-Replaces the todo demo pattern in the LangGraph agent with solver-backed configuration state and tools. Backend only: after this feature the agent can run a valid configuration dialogue in plain chat; the canvas and in-chat controls come with [configuration-canvas](../configuration-canvas/requirements.md).
+Replaces the todo demo pattern in the LangGraph agent with solver-backed configuration state and tools. Backend only: after this feature the agent can run a valid configuration dialogue in plain chat; the canvas and in-chat controls come with [agreement-document](../agreement-document/requirements.md).
 
 ## Stories
 
 - As a customer in chat, I can describe my situation in my own words ("hospital in Munich, six floors") and the agent records the choices that follow from it — validated by the solver, never guessed (constitution #1, #4).
 - As a customer, when I ask for something impossible, the agent tells me *which of my requirements* collide and *which rules* make them collide, using the solver's explanation (constitution #6).
 - As a customer, I can at any point ask "what would that cost?" and get a complete, priced, solver-valid candidate configuration extending my choices so far (constitution #5).
-- As the canvas (downstream, [configuration canvas](../configuration-canvas/requirements.md)), I can read everything I need to render from agent state: the choices with provenance, the status of every option, and the current candidate — without calling the backend myself.
+- As the canvas (downstream, [agreement document](../agreement-document/requirements.md)), I can read everything I need to render from agent state: the choices with provenance, the status of every option, and the current candidate — without calling the backend myself.
 
 ## Acceptance criteria
 
@@ -27,4 +27,4 @@ Agent behavior (verified by scripted chat smoke test, not unit-asserted):
 
 ## Out of scope
 
-Canvas rendering, user-initiated state edits from the UI and in-chat generated option controls (all [configuration canvas](../configuration-canvas/requirements.md)); multiple named candidates, comparison, and repair suggestions beyond the minimal conflict explanation (all [nonlinear-interaction](../nonlinear-interaction/requirements.md)).
+Canvas rendering, user-initiated state edits from the UI and in-chat generated option controls (all [agreement document](../agreement-document/requirements.md)); multiple named candidates, comparison, and repair suggestions beyond the minimal conflict explanation (all [nonlinear-interaction](../nonlinear-interaction/requirements.md)).

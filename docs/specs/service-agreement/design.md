@@ -4,7 +4,7 @@ The service frame is almost entirely model data plus pricing arithmetic. The sol
 
 ## Service variables are ordinary variables in the leading group
 
-The `agreement` group opens `elevator.json`. The [canvas](../configuration-canvas/design.md) renders groups in model order, so the leading position puts outcome terms above the derived hardware spec with no frontend layout logic — the requirements' grouping criterion falls out of data order.
+The `agreement` group opens `elevator.json`. The [canvas](../agreement-document/design.md) maps that group onto the operative terms and the hardware groups onto the schedules, and renders in model order within each layer, so outcome terms stand above the derived hardware spec — the requirements' grouping criterion falls out of the data plus that one mapping, with no per-variable layout decision.
 
 | Variable | Options | Priced |
 |---|---|---|
@@ -61,7 +61,7 @@ Framed around the service offering: elicitation targets the building and its out
 ## Frontend
 
 - `src/lib/configurator.ts`: types for the `pricing` block; `formatMonthly()`; `monthlyDelta(option, termMonths)` — the single place the frontend re-derives money, from the same imported JSON the agent reads.
-- Canvas (`config-canvas/index.tsx`): no layout logic for the grouping — group order does it. The header is the agreement header: monthly figure with its objective named ("cheapest completion"), title "Service agreement". The existing provenance badges (you/agent/auto/proposed) carry the requirements' provenance clause. They carry three of the four provenance strata in [the conversation move inventory](../../discovery/models/Conversation%20moves.md) §1 — you/agent/auto for user-chosen, agent-chosen and solver-forced; *proposed* marks the candidate's suggestion on an open row, which is not a stratum, and the model's fourth stratum, *derived*, has no badge of its own — derived hardware renders as forced or proposed depending on how it was computed.
+- Canvas (`config-canvas/index.tsx`): no per-variable layout logic — the group-to-layer mapping does it. The header is the agreement header: monthly figure with its objective named ("cheapest completion"), title "Service agreement". The existing provenance badges (you/agent/auto/proposed) carry the requirements' provenance clause. They carry three of the four provenance strata in [the conversation move inventory](../../discovery/models/Conversation%20moves.md) §1 — you/agent/auto for user-chosen, agent-chosen and solver-forced; *proposed* marks the candidate's suggestion on an open row, which is not a stratum, and the model's fourth stratum, *derived*, has no badge of its own — derived hardware renders as forced or proposed depending on how it was computed.
 - `frame-comparison.tsx`, `ask-choices.tsx`: render /month values from the payloads; no structural difference from other cards.
 
 ## Validation and tests

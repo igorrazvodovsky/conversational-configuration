@@ -2,7 +2,7 @@
 
 ## Two artifacts, one scenario source
 
-- `docs/demo-scenarios.md` — the presenter document. Per scenario: research claim, setup (which suggestion chip or fresh thread), a numbered turn list (type this / click this), and the expected observable outcome per turn (canvas rows, cards, prices). Written against the running app.
+- `docs/demo-scenarios.md` — the presenter document, not yet written. Per scenario: research claim, setup (which suggestion chip or fresh thread), a numbered turn list (type this / click this), and the expected observable outcome per turn (canvas rows, cards, prices). Written against the running app.
 - `agent/tests/test_scenarios.py` — the automated harness. Reuses the sequential-turn pattern proven in the [nonlinear-interaction](../nonlinear-interaction/design.md) offline smoke: feed `graph.invoke` the accumulated state plus one user message per turn, then assert on `result["configuration"]` and tool-message payloads.
 
 The two stay aligned by construction: the harness encodes the same turns the document prescribes, and both cite the scenario numbering from requirements. Divergence between them is a spec bug (constitution #12).

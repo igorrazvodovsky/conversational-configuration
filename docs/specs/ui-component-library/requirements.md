@@ -10,7 +10,7 @@ The vocabulary reaches the chat pane too. What the pane is composed *of* is its 
 
 ## Scope
 
-*In:* every surface the configurator renders — the elevator list, the workspace split view, the conversation sidebar, the configuration canvas, the three in-chat cards (`ask-choices`, `repair-options`, `frame-comparison`), the split layout, and tool rendering.
+*In:* every surface the configurator renders — the elevator list, the workspace split view, the conversation sidebar, the agreement document canvas, the three in-chat cards (`ask-choices`, `repair-options`, `frame-comparison`), the split layout, and tool rendering.
 
 *Out:* the chat pane's own composition, which is the [chat pane spec](../chat-pane/requirements.md)'s — this spec supplies the primitives it uses and the identity it matches, nothing more. Out too: the dead starter code listed in `CLAUDE.md`, and with it the `[data-copilotkit]` suggestion-pill highlight rules in `globals.css`, which serve `use-example-suggestions.tsx` alone.
 
