@@ -30,6 +30,26 @@
 - [x] Strip every literal radius class in scope (`rounded-full`, `rounded-lg`, `rounded-md`, `rounded-[4px]`, `rounded-[2px]`, `rounded-none`) — the zero ramp does not reach them
 - [x] `components/generative-ui/meeting-time-picker.tsx` — mechanical only: `Spinner size="lg"` → `className="size-8"`, since the prop is gone. Starter code, otherwise untouched
 
+## Chat pane (decision 7)
+
+- [ ] `shadcn add message-scroller message bubble input-group attachment` — radix-lyra variants; adds the `@shadcn/react` runtime dependency
+- [ ] Strip the literal `rounded-*` classes the four arrive with
+- [ ] `components/chat/` — a `ConfiguratorChat` wrapper holding the slot components, so `workspaces/[id]/page.tsx` keeps rendering one element
+- [ ] `scrollView` → provider/scroller/viewport around the given children, unwrapped, plus the scroll-to-end button; `autoScroll={false}` on the chat
+- [ ] `messageView` `children` → `MessageScrollerContent`, one `MessageScrollerItem` per element keyed off the element key, `scrollAnchor` on user turns
+- [ ] `assistantMessage` `children` → `Message`/`MessageContent`/`MessageFooter` around CopilotKit's markdown and tool-calls elements
+- [ ] `userMessage` `children` → `Bubble`/`BubbleContent`
+- [ ] `reasoningMessage` → `Collapsible`, matching `tool-rendering.tsx`
+- [ ] `input` `children` → `InputGroup` + `InputGroupTextarea` + `InputGroupAddon`; pass the placeholder explicitly, since it comes from CopilotKit's labels
+- [ ] `sendButton` / `addMenuButton` / transcribe buttons → `Button`
+- [ ] `suggestionView`'s `suggestion` → `Button variant="outline" size="xs"`; `welcomeScreen` → `Empty`; `cursor` → `Spinner`
+- [ ] Read the [agreement-workspace design](../agreement-workspace/design.md) before the scroll view goes in — hydration, not styling, is where this breaks
+- [x] Decide the attachment queue: kept — attachments feed the agent ([chat-attachments](../chat-attachments/requirements.md)), so the affordance is real
+- [ ] Composer queue → `AttachmentGroup`, via a `chatView` wrapper that takes `attachments`/`onRemoveAttachment` and hands `CopilotChatView` an empty `attachments` array so it draws no queue of its own
+- [ ] Files in a sent message → `Attachment` rows in the user-message slot. Keep the MIME/filename parse in `describeAttachments` — it is the only place the name is recovered — and replace the chip it feeds; give the nameless case an `AttachmentDescription` rather than a title that is really a MIME type
+- [ ] Reconcile [chat-attachments](../chat-attachments/) — its design and tasks record the chip and the un-restyled queue as the settled state
+- [ ] Update the *UI components* paragraph in `CLAUDE.md` — the chat pane no longer stays rounded
+
 ## Verification (constitution #9 — running app)
 
 - [x] Elevator list, light and dark
@@ -47,8 +67,21 @@
 - [x] `Empty` in place: workspace-not-found, and a fresh elevator's bare canvas. The empty *elevator list* was not reached — it needs a store with no workspaces
 - [x] Computed `border-radius: 0px` on canvas rows, chips and cards
 
+Chat pane:
+
+- [ ] Split view in both themes: nothing across the divider reads as a different product, and computed `border-radius: 0px` holds on message rows, composer and pills
+- [ ] A reply longer than the viewport: the sent turn anchors near the top with the previous turn peeking, the last line clears the composer, and scrolling back is not stolen by incoming tokens
+- [ ] The scroll-to-end control returns to the live end
+- [ ] All three cards render inside assistant messages and dispatch verbatim — `Set …`, `Apply repair: …`, `Adopt frame "…"`, `Compare frame "…" with the current configuration`
+- [ ] Markdown, streaming, the stop button, suggestions, the welcome screen on a fresh conversation
+- [ ] Attach a document by picker, by drag and by paste: it appears in the composer strip once — not also in CopilotKit's own queue — and once in the sent message, removable before sending, named — and a conversation reopened from the store shows the same row without a filename to show, labelled honestly
+- [ ] A rejected file still raises its `Alert` and starts no run ([chat-attachments](../chat-attachments/requirements.md))
+- [ ] Thread switch while scrolled back: the new transcript hydrates and the scroller resets to its end
+- [ ] Attach to a workspace with existing history — a full transcript arriving after mount, not a fresh conversation — and the scroller lands at the end rather than the top
+
 ## Not done
 
 - The dead starter surfaces (`example-canvas/`, `charts/`, `meeting-time-picker`, `declarative-generative-ui/`) still use the primitives but were not refactored — see `CLAUDE.md`. They inherit the zinc palette, but a sweep of the tree shows they keep literal `rounded-*` classes and so keep their corners; their layout was not reviewed. `src/lib/a2ui-theme.css` is imported by nothing and was left alone.
+- The `[data-copilotkit] button[data-slot="suggestion-pill"]` highlight rules in `globals.css` serve `use-example-suggestions.tsx` alone. Restyling the suggestion pill may leave them inert; removing them is a separate mechanical change to dead starter styling, not part of this spec.
 - `skeleton`, `alert`, `label`, `checkbox`, `input` and `separator` are installed but unused by the configurator; they are the vocabulary for the next surface, not dead weight to remove.
-- The chat pane keeps CopilotKit's own rounded styling against the square canvas. Deliberate — see design decision 3.
+- The chat pane is still CopilotKit's own styling; the section above is the work that changes that, and is not started.

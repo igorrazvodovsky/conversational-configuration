@@ -7,8 +7,9 @@
  * operator.
  */
 
-import { use, type ComponentProps } from "react";
+import { use, useState, type ComponentProps } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import {
   CopilotChat,
   CopilotChatAssistantMessage,
@@ -17,6 +18,7 @@ import {
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -33,6 +35,13 @@ import {
   useConfiguratorSuggestions,
   useWorkspaceAttachment,
 } from "@/hooks";
+import {
+  ATTACHMENT_ACCEPT,
+  ATTACHMENT_MAX_SIZE,
+  describeAttachments,
+  describeUploadFailure,
+  uploadWithFilename,
+} from "@/lib/attachments";
 import { CANVAS_EDIT_PREFIX } from "@/lib/configurator";
 
 /**
@@ -48,6 +57,17 @@ const QuietCanvasEditMessage = Object.assign(
     const { content } = props.message;
     if (typeof content === "string" && content.startsWith(CANVAS_EDIT_PREFIX)) {
       return null;
+    }
+    if (Array.isArray(content)) {
+      // An attached document arrives here as an image part that cannot load
+      // (docs/specs/chat-attachments) — the row shows its name instead.
+      const message = { ...props.message, content: describeAttachments(content) };
+      return (
+        <CopilotChatUserMessage
+          {...props}
+          message={message as typeof props.message}
+        />
+      );
     }
     return <CopilotChatUserMessage {...props} />;
   },
@@ -114,6 +134,10 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   const { workspace, workspaceName, staleThread, notFound } =
     useWorkspaceAttachment(workspaceId);
   const configuration = useCopilotChatConfiguration();
+  // CopilotKit validates every route into the composer — picker, drop, paste —
+  // and reports rejections through onUploadFailed, but renders nothing for
+  // them (docs/specs/chat-attachments). The message is ours to show.
+  const [rejectedFile, setRejectedFile] = useState<string | null>(null);
 
   if (notFound) {
     return (
@@ -148,14 +172,43 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
           <WorkspaceSplit
             canvas={<ConfigCanvas />}
             chat={
-              <CopilotChat
-                attachments={{ enabled: true }}
-                input={{ disclaimer: () => null, className: "pb-6" }}
-                messageView={{
-                  userMessage: QuietCanvasEditMessage,
-                  assistantMessage: QuietCanvasEditAssistantMessage,
-                }}
-              />
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="min-h-0 flex-1">
+                  <CopilotChat
+                    attachments={{
+                      enabled: true,
+                      accept: ATTACHMENT_ACCEPT,
+                      maxSize: ATTACHMENT_MAX_SIZE,
+                      onUpload: async (file) => {
+                        setRejectedFile(null);
+                        return uploadWithFilename(file);
+                      },
+                      onUploadFailed: (failure) =>
+                        setRejectedFile(describeUploadFailure(failure)),
+                    }}
+                    input={{ disclaimer: () => null, className: "pb-6" }}
+                    messageView={{
+                      userMessage: QuietCanvasEditMessage,
+                      assistantMessage: QuietCanvasEditAssistantMessage,
+                    }}
+                  />
+                </div>
+                {rejectedFile && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{rejectedFile}</AlertDescription>
+                    <AlertAction>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label="Dismiss"
+                        onClick={() => setRejectedFile(null)}
+                      >
+                        <X />
+                      </Button>
+                    </AlertAction>
+                  </Alert>
+                )}
+              </div>
             }
           />
         </div>

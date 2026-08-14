@@ -1,6 +1,6 @@
 # Problem framing
 
-Status: working assertions, revised 2026-08-13. Frames the *interaction-design* problem only; the service model and footprint dimension are fixed context (see §3).
+Status: working assertions, revised 2026-08-14. Frames the *interaction-design* problem only; the service model and footprint dimension are fixed context (see §3).
 
 ## 1. Problem statement
 
@@ -45,13 +45,15 @@ Only the context that changes design decisions.
 
 *Business.* The offering is a service agreement, not a machine (the [service-agreement spec](../specs/service-agreement/requirements.md)). This is fixed. Its interaction consequence is large: what gets configured are outcome terms — handling capacity, uptime, response time, term, monthly price — with the hardware spec derived beneath them. Elicitation therefore has a natural top layer that the product frame lacked. A second fixed decision, environmental footprint as a decision dimension (the [footprint spec](../specs/environmental-footprint/requirements.md)), means the interface must hold *two* optimization objectives at once; a single "best" candidate is no longer meaningful.
 
+*Procurement.* Agreements do not begin with a person at a configurator; they begin with an inbound requirements document. A new build is tendered — the customer's side issues an RFQ — and under the service frame that document speaks outcome terms, the layer the interface already configures. This is in frame as an *entrance*, not a reframe: the document seeds the workspace the operator later revises, so acquisition and revision are one document's life. Its interaction consequence is a flip in the conversation's opening job — from the user explaining what they need to the parties reconciling *deviations* between what the document asks and what the catalogue can promise ([a seeded candidate with named deviations beats compliance-checking by hand](assertions/deviations-beat-compliance-checking.md)). Prescriptive RFQs — hardware parameters written by a consultant, often against a competitor's catalogue — are a second, harder door held for later: their upward translation into outcome terms is the articulation barrier demonstrated on a real artifact.
+
 *User.* Three goal-based personas: the [delivery lead](jtbd/persona-delivery-lead.md), who needs early certainty because shaft dimensions get poured in concrete; the [design specifier](jtbd/persona-design-specifier.md), who iterates constantly on incomplete information and speaks only building language; the [building operator](jtbd/persona-building-operator.md), whose struggle sits in the stages a product configurator abandons — monitor, modify, conclude. The service frame makes the operator the primary persona, and the operator's characteristic move is *revision of an existing agreement*, not first-time configuration. Design for revisers, not for newcomers.
 
 *Domain.* Elevator configuration is the founding benchmark of knowledge-based configuration (VT, Sisyphus-VT: ~280 parameters, 88 constraints) and it was never a linear wizard — the original method is propose, check, repair. Industry practice (Tacton, Configit) converged on needs-based entry, continuous validity, and entry from any angle. The interaction pattern is not novel to this project; what is missing in the literature is its *frontend*.
 
 *Technology.* Z3 gives three operations the interaction can lean on directly: incremental `check` for continuous validity, `consequences` for greying out what is no longer reachable, and named unsat cores for explanations that trace to business rules. Shared agent state (CopilotKit v2) makes chat and canvas two views of one object rather than two stores to reconcile. These are enabling constraints — the interaction design should exploit exactly what the solver can prove and claim nothing more.
 
-*Content.* ~20 user-facing decisions over ~30–80 constraints; footprint and price data are illustrative with plausible relative magnitudes. Small enough that the whole configuration fits on one canvas — which is a fidelity limitation to state honestly, since a real platform exposes 20–40 decisions over 250+ parameters and the canvas would not fit.
+*Content.* ~20 user-facing decisions over ~30–80 constraints; footprint and price data are illustrative with plausible relative magnitudes, and RFQ documents are authored fixtures of the same epistemic status — there is no access to real tenders. Small enough that the whole configuration fits on one canvas — which is a fidelity limitation to state honestly, since a real platform exposes 20–40 decisions over 250+ parameters and the canvas would not fit.
 
 *Process.* Solo prototyping, no budget, no access to job performers, spec-anchored workflow, with the six specs through the service agreement implemented and the demo-scenarios and footprint specs still in draft ([../specs/README.md](../specs/README.md)). Discovery has to be cheap and continuous; there will be no discovery phase with a start and an end date.
 
@@ -68,6 +70,8 @@ The interaction-design hypotheses the prototype exists to examine. Each is provi
 | [Explanations grounded in unsat cores are sufficient for trust](assertions/cores-are-enough-for-trust.md) — no hallucinated justification needed | Constitution #6; consensus in the configuration literature |
 | [Outcome-level elicitation works](assertions/outcome-level-elicitation.md): people can specify an agreement in outcome terms and let hardware derive | Tacton's needs-based practice, plus the service frame |
 | [Two objectives (cost, footprint) held as an explicit pair make the trade-off legible](assertions/two-objectives-as-a-pair.md) where a single score would hide it | Carbon-presentation literature, all of it food labelling — the transfer to a capital good is itself an assumption |
+| [The representation of the agreement selects the user's moves](assertions/representation-selects-moves.md): a document elicits negotiation, a form elicits form-filling | Reasoning plus the dialogue literature on common ground; untested here — the basis of the genre choice in [models/Canvas anatomy.md](models/Canvas%20anatomy.md) |
+| [A seeded candidate with named deviations beats compliance-checking by hand](assertions/deviations-beat-compliance-checking.md): an inbound document seeds the agreement, its unmet requirements become a solver-computed deviation register | Deviation registers are existing tender practice, produced by hand; no evidence for the seeded flow — the [rfq-reconciliation spec](../specs/rfq-reconciliation/requirements.md) exists to test it |
 
 Three are load-bearing: [a candidate beats a question sequence](assertions/candidate-beats-questions.md), [ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md), and [two objectives held as a pair](assertions/two-objectives-as-a-pair.md). If showing the ripple fails the project loses its novelty; if showing a candidate fails the conversational surface is decoration.
 
@@ -76,6 +80,7 @@ Three are load-bearing: [a candidate beats a question sequence](assertions/candi
 - What is the unit of revision: a single variable, a named frame, or an intent expressed in outcome terms?
 - How much of the ripple to show — the full consequence set, the minimal core, or a narrated summary? *Decided 2026-08-13: minimal core plus repair deltas by default, full set one move away, narration never load-bearing — [models/Ripple storyboard.md](models/Ripple%20storyboard.md) §3.*
 - Does the canvas represent one configuration with history, or several live candidates at once? (the [nonlinear-interaction spec](../specs/nonlinear-interaction/requirements.md) says frames; the visual model is unresolved.)
+- When a document is over-constrained, which maximal subset of its requirements should the first candidate satisfy — fewest deviations, cheapest result, or weighted requirements? *Decided 2026-08-14: fewest deviations first, cheapest monthly completion as tie-break, weights deferred to the prescriptive stage — the [rfq-reconciliation design](../specs/rfq-reconciliation/design.md).*
 
 ## Related
 

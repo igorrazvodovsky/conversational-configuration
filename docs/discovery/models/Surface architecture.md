@@ -41,6 +41,6 @@ The chosen patterns compose: the living document is the geometry, static compone
 
 ## 3. Edges this model does not settle
 
-- The per-artifact form on the canvas, and the status vocabulary it uses. Canvas anatomy's question.
+- The per-artifact form on the canvas, and the status vocabulary it uses. Canvas anatomy's question — now drawn in [Canvas anatomy.md](Canvas%20anatomy.md).
 - Whether the declarative path earns a place after all — a footprint or price-breakdown card whose shape varies with the configuration is its natural candidate (the [footprint spec](../../specs/environmental-footprint/requirements.md)).
 - What the split does on a small screen. Below `lg` the two panes stack vertically, so both stay reachable, but the pattern has only ever been exercised at desktop widths and is untested against any principle. Their pixel floors apply side by side only; a short viewport can leave either pane too small to work in.

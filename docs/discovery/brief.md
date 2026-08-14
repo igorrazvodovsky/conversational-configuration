@@ -1,6 +1,6 @@
 # Discovery brief
 
-Standing summary of the interaction-design discovery for the conversational configurator. Revised 2026-08-13. Read this first; the other three artifacts hold the detail.
+Standing summary of the interaction-design discovery for the conversational configurator. Revised 2026-08-14. Read this first; the other three artifacts hold the detail.
 
 ## 1. The challenge, the outcome, the direction
 
@@ -22,11 +22,11 @@ Three conditions make this problem what it is.
 
 *Revision is where the design problem actually lives.* Changing an early decision ripples through constraints the user never saw. A linear transcript has nowhere to show that ripple, so revision degrades into starting over. This is the point at which conversational configuration either earns its existence or does not, and it is the project's novelty claim.
 
-Seven assertions carry the design — one note each, indexed in [problem-framing.md](problem-framing.md) §4. Three are load-bearing: that showing a valid candidate beats interrogation ([a candidate beats a question sequence](assertions/candidate-beats-questions.md)), that ripple shown at the moment of revision makes nonlinear change tolerable ([ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md)), and that two objectives held as an explicit pair beat a collapsed score ([two objectives held as a pair](assertions/two-objectives-as-a-pair.md)). The second is the one whose failure would cost the project its claim; the third is the least supported by anything but reasoning.
+Nine assertions carry the design — one note each, indexed in [problem-framing.md](problem-framing.md) §4. Three are load-bearing: that showing a valid candidate beats interrogation ([a candidate beats a question sequence](assertions/candidate-beats-questions.md)), that ripple shown at the moment of revision makes nonlinear change tolerable ([ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md)), and that two objectives held as an explicit pair beat a collapsed score ([two objectives held as a pair](assertions/two-objectives-as-a-pair.md)). The second is the one whose failure would cost the project its claim; the third is the least supported by anything but reasoning.
 
 ## 3. The direction, in short
 
-The document is durable; the conversation is not. Both parties act on the same object, and both kinds of action are visible and undoable. There is no start and no finish — you join a document in one state and leave it in another, which is what mid-contract revision and renewal already are. The surfaces that carry this are settled: a split workspace, with agent-generated UI as purpose-built components whose options are computed from solver state rather than composed by the model ([models/Surface architecture.md](models/Surface%20architecture.md)).
+The document is durable; the conversation is not. Both parties act on the same object, and both kinds of action are visible and undoable. There is no start and no finish — you join a document in one state and leave it in another, which is what mid-contract revision and renewal already are. The document may also be born seeded: real procurement opens with an inbound RFQ, which under the service frame speaks outcome terms, so the opening conversation reconciles deviations between document and catalogue rather than eliciting a building ([problem-framing.md](problem-framing.md) §3, [a seeded candidate with named deviations beats compliance-checking by hand](assertions/deviations-beat-compliance-checking.md)). The surfaces that carry this are settled: a split workspace, with agent-generated UI as purpose-built components whose options are computed from solver state rather than composed by the model ([models/Surface architecture.md](models/Surface%20architecture.md)).
 
 Eight principles, each written to reject ideas — one note each in [principles/](principles/), indexed in [direction.md](direction.md) §2:
 
