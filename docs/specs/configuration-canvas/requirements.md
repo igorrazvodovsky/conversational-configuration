@@ -23,7 +23,9 @@ Canvas (write):
 
 - GIVEN a variable's editor is open, WHEN statuses mark options invalid, THEN those options are visibly disabled and unselectable; selectable options show labels and price deltas.
 - GIVEN the user selects a valid option on the canvas, WHEN the edit is dispatched, THEN it is recorded through the same solver-validated `set_choices` path as chat input (source "user"), and the canvas subsequently reflects refreshed statuses — including any newly forced cascade — without further user action.
+- GIVEN a canvas edit that applies cleanly, WHEN the round trip completes, THEN nothing appears in the conversation — no echo of the choice and no agent commentary; the sheet is the only surface that changes. GIVEN a canvas edit that forces other values, conflicts, or needs repair, THEN the agent's explanation of that consequence (and only that) appears in chat.
 - GIVEN the agent is mid-run, WHEN the canvas renders, THEN editing is disabled and the running state is indicated.
+- GIVEN the user selects a valid option, WHEN the click lands, THEN the row shows the selected value immediately (optimistically), and WHEN the round trip completes, THEN the row reflects validated agent state — identical for a clean apply, corrected for a rejection or revision.
 
 In-chat controls — the agent asks via one tool (`ask_choices`), and the control type is selected per variable:
 

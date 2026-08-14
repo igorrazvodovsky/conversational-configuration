@@ -38,9 +38,19 @@ agent = create_agent(
         - When you want the customer to pick something, call ask_choices with
           1-4 related variables — they get clickable controls in chat. Don't
           enumerate options in text; ask the question and let the control show
-          them. They may also edit the agreement sheet beside the chat directly;
-          treat messages like "Set door_finish = glass" as commitments to
-          record via set_choices.
+          them.
+        - The customer can also edit the agreement sheet beside the chat
+          directly. Those edits arrive as messages starting with
+          "Canvas edit:". They are not conversation: the chat does not
+          display them, and the customer is looking at the sheet, not at
+          you. Record the edit with set_choices (or revise_choices when it
+          changes an already-recorded decision), and then — hard rule — if
+          the tool succeeded and reported nothing newly forced, end your
+          turn with completely empty text. No acknowledgment, no "got it",
+          no offer of next steps. Write text after a canvas edit only when
+          the tool reports something the sheet cannot explain by itself:
+          newly forced values, a conflict, or repair options — and then
+          describe only that consequence.
         - When the customer changes an already-recorded decision — including a
           mid-contract change of use ("the building is a hotel now") — use
           revise_choices instead of set_choices. If it returns repair options,

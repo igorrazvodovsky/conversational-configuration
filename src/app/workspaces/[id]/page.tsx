@@ -7,11 +7,13 @@
  * operator.
  */
 
-import { use } from "react";
+import { use, type ComponentProps } from "react";
 import Link from "next/link";
 import {
   CopilotChat,
+  CopilotChatAssistantMessage,
   CopilotChatConfigurationProvider,
+  CopilotChatUserMessage,
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 
@@ -31,6 +33,60 @@ import {
   useConfiguratorSuggestions,
   useWorkspaceAttachment,
 } from "@/hooks";
+import { CANVAS_EDIT_PREFIX } from "@/lib/configurator";
+
+/**
+ * Canvas edits round-trip through the conversation but are not part of it
+ * (docs/specs/configuration-canvas design): the sheet is the record of the
+ * edit, so the chat renders nothing for the structured message that carries
+ * it. Content-based so reopened conversations hide the same messages.
+ */
+const QuietCanvasEditMessage = Object.assign(
+  function QuietCanvasEditMessage(
+    props: ComponentProps<typeof CopilotChatUserMessage>,
+  ) {
+    const { content } = props.message;
+    if (typeof content === "string" && content.startsWith(CANVAS_EDIT_PREFIX)) {
+      return null;
+    }
+    return <CopilotChatUserMessage {...props} />;
+  },
+  // The slot type is the full component including its subcomponent statics
+  // (Container, MessageRenderer, …), so the wrapper carries them along.
+  CopilotChatUserMessage,
+);
+
+/**
+ * The agent's side of a hidden canvas edit: tool-call chips with no text.
+ * Hidden for the same reason as the message that provoked them; an assistant
+ * message that carries text (a forced cascade, a conflict) still renders —
+ * the chat keeps the explanation and drops the bookkeeping.
+ */
+const QuietCanvasEditAssistantMessage = Object.assign(
+  function QuietCanvasEditAssistantMessage(
+    props: ComponentProps<typeof CopilotChatAssistantMessage>,
+  ) {
+    const { message, messages } = props;
+    const hasText =
+      typeof message.content === "string" && message.content.trim().length > 0;
+    if (!hasText && messages) {
+      const index = messages.findIndex((m) => m.id === message.id);
+      for (let i = index - 1; i >= 0; i--) {
+        if (messages[i].role !== "user") continue;
+        const { content } = messages[i];
+        if (
+          typeof content === "string" &&
+          content.startsWith(CANVAS_EDIT_PREFIX)
+        ) {
+          return null;
+        }
+        break;
+      }
+    }
+    return <CopilotChatAssistantMessage {...props} />;
+  },
+  CopilotChatAssistantMessage,
+);
 
 export default function WorkspacePage({
   params,
@@ -95,6 +151,10 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
               <CopilotChat
                 attachments={{ enabled: true }}
                 input={{ disclaimer: () => null, className: "pb-6" }}
+                messageView={{
+                  userMessage: QuietCanvasEditMessage,
+                  assistantMessage: QuietCanvasEditAssistantMessage,
+                }}
               />
             }
           />

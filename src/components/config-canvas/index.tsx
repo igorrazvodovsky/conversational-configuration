@@ -5,12 +5,13 @@
  * frames strip from docs/specs/nonlinear-interaction).
  *
  * Reads agent.state.configuration; every edit round-trips through the agent
- * as a visible structured message handled by set_choices, so the solver stays
- * the single source of validity.
+ * as a structured message handled by set_choices, so the solver stays the
+ * single source of validity. The message is hidden from the chat — the sheet
+ * is the record of the edit, the conversation only carries consequences.
  */
 
 import { useAgent } from "@copilotkit/react-core/v2";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bookmark, Check, Lock, Sparkles, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ import {
   Candidate,
   Configuration,
   ModelVariable,
-  choiceMessage,
+  canvasEditMessage,
   footprintBlock,
   formatCO2,
   formatMonthly,
@@ -62,13 +63,25 @@ export function ConfigCanvas() {
   const hasAnything =
     Object.keys(config.choices).length > 0 || config.candidate !== null;
 
+  // Optimistic overlay: the clicked value shows on its row immediately and is
+  // discarded wholesale when the run ends — validated agent state then renders
+  // the truth, identical on a clean apply, corrected on a rejection. Ephemeral
+  // display state, not a store (constitution #3); it can only hold options
+  // that were valid at click time because invalid ones are unclickable.
+  const [pending, setPending] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!isRunning) setPending({});
+  }, [isRunning]);
+
   const dispatch = (content: string) => {
     agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
     agent.runAgent();
   };
 
-  const dispatchChoice = (variable: string, value: string) =>
-    dispatch(choiceMessage([{ variable, value }]));
+  const dispatchChoice = (variable: string, value: string) => {
+    setPending((p) => ({ ...p, [variable]: value }));
+    dispatch(canvasEditMessage([{ variable, value }]));
+  };
 
   return (
     <ScrollArea className="h-full bg-background">
@@ -153,6 +166,7 @@ export function ConfigCanvas() {
                     config={config}
                     termMonths={termMonthsInEffect(config)}
                     disabled={isRunning}
+                    pendingValue={pending[variable.name]}
                     onSelect={dispatchChoice}
                   />
                 ))}
@@ -265,16 +279,20 @@ function VariableRow({
   config,
   termMonths,
   disabled,
+  pendingValue,
   onSelect,
 }: {
   variable: ModelVariable;
   config: Configuration;
   termMonths: number;
   disabled: boolean;
+  pendingValue?: string;
   onSelect: (variable: string, value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const display = currentDisplay(variable, config);
+  const display = pendingValue
+    ? { value: pendingValue, kind: "user" as const }
+    : currentDisplay(variable, config);
   const statuses = config.statuses[variable.name] ?? {};
   const badge = display.kind in KIND_BADGE ? KIND_BADGE[display.kind] : null;
   const editable = display.kind !== "forced";

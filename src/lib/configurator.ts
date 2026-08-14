@@ -149,7 +149,7 @@ export function termMonthsInEffect(config: Configuration): number {
 }
 
 /**
- * The structured canvas-edit / control-activation message (docs/specs/configuration-canvas design):
+ * The structured control-activation message (docs/specs/configuration-canvas design):
  * a visible user message the agent records via set_choices. Includes both the
  * human-readable labels and the exact codes so the LLM never has to guess.
  */
@@ -161,6 +161,21 @@ export function choiceMessage(
     return `Set ${varLabel} to ${optionLabel(variable, value)} (${variable}=${value})`;
   });
   return lines.join("\n");
+}
+
+/**
+ * Marks a canvas-originated edit. The chat renders nothing for messages
+ * carrying this prefix, and the agent prompt keys on it to stay quiet when
+ * the edit applies cleanly (docs/specs/configuration-canvas design) — the
+ * sheet already shows the change, so the conversation doesn't repeat it.
+ */
+export const CANVAS_EDIT_PREFIX = "Canvas edit: ";
+
+/** A canvas edit: the choiceMessage grammar, hidden from the chat. */
+export function canvasEditMessage(
+  selections: { variable: string; value: string }[],
+): string {
+  return CANVAS_EDIT_PREFIX + choiceMessage(selections);
 }
 
 /**
