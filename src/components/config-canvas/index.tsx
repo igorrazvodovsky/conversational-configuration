@@ -40,6 +40,7 @@ import {
   Configuration,
   RegisterEntry,
   canvasEditMessage,
+  completionLabel,
   formatMonthly,
   layerOf,
   liveValue,
@@ -288,9 +289,7 @@ export function ConfigCanvas({
                 {formatMonthly(config.candidate.price)}
               </span>
               <span className="ml-2 text-xs text-muted-foreground">
-                {config.candidate.objective === "co2"
-                  ? "lowest-footprint completion"
-                  : "cheapest completion"}
+                {completionLabel(config.candidate)}
               </span>
             </p>
           )}

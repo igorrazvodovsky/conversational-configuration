@@ -179,9 +179,10 @@ def apply_choices(
     for var, val in new_choices.items():
         choices[var] = {"value": val, "source": source}
 
+    was_forced = _forced(config["statuses"])
     newly_forced = {
         var: val for var, val in _forced(statuses).items()
-        if _forced(config["statuses"]).get(var) != val
+        if was_forced.get(var) != val
     }
     new_config: Configuration = _carry_rfq(config, {
         "choices": choices,
@@ -671,7 +672,21 @@ def _label(var: str, val: str) -> str:
 
 
 def _format_co2(kg: int) -> str:
-    return f"{kg / 1000:.1f} t CO₂e" if abs(kg) >= 1000 else f"{kg} kg CO₂e"
+    """kg CO₂e → "12.4 t CO₂e", or "540 kg CO₂e" below a tonne.
+
+    Tenths round half away from zero, in integer arithmetic, because that is
+    what `formatCO2` in `src/lib/configurator.ts` does — the canvas and the
+    agent's prose quote the same lifetime total, and Python's own `:.1f`
+    rounds half to even, so 1250 kg read 1.2 t in chat beside 1.3 t on the
+    sheet. Reimplementing rather than sharing is unavoidable across the two
+    runtimes; agreeing on the rule is not. The two still part above 1000 t,
+    where the frontend's locale formatter groups thousands and this does not —
+    a figure one elevator cannot reach.
+    """
+    if abs(kg) < 1000:
+        return f"{kg} kg CO₂e"
+    tenths = (abs(kg) + 50) // 100
+    return f"{'-' if kg < 0 else ''}{tenths // 10}.{tenths % 10} t CO₂e"
 
 
 def _signed_co2(kg: int) -> str:
@@ -753,6 +768,80 @@ def _commit(runtime: ToolRuntime, config: Configuration) -> None:
         print(f"workspace {workspace_id!r} not found — configuration not persisted")
 
 
+def _undecided(config: Configuration) -> list[str]:
+    """Variables neither recorded as a choice nor forced by the rules."""
+    forced = _forced(config["statuses"])
+    return [
+        var for var in MODEL.variables
+        if var not in config["choices"] and var not in forced
+    ]
+
+
+# -- tool returns ---------------------------------------------------------
+#
+# Every tool answers with a ToolMessage the agent reads, optionally alongside
+# the state it changed. The wording of those messages is what the LLM acts on
+# and no automated check sees it (the default suite exercises the transitions
+# above, and the scenario harness asserts on tool calls, never prose), so these
+# helpers carry the shapes and leave every sentence to the call site.
+
+
+def _reply(runtime: ToolRuntime, content: str, **update) -> Command:
+    return Command(update={
+        **update,
+        "messages": [ToolMessage(content=content, tool_call_id=runtime.tool_call_id)],
+    })
+
+
+def _error(runtime: ToolRuntime, e: Exception) -> Command:
+    return _reply(runtime, f"ERROR: {e}")
+
+
+def _rejected(runtime: ToolRuntime, e: ConflictError) -> Command:
+    return _reply(runtime, _conflict_payload(e))
+
+
+def _committed(runtime: ToolRuntime, config: Configuration, lines: list[str]) -> Command:
+    """A tool that moved the agreement: write through to the workspace, then
+    report. The write-through precedes the reply everywhere, so a message the
+    agent has read always describes a durable agreement."""
+    _commit(runtime, config)
+    return _reply(runtime, "\n".join(lines), configuration=config)
+
+
+def _repair_options(
+    runtime: ToolRuntime, config: Configuration, changes: dict[str, str]
+) -> Command:
+    """A revision that collides with recorded choices comes back as
+    solver-computed repair options, rendered as clickable cards. When the
+    requested changes are contradictory on their own, no repair to the *other*
+    choices can help, so the conflict itself is what the agent gets."""
+    try:
+        payload = build_repair_payload(config, changes)
+    except ConflictError as e:
+        return _rejected(runtime, e)
+    return _reply(runtime, json.dumps(payload))
+
+
+def _consequence_lines(
+    config: Configuration,
+    new_config: Configuration,
+    newly_forced: dict[str, str],
+    discarded: str = "The previous candidate no longer fits and was discarded.",
+) -> list[str]:
+    """What a transition did beyond what was asked: the values the rules now
+    force, and whether the standing candidate survived."""
+    lines = []
+    if newly_forced:
+        lines.append(
+            "Now forced by the rules (announce these to the customer): "
+            + ", ".join(f"{_label(v, val)} ({v})" for v, val in newly_forced.items())
+        )
+    if new_config["candidate"] is None and config["candidate"] is not None:
+        lines.append(discarded)
+    return lines
+
+
 # -- tools ----------------------------------------------------------------
 
 
@@ -770,27 +859,13 @@ def set_choices(choices: dict[str, str], source: Source, runtime: ToolRuntime) -
     try:
         new_config, newly_forced = apply_choices(config, choices, source)
     except ValueError as e:
-        return Command(update={"messages": [
-            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
-        ]})
+        return _error(runtime, e)
     except ConflictError as e:
-        return Command(update={"messages": [
-            ToolMessage(content=_conflict_payload(e), tool_call_id=runtime.tool_call_id)
-        ]})
+        return _rejected(runtime, e)
 
     lines = ["Recorded: " + ", ".join(f"{v}={val}" for v, val in choices.items())]
-    if newly_forced:
-        lines.append(
-            "Now forced by the rules (announce these to the customer): "
-            + ", ".join(f"{_label(v, val)} ({v})" for v, val in newly_forced.items())
-        )
-    if new_config["candidate"] is None and config["candidate"] is not None:
-        lines.append("The previous candidate no longer fits and was discarded.")
-    _commit(runtime, new_config)
-    return Command(update={
-        "configuration": new_config,
-        "messages": [ToolMessage(content="\n".join(lines), tool_call_id=runtime.tool_call_id)],
-    })
+    lines += _consequence_lines(config, new_config, newly_forced)
+    return _committed(runtime, new_config, lines)
 
 
 @tool
@@ -814,37 +889,15 @@ def revise_choices(
     try:
         new_config, newly_forced = revise(config, changes, drop or [], source)
     except ValueError as e:
-        return Command(update={"messages": [
-            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
-        ]})
+        return _error(runtime, e)
     except ConflictError:
-        try:
-            payload = build_repair_payload(config, changes)
-        except ConflictError as e:
-            # the requested changes are contradictory on their own — no repair
-            # to the *other* choices can help
-            return Command(update={"messages": [
-                ToolMessage(content=_conflict_payload(e), tool_call_id=runtime.tool_call_id)
-            ]})
-        return Command(update={"messages": [
-            ToolMessage(content=json.dumps(payload), tool_call_id=runtime.tool_call_id)
-        ]})
+        return _repair_options(runtime, config, changes)
 
     lines = ["Revised: " + ", ".join(f"{v}={val}" for v, val in changes.items())]
     if drop:
         lines.append("Withdrew: " + ", ".join(drop))
-    if newly_forced:
-        lines.append(
-            "Now forced by the rules (announce these to the customer): "
-            + ", ".join(f"{_label(v, val)} ({v})" for v, val in newly_forced.items())
-        )
-    if new_config["candidate"] is None and config["candidate"] is not None:
-        lines.append("The previous candidate no longer fits and was discarded.")
-    _commit(runtime, new_config)
-    return Command(update={
-        "configuration": new_config,
-        "messages": [ToolMessage(content="\n".join(lines), tool_call_id=runtime.tool_call_id)],
-    })
+    lines += _consequence_lines(config, new_config, newly_forced)
+    return _committed(runtime, new_config, lines)
 
 
 @tool
@@ -854,16 +907,8 @@ def clear_choices(variables: list[str], runtime: ToolRuntime) -> Command:
     try:
         new_config = withdraw_choices(config, variables)
     except ValueError as e:
-        return Command(update={"messages": [
-            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
-        ]})
-    _commit(runtime, new_config)
-    return Command(update={
-        "configuration": new_config,
-        "messages": [ToolMessage(
-            content=f"Withdrew: {', '.join(variables)}", tool_call_id=runtime.tool_call_id
-        )],
-    })
+        return _error(runtime, e)
+    return _committed(runtime, new_config, [f"Withdrew: {', '.join(variables)}"])
 
 
 @tool
@@ -881,11 +926,7 @@ def propose_completion(runtime: ToolRuntime, objective: Objective = "price") -> 
     other_assignment, other_price = SOLVER.complete(_chosen_values(config), other)
     content = completion_message(new_config["candidate"], objective,
                                  other_assignment, other_price)
-    _commit(runtime, new_config)
-    return Command(update={
-        "configuration": new_config,
-        "messages": [ToolMessage(content=content, tool_call_id=runtime.tool_call_id)],
-    })
+    return _committed(runtime, new_config, [content])
 
 
 @tool("save_frame")
@@ -897,18 +938,11 @@ def save_frame_tool(name: str, runtime: ToolRuntime) -> Command:
     try:
         new_config = save_frame(config, name)
     except ValueError as e:
-        return Command(update={"messages": [
-            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
-        ]})
+        return _error(runtime, e)
     frame = new_config["frames"][-1]
-    _commit(runtime, new_config)
-    return Command(update={
-        "configuration": new_config,
-        "messages": [ToolMessage(
-            content=f"Saved frame {frame['name']!r} at {frame['price']} EUR/month.",
-            tool_call_id=runtime.tool_call_id,
-        )],
-    })
+    return _committed(runtime, new_config, [
+        f"Saved frame {frame['name']!r} at {frame['price']} EUR/month."
+    ])
 
 
 @tool
@@ -932,18 +966,11 @@ def adopt_frame_tool(name: str, runtime: ToolRuntime) -> Command:
     try:
         new_config = adopt_frame(config, name)
     except ValueError as e:
-        return Command(update={"messages": [
-            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
-        ]})
+        return _error(runtime, e)
     price = new_config["candidate"]["price"]
-    _commit(runtime, new_config)
-    return Command(update={
-        "configuration": new_config,
-        "messages": [ToolMessage(
-            content=f"Adopted frame {name!r} — agreement replaced, {price} EUR/month.",
-            tool_call_id=runtime.tool_call_id,
-        )],
-    })
+    return _committed(runtime, new_config, [
+        f"Adopted frame {name!r} — agreement replaced, {price} EUR/month."
+    ])
 
 
 # -- RFQ tools (docs/specs/rfq-reconciliation) ----------------------------
@@ -1033,9 +1060,7 @@ def ingest_rfq(
     try:
         new_config, seeded, demoted = ingest(config, requirements, unmapped, budget_cap)
     except ValueError as e:
-        return Command(update={"messages": [
-            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
-        ]})
+        return _error(runtime, e)
 
     rfq = new_config["rfq"]
     lines = [
@@ -1076,27 +1101,18 @@ def ingest_rfq(
             + ", ".join(u["clause"] for u in rfq["unmapped"] if u["clause"])
         )
     lines += _budget_lines(new_config)
-
-    forced = _forced(new_config["statuses"])
-    undecided = [
-        var for var in MODEL.variables
-        if var not in new_config["choices"] and var not in forced
-    ]
     lines.append(
         "The document leaves these open — ask about these and nothing else: "
-        + (", ".join(undecided) or "nothing; the document settles everything")
+        + (", ".join(_undecided(new_config))
+           or "nothing; the document settles everything")
     )
-    _commit(runtime, new_config)
     workspace_id = runtime.state.get("workspace_id")
     if workspace_id:
         try:
             workspace_store.attach_rfq(workspace_id, document_text)
         except KeyError:
             print(f"workspace {workspace_id!r} not found — RFQ text not persisted")
-    return Command(update={
-        "configuration": new_config,
-        "messages": [ToolMessage(content="\n".join(lines), tool_call_id=runtime.tool_call_id)],
-    })
+    return _committed(runtime, new_config, lines)
 
 
 @tool
@@ -1123,26 +1139,13 @@ def reconcile_requirement(
     try:
         new_config, newly_forced, applied = reconcile(config, variable, move, value)
     except ValueError as e:
-        return Command(update={"messages": [
-            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
-        ]})
+        return _error(runtime, e)
     except ConflictError as conflict:
         # Only "revise" can collide — "accept" pins a value the agreement
         # already holds — so only it has a revision to build repairs for.
         if value is None:
-            return Command(update={"messages": [
-                ToolMessage(content=_conflict_payload(conflict),
-                            tool_call_id=runtime.tool_call_id)
-            ]})
-        try:
-            payload = build_repair_payload(config, {variable: value})
-        except ConflictError as e:
-            return Command(update={"messages": [
-                ToolMessage(content=_conflict_payload(e), tool_call_id=runtime.tool_call_id)
-            ]})
-        return Command(update={"messages": [
-            ToolMessage(content=json.dumps(payload), tool_call_id=runtime.tool_call_id)
-        ]})
+            return _rejected(runtime, conflict)
+        return _repair_options(runtime, config, {variable: value})
 
     clauses = ", ".join(
         r["clause"] for r in new_config["rfq"]["requirements"] if r["variable"] == variable
@@ -1156,20 +1159,13 @@ def reconcile_requirement(
                  f"now {_label(variable, applied)}."]
     else:
         lines = [f"Clause {clauses} left open — still an unreconciled deviation."]
-    if newly_forced:
-        lines.append(
-            "Now forced by the rules (announce these to the customer): "
-            + ", ".join(f"{_label(v, val)} ({v})" for v, val in newly_forced.items())
-        )
-    if new_config["candidate"] is None and config["candidate"] is not None:
-        lines.append("The previous candidate no longer fits and was discarded — "
-                     "propose a completion to price the reconciled agreement.")
+    lines += _consequence_lines(
+        config, new_config, newly_forced,
+        discarded="The previous candidate no longer fits and was discarded — "
+                  "propose a completion to price the reconciled agreement.",
+    )
     lines += _register_lines(new_config)
-    _commit(runtime, new_config)
-    return Command(update={
-        "configuration": new_config,
-        "messages": [ToolMessage(content="\n".join(lines), tool_call_id=runtime.tool_call_id)],
-    })
+    return _committed(runtime, new_config, lines)
 
 
 @tool
@@ -1181,23 +1177,19 @@ def name_workspace(name: str, runtime: ToolRuntime) -> Command:
     again whenever a better identity emerges."""
     workspace_id = runtime.state.get("workspace_id")
     if not workspace_id:
-        return Command(update={"messages": [ToolMessage(
-            content="No workspace attached to this conversation — nothing to name.",
-            tool_call_id=runtime.tool_call_id,
-        )]})
+        return _reply(
+            runtime,
+            "No workspace attached to this conversation — nothing to name.",
+        )
     try:
         workspace_store.rename_workspace(workspace_id, name)
     except (KeyError, ValueError) as e:
-        return Command(update={"messages": [
-            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
-        ]})
-    return Command(update={
-        "workspace_name": name.strip(),
-        "messages": [ToolMessage(
-            content=f"Named the elevator {name.strip()!r}.",
-            tool_call_id=runtime.tool_call_id,
-        )],
-    })
+        return _error(runtime, e)
+    return _reply(
+        runtime,
+        f"Named the elevator {name.strip()!r}.",
+        workspace_name=name.strip(),
+    )
 
 
 @tool
@@ -1206,10 +1198,6 @@ def get_configuration(runtime: ToolRuntime) -> str:
     and which variables are still undecided."""
     config = _get_config(runtime)
     forced = _forced(config["statuses"])
-    undecided = [
-        var for var in MODEL.variables
-        if var not in config["choices"] and var not in forced
-    ]
     lines = []
     workspace_id = runtime.state.get("workspace_id")
     if workspace_id:
@@ -1225,7 +1213,7 @@ def get_configuration(runtime: ToolRuntime) -> str:
         lines.append(f"- {var} = {c['value']} (source: {c['source']})")
     if forced:
         lines.append("Forced by rules: " + ", ".join(f"{v}={val}" for v, val in forced.items()))
-    lines.append("Undecided: " + (", ".join(undecided) or "none"))
+    lines.append("Undecided: " + (", ".join(_undecided(config)) or "none"))
     if config["candidate"]:
         line = f"Candidate agreement at {config['candidate']['price']} EUR/month"
         fp = config["candidate"].get("footprint")

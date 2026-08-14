@@ -12,12 +12,11 @@
  */
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
 import { ToolReasoning } from "@/components/tool-rendering";
 import { cn } from "@/lib/utils";
 import { abandonMessage, repairMessage } from "@/lib/configurator";
 import { useCardDispatch } from "./card-dispatch";
+import { CardPending, CardProps, CardShell, parsePayload } from "./card-shell";
 
 interface DescribedValue {
   variable: string;
@@ -39,88 +38,69 @@ interface Payload {
   repairs: RepairOption[];
 }
 
-interface RepairOptionsProps {
-  toolCallId: string;
-  status: string;
-  result?: string;
-}
-
-export function RepairOptions({ toolCallId, status, result }: RepairOptionsProps) {
+export function RepairOptions({ toolCallId, status, result }: CardProps) {
   const { inert, dispatch } = useCardDispatch(toolCallId);
 
   if (status !== "complete" || !result) {
-    return (
-      <div className="my-2 flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner className="size-3" /> checking the revision…
-      </div>
-    );
+    return <CardPending>checking the revision…</CardPending>;
   }
 
-  let payload: Payload;
-  try {
-    payload = JSON.parse(result);
-    if (payload.kind !== "repairs") throw new Error("not a repair payload");
-  } catch {
-    // Passthrough ("Revised: …") and errors render as a plain tool row.
-    return <ToolReasoning name="revise_choices" status={status} />;
-  }
+  const payload = parsePayload<Payload>(result, (p) => p.kind === "repairs");
+  // Passthrough ("Revised: …") and errors render as a plain tool row.
+  if (!payload) return <ToolReasoning name="revise_choices" status={status} />;
 
   const wanted = payload.changes
     .map((c) => `${c.label}: ${c.valueLabel}`)
     .join(", ");
 
   return (
-    <Card
-      className={`my-2 gap-0 py-0 shadow-none ${inert ? "opacity-60" : ""}`}
-    >
-      <CardContent className="space-y-2 p-3">
-        <p className="text-sm">
-          <span className="font-medium">{wanted}</span> collides with earlier
-          decisions. Ways forward:
-        </p>
+    <CardShell inert={inert} className="space-y-2">
+      <p className="text-sm">
+        <span className="font-medium">{wanted}</span> collides with earlier
+        decisions. Ways forward:
+      </p>
 
-        {payload.repairs.map((option, i) => (
-          <RepairButton
-            key={i}
-            disabled={inert}
-            onClick={() => dispatch(repairMessage(option.drop, payload.changes))}
-          >
-            <div>
-              Give up{" "}
-              {option.drop.map((d, j) => (
-                <span key={d.variable}>
-                  {j > 0 && ", "}
-                  <span className="font-medium">
-                    {d.label} = {d.valueLabel}
-                  </span>
-                </span>
-              ))}
-            </div>
-            {option.ripple.length > 0 && (
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                then follows:{" "}
-                {option.ripple
-                  .map((r) => `${r.label} ${r.valueLabel}`)
-                  .join(", ")}
-              </div>
-            )}
-            {option.rules.length > 0 && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
-                {option.rules.map((r) => r.label).join("; ")}
-              </div>
-            )}
-          </RepairButton>
-        ))}
-
+      {payload.repairs.map((option, i) => (
         <RepairButton
+          key={i}
           disabled={inert}
-          onClick={() => dispatch(abandonMessage)}
-          className="border-dashed text-muted-foreground"
+          onClick={() => dispatch(repairMessage(option.drop, payload.changes))}
         >
-          Keep everything as it is — abandon this change
+          <div>
+            Give up{" "}
+            {option.drop.map((d, j) => (
+              <span key={d.variable}>
+                {j > 0 && ", "}
+                <span className="font-medium">
+                  {d.label} = {d.valueLabel}
+                </span>
+              </span>
+            ))}
+          </div>
+          {option.ripple.length > 0 && (
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              then follows:{" "}
+              {option.ripple
+                .map((r) => `${r.label} ${r.valueLabel}`)
+                .join(", ")}
+            </div>
+          )}
+          {option.rules.length > 0 && (
+            <div className="mt-0.5 text-[10px] text-muted-foreground">
+              {option.rules.map((r) => r.label).join("; ")}
+            </div>
+          )}
         </RepairButton>
-      </CardContent>
-    </Card>
+      ))}
+
+      <RepairButton
+        disabled={inert}
+        onClick={() => dispatch(abandonMessage)}
+        className="border-dashed text-muted-foreground"
+      >
+        Keep everything as it is — abandon this change
+      </RepairButton>
+    </CardShell>
   );
 }
 

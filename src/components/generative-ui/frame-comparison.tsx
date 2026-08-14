@@ -10,10 +10,9 @@
  */
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
 import { Footprint, adoptMessage, formatCO2, formatMonthly } from "@/lib/configurator";
 import { useCardDispatch } from "./card-dispatch";
+import { CardPending, CardProps, CardShell, parsePayload } from "./card-shell";
 
 interface SideValue {
   value: string | null; // null when a frame persisted before the service frame lacks an agreement variable
@@ -31,34 +30,18 @@ interface Payload {
   footprintDelta: number; // 0 when either side lacks a footprint
 }
 
-interface FrameComparisonProps {
-  toolCallId: string;
-  status: string;
-  result?: string;
-}
-
-export function FrameComparison({
-  toolCallId,
-  status,
-  result,
-}: FrameComparisonProps) {
+export function FrameComparison({ toolCallId, status, result }: CardProps) {
   const { inert, dispatch } = useCardDispatch(toolCallId);
 
   if (status !== "complete" || !result) {
-    return (
-      <div className="my-2 flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner className="size-3" /> comparing…
-      </div>
-    );
+    return <CardPending>comparing…</CardPending>;
   }
 
-  let payload: Payload;
-  try {
-    payload = JSON.parse(result);
-    if (payload.kind !== "frame_comparison") throw new Error("bad payload");
-  } catch {
-    return null; // ERROR results are relayed by the agent in text
-  }
+  const payload = parsePayload<Payload>(
+    result,
+    (p) => p.kind === "frame_comparison",
+  );
+  if (!payload) return null; // ERROR results are relayed by the agent in text
 
   const sides = [
     {
@@ -79,86 +62,82 @@ export function FrameComparison({
   const footprintDelta = payload.footprintDelta ?? 0;
 
   return (
-    <Card
-      className={`my-2 gap-0 py-0 shadow-none ${inert ? "opacity-60" : ""}`}
-    >
-      <CardContent className="p-3">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left">
-              <th className="pb-2 font-normal text-xs text-muted-foreground">
-                {payload.differences.length} difference
-                {payload.differences.length === 1 ? "" : "s"}
+    <CardShell inert={inert}>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left">
+            <th className="pb-2 font-normal text-xs text-muted-foreground">
+              {payload.differences.length} difference
+              {payload.differences.length === 1 ? "" : "s"}
+            </th>
+            {sides.map((s) => (
+              <th key={s.key} className="pb-2 font-medium">
+                {s.isCurrent ? "current" : s.name}
               </th>
-              {sides.map((s) => (
-                <th key={s.key} className="pb-2 font-medium">
-                  {s.isCurrent ? "current" : s.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="align-top">
-            {payload.differences.map((d) => (
-              <tr key={d.variable} className="border-t">
-                <td className="py-1.5 pr-2 text-xs text-muted-foreground">
-                  {d.label}
-                </td>
-                {(["a", "b"] as const).map((k) => (
-                  <td key={k} className="py-1.5 pr-2">
-                    {d[k].label}
-                    {d[k].price > 0 && (
-                      <span className="ml-1 text-xs tabular-nums text-muted-foreground">
-                        +{formatMonthly(d[k].price)}
-                      </span>
-                    )}
-                  </td>
-                ))}
-              </tr>
             ))}
-            <tr className="border-t font-medium">
+          </tr>
+        </thead>
+        <tbody className="align-top">
+          {payload.differences.map((d) => (
+            <tr key={d.variable} className="border-t">
               <td className="py-1.5 pr-2 text-xs text-muted-foreground">
-                total
+                {d.label}
               </td>
-              {sides.map((s) => (
-                <td key={s.key} className="py-1.5 pr-2 tabular-nums">
-                  {formatMonthly(s.price)}
+              {(["a", "b"] as const).map((k) => (
+                <td key={k} className="py-1.5 pr-2">
+                  {d[k].label}
+                  {d[k].price > 0 && (
+                    <span className="ml-1 text-xs tabular-nums text-muted-foreground">
+                      +{formatMonthly(d[k].price)}
+                    </span>
+                  )}
                 </td>
               ))}
             </tr>
-            <tr className="border-t">
-              <td className="py-1.5 pr-2 text-xs text-muted-foreground">
-                footprint (modelled)
+          ))}
+          <tr className="border-t font-medium">
+            <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+              total
+            </td>
+            {sides.map((s) => (
+              <td key={s.key} className="py-1.5 pr-2 tabular-nums">
+                {formatMonthly(s.price)}
               </td>
-              {sides.map((s) => (
-                <td key={s.key} className="py-1.5 pr-2 tabular-nums">
-                  {s.footprint ? formatCO2(s.footprint.total) : "—"}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-        <div className="mt-2 flex gap-2">
-          <span className="flex-1 self-center text-xs text-muted-foreground">
-            {payload.priceDelta === 0
-              ? "same monthly price"
-              : `${payload.b.isCurrent ? "current" : payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
-            {footprintDelta !== 0 &&
-              ` · ${formatCO2(Math.abs(footprintDelta))} ${footprintDelta > 0 ? "more" : "less"}`}
-          </span>
-          {sides
-            .filter((s) => !s.isCurrent)
-            .map((s) => (
-              <Button
-                key={s.key}
-                size="sm"
-                disabled={inert}
-                onClick={() => dispatch(adoptMessage(s.name))}
-              >
-                Adopt {s.name}
-              </Button>
             ))}
-        </div>
-      </CardContent>
-    </Card>
+          </tr>
+          <tr className="border-t">
+            <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+              footprint (modelled)
+            </td>
+            {sides.map((s) => (
+              <td key={s.key} className="py-1.5 pr-2 tabular-nums">
+                {s.footprint ? formatCO2(s.footprint.total) : "—"}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+      <div className="mt-2 flex gap-2">
+        <span className="flex-1 self-center text-xs text-muted-foreground">
+          {payload.priceDelta === 0
+            ? "same monthly price"
+            : `${payload.b.isCurrent ? "current" : payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
+          {footprintDelta !== 0 &&
+            ` · ${formatCO2(Math.abs(footprintDelta))} ${footprintDelta > 0 ? "more" : "less"}`}
+        </span>
+        {sides
+          .filter((s) => !s.isCurrent)
+          .map((s) => (
+            <Button
+              key={s.key}
+              size="sm"
+              disabled={inert}
+              onClick={() => dispatch(adoptMessage(s.name))}
+            >
+              Adopt {s.name}
+            </Button>
+          ))}
+      </div>
+    </CardShell>
   );
 }

@@ -12,12 +12,12 @@
 import { useState } from "react";
 import { BadgePercent } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
-import { Spinner } from "@/components/ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { choiceMessage, formatMonthly } from "@/lib/configurator";
+import { KEEP_TITLE } from "@/lib/utils";
 import { useCardDispatch } from "./card-dispatch";
+import { CardPending, CardProps, CardShell, parsePayload } from "./card-shell";
 
 interface PayloadOption {
   value: string;
@@ -40,33 +40,20 @@ interface Payload {
   prompt?: string;
 }
 
-interface AskChoicesProps {
-  toolCallId: string;
-  status: string;
-  result?: string;
-}
-
-export function AskChoices({ toolCallId, status, result }: AskChoicesProps) {
-  const { inert: cardInert, dispatch: send } = useCardDispatch(toolCallId);
+export function AskChoices({ toolCallId, status, result }: CardProps) {
+  const { inert, dispatch: send } = useCardDispatch(toolCallId);
   const [selections, setSelections] = useState<Record<string, string>>({});
 
   if (status !== "complete" || !result) {
-    return (
-      <div className="my-2 flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner className="size-3" /> preparing options…
-      </div>
-    );
+    return <CardPending>preparing options…</CardPending>;
   }
 
-  let payload: Payload;
-  try {
-    payload = JSON.parse(result);
-    if (!Array.isArray(payload.variables)) throw new Error("bad payload");
-  } catch {
-    return null; // ERROR results are relayed by the agent in text
-  }
+  // No `kind` on this payload — its shape is the test.
+  const payload = parsePayload<Payload>(result, (p) =>
+    Array.isArray(p.variables),
+  );
+  if (!payload) return null; // ERROR results are relayed by the agent in text
 
-  const inert = cardInert;
   const multi = payload.variables.length > 1;
 
   const dispatch = (picks: { variable: string; value: string }[]) =>
@@ -79,57 +66,53 @@ export function AskChoices({ toolCallId, status, result }: AskChoicesProps) {
   };
 
   return (
-    <Card
-      className={`my-2 gap-0 py-0 shadow-none ${inert ? "opacity-60" : ""}`}
-    >
-      <CardContent className="space-y-3 p-3">
-        {payload.prompt && <p className="text-sm">{payload.prompt}</p>}
-        {payload.variables.map((variable) => (
-          <div key={variable.name}>
-            <div className="mb-1 text-xs font-medium text-muted-foreground">
-              {variable.label}
-            </div>
-            <Control
-              variable={variable}
-              selected={selections[variable.name]}
-              inert={inert}
-              onSelect={select}
-            />
+    <CardShell inert={inert} className="space-y-3">
+      {payload.prompt && <p className="text-sm">{payload.prompt}</p>}
+      {payload.variables.map((variable) => (
+        <div key={variable.name}>
+          <div className="mb-1 text-xs font-medium text-muted-foreground">
+            {variable.label}
           </div>
-        ))}
-        {multi && (
-          <Button
-            size="sm"
-            disabled={inert || Object.keys(selections).length === 0}
-            onClick={() =>
-              dispatch(
-                Object.entries(selections).map(([variable, value]) => ({
-                  variable,
-                  value,
-                })),
-              )
-            }
-          >
-            Apply {Object.keys(selections).length || ""} choice
-            {Object.keys(selections).length === 1 ? "" : "s"}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+          <Control
+            variable={variable}
+            selected={selections[variable.name]}
+            inert={inert}
+            onSelect={select}
+          />
+        </div>
+      ))}
+      {multi && (
+        <Button
+          size="sm"
+          disabled={inert || Object.keys(selections).length === 0}
+          onClick={() =>
+            dispatch(
+              Object.entries(selections).map(([variable, value]) => ({
+                variable,
+                value,
+              })),
+            )
+          }
+        >
+          Apply {Object.keys(selections).length || ""} choice
+          {Object.keys(selections).length === 1 ? "" : "s"}
+        </Button>
+      )}
+    </CardShell>
   );
 }
 
-function Control({
-  variable,
-  selected,
-  inert,
-  onSelect,
-}: {
+/** What every control renders from: one variable's payload, the pending
+ * selection when the card is collecting several, and the two things that
+ * decide whether a click does anything. */
+interface ControlProps {
   variable: PayloadVariable;
   selected?: string;
   inert: boolean;
   onSelect: (variable: string, value: string) => void;
-}) {
+}
+
+function Control({ variable, selected, inert, onSelect }: ControlProps) {
   switch (variable.control) {
     case "scale":
       return (
@@ -156,26 +139,7 @@ function CheapestMark() {
   );
 }
 
-/**
- * Disabled shadcn controls set `pointer-events: none`, which suppresses the
- * native `title` — and every explanation of why an option is unavailable lives
- * on one (docs/specs/ui-component-library, decision 4). Restoring pointer
- * events keeps the reason reachable; a disabled control still cannot be
- * clicked.
- */
-const KEEP_TITLE = "disabled:pointer-events-auto";
-
-function ChipRow({
-  variable,
-  selected,
-  inert,
-  onSelect,
-}: {
-  variable: PayloadVariable;
-  selected?: string;
-  inert: boolean;
-  onSelect: (variable: string, value: string) => void;
-}) {
+function ChipRow({ variable, selected, inert, onSelect }: ControlProps) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {variable.options.map((o) => {
@@ -209,17 +173,7 @@ function ChipRow({
   );
 }
 
-function ScaleControl({
-  variable,
-  selected,
-  inert,
-  onSelect,
-}: {
-  variable: PayloadVariable;
-  selected?: string;
-  inert: boolean;
-  onSelect: (variable: string, value: string) => void;
-}) {
+function ScaleControl({ variable, selected, inert, onSelect }: ControlProps) {
   const active = variable.options.find(
     (o) => optionState(o, selected).active,
   )?.value;
@@ -270,17 +224,7 @@ function ScaleControl({
   );
 }
 
-function OptionList({
-  variable,
-  selected,
-  inert,
-  onSelect,
-}: {
-  variable: PayloadVariable;
-  selected?: string;
-  inert: boolean;
-  onSelect: (variable: string, value: string) => void;
-}) {
+function OptionList({ variable, selected, inert, onSelect }: ControlProps) {
   return (
     <div className="divide-y border">
       {variable.options.map((o) => {

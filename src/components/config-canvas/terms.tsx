@@ -14,6 +14,7 @@
 import {
   Candidate,
   Configuration,
+  completionLabel,
   footprintBlock,
   formatCO2,
   formatMonthly,
@@ -31,6 +32,7 @@ import {
   DeviationMark,
   DocumentView,
   Gloss,
+  LAYER_HEADING,
   ProvenanceBadge,
   ValueToken,
   displayOf,
@@ -95,9 +97,7 @@ function Consideration({ doc }: { doc: DocumentView }) {
     <Clause
       margin={
         <span className="text-[10px] text-muted-foreground">
-          {candidate.objective === "co2"
-            ? "lowest-footprint completion"
-            : "cheapest completion"}
+          {completionLabel(candidate)}
         </span>
       }
     >
@@ -195,9 +195,7 @@ function FootprintSentence({
 export function OperativeTerms({ doc }: { doc: DocumentView }) {
   return (
     <section className="mb-8">
-      <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Operative terms
-      </h2>
+      <h2 className={LAYER_HEADING}>Operative terms</h2>
       <div className="divide-y border-y">
         {TERM_VARIABLES.map((variable, i) => (
           <TermClause

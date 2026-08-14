@@ -1,11 +1,13 @@
 /**
  * The move catalogue behind the suggestion strip (docs/specs/suggested-moves).
  *
- * Each family is a predicate over the agreement plus the pills to offer when it
- * holds, phrased from the product model's own display labels so a pill and the
- * term it refers to call the same thing by the same name. Nothing here is
- * composed by the model, and nothing here dispatches: a pill is a sentence the
- * customer could have typed, sent on the path a typed sentence takes.
+ * Each family is a predicate over the agreement — and, for the two families
+ * whose moves change nothing in it, over what the customer has already asked —
+ * plus the pills to offer when it holds, phrased from the product model's own
+ * display labels so a pill and the term it refers to call the same thing by the
+ * same name. Nothing here is composed by the model, and nothing here dispatches:
+ * a pill is a sentence the customer could have typed, sent on the path a typed
+ * sentence takes.
  *
  * With no automated check able to reach this surface, the file is meant to be
  * read — which is why the catalogue lives here alone rather than beside the
@@ -58,6 +60,18 @@ function move(text: string): SuggestedMove {
 }
 
 /**
+ * A family, given the agreement and the sentences the customer has already
+ * sent. Most families need only the first: the move they name changes the
+ * agreement, so applying it is what stops them repeating. The two whose moves
+ * change nothing — a question about a term, a hypothetical — would otherwise
+ * recompute identically forever, so they read the second (design decision 7).
+ */
+type MoveFamily = (
+  config: Configuration,
+  asked: ReadonlySet<string>,
+) => SuggestedMove[] | null;
+
+/**
  * The same test the canvas applies: an agreement is untouched when nothing has
  * been recorded and nothing has been proposed. A document-seeded agreement is
  * not untouched — its requirements are choices, made upstream of the
@@ -100,8 +114,16 @@ function tradeOffPair(config: Configuration): SuggestedMove[] | null {
  * A value nobody in the conversation chose: forced by the rules, or picked by
  * the agent as a default. Both owe an explanation the agent can ground
  * (constitution #6), and neither announces that it can be asked about.
+ *
+ * The question already asked is skipped rather than ending the family, so the
+ * strip moves on to the next unexplained term. An agreement usually carries
+ * several, and going silent after the first would answer one question and
+ * conceal the rest.
  */
-function askWhy(config: Configuration): SuggestedMove[] | null {
+function askWhy(
+  config: Configuration,
+  asked: ReadonlySet<string>,
+): SuggestedMove[] | null {
   for (const variable of productModel.variables) {
     const { value, kind } = resolveValue(config, variable.name);
     if (!value) continue;
@@ -109,7 +131,9 @@ function askWhy(config: Configuration): SuggestedMove[] | null {
     // The term, not the value: value labels run to "99.9 % uptime, 4 h
     // response, remote diagnostics", which is a paragraph on a chip, and the
     // canvas is already showing the value the question is about.
-    return [move(`Why this ${variable.label.toLowerCase()}?`)];
+    const question = move(`Why this ${variable.label.toLowerCase()}?`);
+    if (asked.has(question.message)) continue;
+    return [question];
   }
   return null;
 }
@@ -118,15 +142,27 @@ function askWhy(config: Configuration): SuggestedMove[] | null {
  * Revision phrased as intent rather than as a value, against a term the
  * agreement already carries. A hypothetical, not a claim about the building:
  * the pill sends the customer's words, so it may not put a fact in their mouth.
+ *
+ * One sentence, so asking it retires the family until the profile changes.
  */
-function reviseByIntent(config: Configuration): SuggestedMove[] | null {
+function reviseByIntent(
+  config: Configuration,
+  asked: ReadonlySet<string>,
+): SuggestedMove[] | null {
   const { value } = resolveValue(config, "usage_profile");
   if (!value || value === "heavy") return null;
-  return [move("What would change if the traffic were heavier?")];
+  const question = move("What would change if the traffic were heavier?");
+  if (asked.has(question.message)) return null;
+  return [question];
 }
 
 /** The strip's order, and the unit the cap counts in. */
-const FAMILIES = [answerTheDocument, tradeOffPair, askWhy, reviseByIntent];
+const FAMILIES: MoveFamily[] = [
+  answerTheDocument,
+  tradeOffPair,
+  askWhy,
+  reviseByIntent,
+];
 
 /** At most this many families — never this many pills, or the pair could be
  * split (docs/specs/suggested-moves design decision 3). */
@@ -146,10 +182,15 @@ const MAX_FAMILIES = 3;
  *
  * State that has not arrived yet is the untouched case, not the no-moves case:
  * a reload should not blank the surface on its way up.
+ *
+ * `asked` is the set of sentences the customer has already sent, verbatim; a
+ * pill's message is exactly what a click sends, so a pill that has been used
+ * is one whose message is in the set.
  */
 export function suggestedMoves(
   config: Configuration | undefined,
   hasTranscript: boolean,
+  asked: ReadonlySet<string>,
 ): SuggestedMove[] {
   if (!config) return ENTRY_PROMPTS;
   if (!hasAnything(config)) return hasTranscript ? [] : ENTRY_PROMPTS;
@@ -157,7 +198,7 @@ export function suggestedMoves(
   let families = 0;
   for (const family of FAMILIES) {
     if (families >= MAX_FAMILIES) break;
-    const offered = family(config);
+    const offered = family(config, asked);
     if (!offered) continue;
     families += 1;
     moves.push(...offered);

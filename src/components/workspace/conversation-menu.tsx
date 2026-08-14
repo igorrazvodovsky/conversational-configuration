@@ -27,6 +27,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { KEEP_TITLE } from "@/lib/utils";
 import type { WorkspaceRecord } from "@/lib/workspaces";
 
 const LOCALE = "en-IE";
@@ -158,10 +159,7 @@ export function ConversationMenu({
         // Already in a fresh, unregistered conversation — nothing to start.
         disabled={!active}
         title={active ? "New conversation" : "you're in a new conversation now"}
-        // pointer-events-auto: Button disables them, which would suppress the
-        // native title and with it the reason this is unavailable
-        // (docs/specs/ui-component-library/design.md, decision 4).
-        className="disabled:pointer-events-auto"
+        className={KEEP_TITLE}
       >
         <MessageSquarePlus />
         <span className="sr-only">New conversation</span>

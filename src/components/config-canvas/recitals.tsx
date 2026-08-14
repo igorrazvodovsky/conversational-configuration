@@ -24,6 +24,7 @@ import {
   Clause,
   DeviationMark,
   DocumentView,
+  LAYER_HEADING,
   ProvenanceBadge,
   ValueToken,
   unmetFor,
@@ -72,14 +73,6 @@ const TRAFFIC: Record<string, string> = {
   heavy: "near-continuous traffic",
 };
 
-function LayerHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-      {children}
-    </h2>
-  );
-}
-
 /** The margin marks for the variables a paragraph commits. */
 function Marks({ doc, variables }: { doc: DocumentView; variables: string[] }) {
   return (
@@ -108,7 +101,7 @@ export function Recitals({
 }) {
   return (
     <section className="mb-8">
-      <LayerHeading>Recitals</LayerHeading>
+      <h2 className={LAYER_HEADING}>Recitals</h2>
       <div className="divide-y">
         <Clause margin={<Marks doc={doc} variables={["building_type", "region"]} />}>
           <p className="text-sm leading-7">

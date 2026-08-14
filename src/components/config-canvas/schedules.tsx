@@ -31,6 +31,7 @@ import {
   DeviationMark,
   DocumentView,
   Gloss,
+  LAYER_HEADING,
   OptionEditor,
   ProvenanceBadge,
   displayOf,
@@ -188,9 +189,7 @@ function Schedule({
 export function Schedules({ doc }: { doc: DocumentView }) {
   return (
     <section className="mb-8">
-      <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Schedules
-      </h2>
+      <h2 className={LAYER_HEADING}>Schedules</h2>
       <p className="mb-3 text-xs text-muted-foreground">
         The machine that delivers the terms above — derived from them, and
         editable here.

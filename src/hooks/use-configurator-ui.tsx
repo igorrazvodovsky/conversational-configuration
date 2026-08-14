@@ -8,6 +8,7 @@ import {
 } from "@copilotkit/react-core/v2";
 
 import { AskChoices } from "@/components/generative-ui/ask-choices";
+import type { CardProps } from "@/components/generative-ui/card-shell";
 import { FrameComparison } from "@/components/generative-ui/frame-comparison";
 import { RepairOptions } from "@/components/generative-ui/repair-options";
 import { ToolReasoning } from "@/components/tool-rendering";
@@ -20,11 +21,7 @@ export const useConfiguratorUI = () => {
       variables: z.array(z.string()),
       prompt: z.string().optional(),
     }),
-    render: (props: {
-      toolCallId: string;
-      status: string;
-      result?: string;
-    }) => <AskChoices {...props} />,
+    render: (props: CardProps) => <AskChoices {...props} />,
   });
 
   // Conflicting revisions render as repair cards (docs/specs/nonlinear-interaction).
@@ -35,11 +32,7 @@ export const useConfiguratorUI = () => {
       source: z.string(),
       drop: z.array(z.string()).optional(),
     }),
-    render: (props: {
-      toolCallId: string;
-      status: string;
-      result?: string;
-    }) => <RepairOptions {...props} />,
+    render: (props: CardProps) => <RepairOptions {...props} />,
   });
 
   // A reconciliation that collides returns the same repair payload as any
@@ -54,11 +47,7 @@ export const useConfiguratorUI = () => {
       move: z.string(),
       value: z.string().optional(),
     }),
-    render: (props: {
-      toolCallId: string;
-      status: string;
-      result?: string;
-    }) => <RepairOptions {...props} />,
+    render: (props: CardProps) => <RepairOptions {...props} />,
   });
 
   // Frame comparisons render as a two-column diff card (docs/specs/nonlinear-interaction).
@@ -68,11 +57,7 @@ export const useConfiguratorUI = () => {
       a: z.string(),
       b: z.string().optional(),
     }),
-    render: (props: {
-      toolCallId: string;
-      status: string;
-      result?: string;
-    }) => <FrameComparison {...props} />,
+    render: (props: CardProps) => <FrameComparison {...props} />,
   });
 
   // Every other backend tool renders as a compact reasoning row.

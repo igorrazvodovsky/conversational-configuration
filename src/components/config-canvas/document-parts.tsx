@@ -36,7 +36,7 @@ import {
   resolveValue,
   variablesByName,
 } from "@/lib/configurator";
-import { cn } from "@/lib/utils";
+import { KEEP_TITLE, cn } from "@/lib/utils";
 
 /**
  * Everything a layer needs to render and edit the agreement. Held by the
@@ -62,6 +62,22 @@ export interface DocumentView {
   onEditorOpen: (variable: string) => void;
   onEditorClose: (variable: string) => void;
 }
+
+/**
+ * How a layer's heading is set: small capitals over the section, the three
+ * layers marked identically because they are peers.
+ *
+ * Shared as a class string and deliberately *not* as a `<LayerHeading>`
+ * component. A component would be a fiber, and a fiber inserted above the
+ * schedules' Radix collapsibles shifts the `useId` values the whole page
+ * derives — server and client then disagree and hydration breaks on every
+ * load, measured, not guessed (docs/specs/chat-surface/design.md owns this
+ * rule; the [component library](docs/specs/ui-component-library/design.md)
+ * records this instance). A constant costs the same duplication in markup and
+ * none in tree shape.
+ */
+export const LAYER_HEADING =
+  "mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
 /** The resolved value with the optimistic overlay laid over it. */
 export function displayOf(doc: DocumentView, variable: string): ResolvedValue {
@@ -140,12 +156,9 @@ export function OptionEditor({
               onDone?.();
               doc.onSelect(variable, option.value);
             }}
-            // pointer-events-auto: Button disables them, which would suppress
-            // the native title — and with it the option's reason for being
-            // unavailable (docs/specs/ui-component-library, decision 4).
             className={
               invalid
-                ? "cursor-not-allowed line-through opacity-40 disabled:pointer-events-auto"
+                ? `cursor-not-allowed line-through opacity-40 ${KEEP_TITLE}`
                 : isCurrent
                   ? ""
                   : "font-normal hover:border-primary"

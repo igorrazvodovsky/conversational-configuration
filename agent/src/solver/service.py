@@ -120,6 +120,22 @@ class ConfigSolver:
     def _assumptions(self, choices: dict[str, str]) -> list[BoolRef]:
         return [self.sel[(var, val)] for var, val in choices.items()]
 
+    def _optimizer(self) -> Optimize:
+        """A fresh Optimize carrying the model. Rules go in untracked: the
+        persistent solver is the one that produces unsat cores, and an
+        optimization run has no core to explain."""
+        opt = Optimize()
+        self._add_structure(opt)
+        self._add_rules(opt, tracked=False)
+        return opt
+
+    def _require_feasible(self, choices: dict[str, str]) -> None:
+        """Every operation refuses to work from an infeasible starting point,
+        and says which choices cannot hold together."""
+        conflict = self.explain(choices)
+        if conflict is not None:
+            raise ConflictError(conflict, conflict.describe(self.model))
+
     # -- operations -------------------------------------------------------
 
     def check(self, choices: dict[str, str]) -> bool:
@@ -162,9 +178,7 @@ class ConfigSolver:
 
     def valid_options(self, choices: dict[str, str]) -> dict[str, dict[str, Status]]:
         """Status of every option value under the given choices."""
-        conflict = self.explain(choices)
-        if conflict is not None:
-            raise ConflictError(conflict, conflict.describe(self.model))
+        self._require_feasible(choices)
 
         assumptions = self._assumptions(choices)
         result, consequences = self.solver.consequences(assumptions, list(self.sel.values()))
@@ -202,14 +216,10 @@ class ConfigSolver:
         Returns [] when the revision is compatible with everything — no repair
         needed. Raises ConflictError if `changes` alone are infeasible.
         """
-        conflict = self.explain(changes)
-        if conflict is not None:
-            raise ConflictError(conflict, conflict.describe(self.model))
+        self._require_feasible(changes)
 
         existing = {v: val for v, val in choices.items() if v not in changes}
-        opt = Optimize()
-        self._add_structure(opt)
-        self._add_rules(opt, tracked=False)
+        opt = self._optimizer()
         for var, val in changes.items():
             opt.add(self.sel[(var, val)])
         for var, val in existing.items():
@@ -272,9 +282,7 @@ class ConfigSolver:
         if unknown:
             raise ValueError(f"unknown (variable, value) requirements: {unknown}")
 
-        opt = Optimize()
-        self._add_structure(opt)
-        self._add_rules(opt, tracked=False)
+        opt = self._optimizer()
         for pair in pairs:
             opt.add_soft(self.sel[pair], 1)
 
@@ -376,9 +384,7 @@ class ConfigSolver:
             raise ValueError("model has no pricing block — cannot derive a monthly fee")
         if objective == "co2" and self.model.footprint_block is None:
             raise ValueError("model has no footprint block — cannot derive a footprint")
-        conflict = self.explain(choices)
-        if conflict is not None:
-            raise ConflictError(conflict, conflict.describe(self.model))
+        self._require_feasible(choices)
 
         if TERM_VAR in choices:
             terms = [choices[TERM_VAR]]
@@ -393,9 +399,7 @@ class ConfigSolver:
         best: tuple[dict[str, str], int] | None = None
         best_key: tuple | None = None
         for term in terms:
-            opt = Optimize()
-            self._add_structure(opt)
-            self._add_rules(opt, tracked=False)
+            opt = self._optimizer()
             for var, val in choices.items():
                 opt.add(self.sel[(var, val)])
             opt.add(self.sel[(TERM_VAR, term)])

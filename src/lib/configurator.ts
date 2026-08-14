@@ -248,6 +248,18 @@ export function layerVariables(layer: Layer): ModelVariable[] {
   return layerGroups(layer).flatMap((g) => g.variables);
 }
 
+/**
+ * Which completion the solver returned, named as the objective it was
+ * optimised for — so a lowest-footprint agreement is never labelled cheapest.
+ * The canvas header and the consideration clause show the same figure and say
+ * the same thing about it.
+ */
+export function completionLabel(candidate: Candidate): string {
+  return candidate.objective === "co2"
+    ? "lowest-footprint completion"
+    : "cheapest completion";
+}
+
 export function formatPrice(eur: number): string {
   return `€${eur.toLocaleString("en-IE")}`;
 }

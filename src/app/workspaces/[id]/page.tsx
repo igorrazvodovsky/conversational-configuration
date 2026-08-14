@@ -133,7 +133,10 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
         )}
         {/* Draws nothing: it subscribes to agent state to keep the suggestion
             strip current (docs/specs/suggested-moves), and does so from a leaf
-            so a streaming reply does not re-render this page. */}
+            rather than from this component, which is the page's render-scope
+            rule. The page is not spared a streaming reply today —
+            `useWorkspaceAttachment` above subscribes too — but this adds
+            nothing to that. */}
         <SuggestedMoves />
       </div>
     </StaleThreadContext.Provider>

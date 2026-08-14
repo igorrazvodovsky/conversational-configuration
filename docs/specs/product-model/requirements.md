@@ -1,6 +1,6 @@
 # Mock elevator product model
 
-Status: implemented (back-filled spec; this feature predates SDD adoption).
+Status: implemented.
 
 ## Stories
 

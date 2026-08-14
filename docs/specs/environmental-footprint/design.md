@@ -86,6 +86,7 @@ Additions, coupled to card copy as always: quote footprint only from tool result
 ## Frontend
 
 - `configurator.ts`: `Footprint` type, `formatCO2()` (kg → "12.4 t CO₂e"), the `footprint` block exported for the assumptions panel. No arithmetic.
+- One lifetime total is quoted on two surfaces — the canvas formats it with `formatCO2`, the agent's prose with `_format_co2` in `configuration.py` — so the two agree on the rounding rule: tenths round half away from zero. They did not at first, because Python's `:.1f` rounds half to even, and 1250 kg read 1.2 t in chat beside 1.3 t on the sheet. Nothing can share the code across the two runtimes; the rule is written down in both, and each cites the other.
 - Canvas: in the consideration clause that closes the operative terms ([agreement-document](../agreement-document/design.md)), under the monthly figure, the candidate's lifetime total — "≈ 14.2 t CO₂e over 25 years (modelled)" — with an assumptions disclosure (popover) showing the embodied/use-phase split, service life, usage profile in effect, grid factor with the decarbonising bookend figure, module scope, and the illustrative-model sentence, all read from the model JSON.
 - `energy_class` renders as an ordinary forced row — its "(modelled)" label does the work; no EU-label styling anywhere, no co2 in row editors or ask-choices cards.
 - `frame-comparison.tsx`: footprint delta rendered next to the price delta; a side without stored footprint (pre-footprint frame) shows "—" at delta 0, the established fallback.
