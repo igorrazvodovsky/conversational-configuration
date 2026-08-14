@@ -22,9 +22,9 @@ import {
   EmptyDescription,
   EmptyHeader,
 } from "@/components/ui/empty";
-import { ExampleLayout } from "@/components/example-layout";
 import { ConfigCanvas } from "@/components/config-canvas";
 import { ConversationSidebar } from "@/components/workspace/conversation-sidebar";
+import { WorkspaceSplit } from "@/components/workspace/workspace-split";
 import { StaleThreadContext } from "@/components/generative-ui/card-dispatch";
 import {
   useConfiguratorUI,
@@ -89,14 +89,14 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
           onNew={() => configuration?.startNewThread()}
         />
         <div className="h-dvh min-w-0 flex-1">
-          <ExampleLayout
-            chatContent={
+          <WorkspaceSplit
+            canvas={<ConfigCanvas />}
+            chat={
               <CopilotChat
                 attachments={{ enabled: true }}
                 input={{ disclaimer: () => null, className: "pb-6" }}
               />
             }
-            appContent={<ConfigCanvas />}
           />
         </div>
       </div>

@@ -23,6 +23,15 @@
 - [x] Frontend: user-facing term "elevator"; one-click create; placeholder display for unnamed workspaces; sidebar shows the live name from agent state
 - [x] Browser pass: one-click create → placeholder in list and sidebar → first message identifying the installation triggers `name_workspace` (no announcement in the reply) → sidebar renames live → list shows the stored name
 
+## Placement of the two surfaces (2026-08-13, after naming)
+
+- [x] `shadcn add resizable`; `workspace-split.tsx` with the canvas centre and the chat right, drag-to-size, pixel floors
+- [x] Retire `src/components/example-layout/` — the Chat/App toggle and the `enableAppMode`/`enableChatMode` frontend tools; confirmed the system prompt never referenced them
+- [x] Stack the panes vertically below `lg` instead of hiding the chat
+- [x] Correct the `cpk-web-inspector` rule's comment in `globals.css` — it explained a position that dodged the deleted toggle
+- [x] Browser pass: drag to both floors; canvas `ScrollArea` scrolls inside its panel rather than clipping (902px viewport over 1610px of content at the default split, no page-level scroll); stacked orientation; light and dark; no hydration error; canvas-row edit dispatched `Set Building type to Hotel (building_type=hotel)` and the canvas took it with the forced usage-profile cascade
+- [x] Chat floor set from a measurement, not a guess: the `compare_frames` table overflowed its card by 8px at 320px, so the floor is 360px. Verified with the card on screen at the floor — the chat pane has one scroller (CopilotKit's own; the wrapper's is inert) and the only remaining overflow is CopilotKit's user bubble, 5px, at every width
+
 ## Reconcile
 
 - [x] Browser pass: create workspace → converse (choices + candidate persisted to store) → cold reload shows canvas with no conversation → canvas edit starts+registers a conversation and writes through → reopen first conversation (transcript hydrates, canvas keeps *current* state) → "where were we?" answered from current state, not the transcript

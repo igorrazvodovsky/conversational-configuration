@@ -8,7 +8,7 @@ Serves discovery principle [the agent proposes; the user disposes](../../discove
 
 ## Scope
 
-*In:* the surfaces the configurator renders — the elevator list, the workspace split view, the conversation sidebar, the configuration canvas, the three in-chat cards (`ask-choices`, `repair-options`, `frame-comparison`), the layout and mode toggle, and tool rendering.
+*In:* the surfaces the configurator renders — the elevator list, the workspace split view, the conversation sidebar, the configuration canvas, the three in-chat cards (`ask-choices`, `repair-options`, `frame-comparison`), the split layout, and tool rendering.
 
 *Out:* CopilotKit's own chat UI. `CopilotChat` renders itself and follows neither the palette nor the style, so the chat half of the split view keeps its rounded input and pills; its `[data-copilotkit]` and `cpk-web-inspector` rules in `globals.css` stay. Out too: the dead starter code listed in `CLAUDE.md`.
 

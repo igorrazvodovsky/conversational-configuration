@@ -20,7 +20,7 @@ Tailwind v4 still needs the `@theme inline` bridge: `bg-background`, `text-muted
 
 Lyra pairs conventionally with a monospace face; the body stays Plus Jakarta Sans anyway. The canvas is a dense mix of prose labels and numbers, and long agent prose in the chat reads badly in mono. Spline Sans Mono keeps its existing job on tool rows and code.
 
-*Radius is zero twice over.* Every step of the ramp — `--radius-sm` through `--radius-xl` — is `0rem`, so a stray `rounded-md` cannot reintroduce a corner. That does not cover literal classes, which are not token derived: `rounded-full` on the option chips, `rounded-[4px]`/`rounded-[2px]` in the mode toggle, `rounded-lg` on the cards. Those were removed at the call sites, and the zero ramp is the backstop.
+*Radius is zero twice over.* Every step of the ramp — `--radius-sm` through `--radius-xl` — is `0rem`, so a stray `rounded-md` cannot reintroduce a corner. That does not cover literal classes, which are not token derived: `rounded-full` on the option chips, `rounded-[4px]`/`rounded-[2px]` in the since-deleted mode toggle, `rounded-lg` on the cards. Those were removed at the call sites, and the zero ramp is the backstop.
 
 Lyra components are written against custom variants (`data-open`, `data-checked`, `data-vertical`) and utilities (`scroll-fade`, `shimmer`) that live in `shadcn/tailwind.css`. That import, and the `shadcn` devDependency behind it, are required — without them those class names silently do nothing.
 
@@ -41,6 +41,7 @@ Lyra components are written against custom variants (`data-open`, `data-checked`
 | dashed-border empty states | `Empty` | elevator list, canvas, workspace-not-found |
 | chat/app switch | `Tabs` | |
 | scrolling panes | `ScrollArea` | canvas, sidebar |
+| the workspace's two-pane split | `Resizable` | added later, with the placement change in the [agreement-workspace design](../agreement-workspace/design.md); replaces the fixed `w-1/2` halves and the Chat/App toggle that hid one of them |
 
 Three upstream defaults are relaxed at call sites, each to preserve behaviour rather than appearance:
 

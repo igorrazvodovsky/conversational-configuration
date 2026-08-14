@@ -27,6 +27,8 @@ The chosen patterns compose: the living document is the geometry, static compone
 
 ## 2. What follows from the choice
 
+*The document holds the centre.* The geometry names two surfaces but not their weight. The agreement takes the primary area and the chat sits beside it in a pane the user sizes — a chat pane that can be pushed to the margin, and never a document that can be hidden. Placement is the cheapest evidence for [the canvas is the durable state](../assertions/canvas-is-the-durable-state.md): a surface the layout treats as secondary will not be read as the record, whatever the state actually lives in.
+
 *Valid by construction.* Each card's payload is computed from solver state at call time — `ask_choices` returns per-variable options with invalid values flagged for greying in place and the cheapest completion marked; repair cards carry their own ripple. What the user can click is what the solver admits, which is how constitution #5 survives contact with a clickable surface.
 
 *One grammar.* Every activation — a chip, a repair card, a canvas row edit — dispatches the same visible structured user message through the same validated path. The alternative, a silent programmatic run, was set aside: faster, but it hides user actions from the dialogue and creates a second interaction grammar (the [canvas design](../../specs/configuration-canvas/design.md)).
@@ -41,4 +43,4 @@ The chosen patterns compose: the living document is the geometry, static compone
 
 - The per-artifact form on the canvas, and the status vocabulary it uses. Canvas anatomy's question.
 - Whether the declarative path earns a place after all — a footprint or price-breakdown card whose shape varies with the configuration is its natural candidate (the [footprint spec](../../specs/environmental-footprint/requirements.md)).
-- What the split does on a small screen. In app mode the panes are 50/50 and below `lg` the canvas takes the full width with chat hidden, so the pattern degrades to one surface at a time — untested against any principle.
+- What the split does on a small screen. Below `lg` the two panes stack vertically, so both stay reachable, but the pattern has only ever been exercised at desktop widths and is untested against any principle. Their pixel floors apply side by side only; a short viewport can leave either pane too small to work in.

@@ -10,7 +10,7 @@
 - [x] `@import "tw-animate-css"` (overlay keyframes) and `@import "shadcn/tailwind.css"` (the custom variants and utilities Lyra components are written against) + the `shadcn` devDependency
 - [x] Keep `@custom-variant dark (&:where(.dark, .dark *))`, defined after the imports so it wins — shadcn's default `&:is(.dark *)` misses the `<html>` element `ThemeProvider` stamps
 - [x] Verify the bridge compiles before refactoring anything
-- [x] `shadcn add` all 19 components under the Lyra style
+- [x] `shadcn add` all 19 components under the Lyra style (`resizable` was added later, with the workspace placement change)
 - [x] Drop `@radix-ui/react-{checkbox,label,separator}`, superseded by the unified `radix-ui` package
 
 ## Call sites
@@ -23,8 +23,8 @@
 - [x] `components/generative-ui/ask-choices.tsx` — `Card`, `Button` chips, `ToggleGroup spacing={0}` scale, `Item` option list
 - [x] `components/generative-ui/repair-options.tsx` — `Card`, shared `RepairButton` over `Button`
 - [x] `components/generative-ui/frame-comparison.tsx` — `Card`, `Button` adopt actions
-- [x] `components/example-layout/mode-toggle.tsx` — `Tabs`
-- [x] `components/example-layout/index.tsx` — token classes
+- [x] `components/example-layout/mode-toggle.tsx` — `Tabs` *(the file is gone: the Chat/App toggle went with the placement change in the [agreement-workspace spec](../agreement-workspace/design.md), which replaced this layout with `workspace-split.tsx` on `Resizable`)*
+- [x] `components/example-layout/index.tsx` — token classes *(same; superseded)*
 - [x] `components/tool-rendering.tsx` — `Collapsible` in place of `<details>`, `font-mono` in place of the inline font style
 - [x] `components/headless-chat.tsx` — `Input` + `Button`
 - [x] Strip every literal radius class in scope (`rounded-full`, `rounded-lg`, `rounded-md`, `rounded-[4px]`, `rounded-[2px]`, `rounded-none`) — the zero ramp does not reach them
