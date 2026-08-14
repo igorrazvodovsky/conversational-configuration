@@ -7,18 +7,13 @@
  * operator.
  */
 
-import { use, useState, type ComponentProps } from "react";
+import { use } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
 import {
-  CopilotChat,
-  CopilotChatAssistantMessage,
   CopilotChatConfigurationProvider,
-  CopilotChatUserMessage,
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 
-import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -27,7 +22,13 @@ import {
   EmptyHeader,
 } from "@/components/ui/empty";
 import { ConfigCanvas } from "@/components/config-canvas";
+import { ConfiguratorChat } from "@/components/chat";
 import { ConversationSidebar } from "@/components/workspace/conversation-sidebar";
+import {
+  ChatRestoreButton,
+  ChatSurfaceHeader,
+  useChatSurface,
+} from "@/components/workspace/chat-surface";
 import { WorkspaceSplit } from "@/components/workspace/workspace-split";
 import { StaleThreadContext } from "@/components/generative-ui/card-dispatch";
 import {
@@ -35,78 +36,6 @@ import {
   useConfiguratorSuggestions,
   useWorkspaceAttachment,
 } from "@/hooks";
-import {
-  ATTACHMENT_ACCEPT,
-  ATTACHMENT_MAX_SIZE,
-  describeAttachments,
-  describeUploadFailure,
-  uploadWithFilename,
-} from "@/lib/attachments";
-import { CANVAS_EDIT_PREFIX } from "@/lib/configurator";
-
-/**
- * Canvas edits round-trip through the conversation but are not part of it
- * (docs/specs/configuration-canvas design): the sheet is the record of the
- * edit, so the chat renders nothing for the structured message that carries
- * it. Content-based so reopened conversations hide the same messages.
- */
-const QuietCanvasEditMessage = Object.assign(
-  function QuietCanvasEditMessage(
-    props: ComponentProps<typeof CopilotChatUserMessage>,
-  ) {
-    const { content } = props.message;
-    if (typeof content === "string" && content.startsWith(CANVAS_EDIT_PREFIX)) {
-      return null;
-    }
-    if (Array.isArray(content)) {
-      // An attached document arrives here as an image part that cannot load
-      // (docs/specs/chat-attachments) — the row shows its name instead.
-      const message = { ...props.message, content: describeAttachments(content) };
-      return (
-        <CopilotChatUserMessage
-          {...props}
-          message={message as typeof props.message}
-        />
-      );
-    }
-    return <CopilotChatUserMessage {...props} />;
-  },
-  // The slot type is the full component including its subcomponent statics
-  // (Container, MessageRenderer, …), so the wrapper carries them along.
-  CopilotChatUserMessage,
-);
-
-/**
- * The agent's side of a hidden canvas edit: tool-call chips with no text.
- * Hidden for the same reason as the message that provoked them; an assistant
- * message that carries text (a forced cascade, a conflict) still renders —
- * the chat keeps the explanation and drops the bookkeeping.
- */
-const QuietCanvasEditAssistantMessage = Object.assign(
-  function QuietCanvasEditAssistantMessage(
-    props: ComponentProps<typeof CopilotChatAssistantMessage>,
-  ) {
-    const { message, messages } = props;
-    const hasText =
-      typeof message.content === "string" && message.content.trim().length > 0;
-    if (!hasText && messages) {
-      const index = messages.findIndex((m) => m.id === message.id);
-      for (let i = index - 1; i >= 0; i--) {
-        if (messages[i].role !== "user") continue;
-        const { content } = messages[i];
-        if (
-          typeof content === "string" &&
-          content.startsWith(CANVAS_EDIT_PREFIX)
-        ) {
-          return null;
-        }
-        break;
-      }
-    }
-    return <CopilotChatAssistantMessage {...props} />;
-  },
-  CopilotChatAssistantMessage,
-);
 
 export default function WorkspacePage({
   params,
@@ -134,10 +63,10 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   const { workspace, workspaceName, staleThread, notFound } =
     useWorkspaceAttachment(workspaceId);
   const configuration = useCopilotChatConfiguration();
-  // CopilotKit validates every route into the composer — picker, drop, paste —
-  // and reports rejections through onUploadFailed, but renders nothing for
-  // them (docs/specs/chat-attachments). The message is ours to show.
-  const [rejectedFile, setRejectedFile] = useState<string | null>(null);
+  // The chat's geometry is the user's, and only the user's
+  // (docs/specs/chat-surface): nothing below may set it, and it is not
+  // remembered across a reload.
+  const chatSurface = useChatSurface();
 
   if (notFound) {
     return (
@@ -168,49 +97,26 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
           onSelect={(threadId) => configuration?.setActiveThreadId(threadId)}
           onNew={() => configuration?.startNewThread()}
         />
-        <div className="h-dvh min-w-0 flex-1">
+        <div className="relative h-dvh min-w-0 flex-1">
           <WorkspaceSplit
             canvas={<ConfigCanvas />}
-            chat={
-              <div className="flex h-full min-h-0 flex-col">
-                <div className="min-h-0 flex-1">
-                  <CopilotChat
-                    attachments={{
-                      enabled: true,
-                      accept: ATTACHMENT_ACCEPT,
-                      maxSize: ATTACHMENT_MAX_SIZE,
-                      onUpload: async (file) => {
-                        setRejectedFile(null);
-                        return uploadWithFilename(file);
-                      },
-                      onUploadFailed: (failure) =>
-                        setRejectedFile(describeUploadFailure(failure)),
-                    }}
-                    input={{ disclaimer: () => null, className: "pb-6" }}
-                    messageView={{
-                      userMessage: QuietCanvasEditMessage,
-                      assistantMessage: QuietCanvasEditAssistantMessage,
-                    }}
-                  />
-                </div>
-                {rejectedFile && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{rejectedFile}</AlertDescription>
-                    <AlertAction>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label="Dismiss"
-                        onClick={() => setRejectedFile(null)}
-                      >
-                        <X />
-                      </Button>
-                    </AlertAction>
-                  </Alert>
-                )}
-              </div>
+            chat={<ConfiguratorChat />}
+            chatHeader={
+              <ChatSurfaceHeader
+                mode={chatSurface.mode}
+                onSelect={chatSurface.select}
+                onHide={chatSurface.hide}
+                onUnseenReply={chatSurface.noteReply}
+              />
             }
+            mode={chatSurface.mode}
           />
+          {chatSurface.mode === "hidden" && (
+            <ChatRestoreButton
+              unseenReplies={chatSurface.unseenReplies}
+              onClick={chatSurface.restore}
+            />
+          )}
         </div>
       </div>
     </StaleThreadContext.Provider>

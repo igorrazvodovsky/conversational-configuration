@@ -183,6 +183,11 @@
   },
   "active": "0a96195340f5dc8d",
   "lastOpenFiles": [
+    "specs/chat-surface/tasks.md",
+    "specs/chat-surface/tasks.md.tmp.89498.f728d2fca4eb",
+    "specs/chat-surface/design.md",
+    "specs/chat-surface/requirements.md",
+    "specs/chat-surface",
     "specs/agreement-document/tasks.md",
     "specs/agreement-document/design.md",
     "specs/agreement-document/requirements.md",
@@ -212,12 +217,7 @@
     "specs/service-agreement/requirements.md",
     "specs/service-agreement/design.md",
     "specs/service-agreement",
-    "specs/eaas-pivot/tasks.md",
-    "specs/eaas-pivot/design.md",
-    "specs/environmental-footprint/requirements.md",
     "specs/environmental-footprint",
-    "specs/eaas-pivot",
-    "specs/demo-scenarios",
-    "specs/nonlinear-interaction"
+    "specs/eaas-pivot"
   ]
 }

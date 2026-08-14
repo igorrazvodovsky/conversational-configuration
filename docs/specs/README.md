@@ -21,7 +21,8 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [service-agreement](service-agreement/) | Elevator as a service: outcome terms, monthly price, derived hardware | Implemented |
 | [environmental-footprint](environmental-footprint/) | Environmental footprint as a decision dimension | Implemented |
 | [agreement-workspace](agreement-workspace/) | Durable workspace per installation; conversations decoupled from the agreement | Implemented |
-| [ui-component-library](ui-component-library/) | shadcn/ui as the component vocabulary; zinc palette, Lyra style | Implemented (`requirements.md` written alongside the work rather than approved in advance), except the chat pane — that extension is specified and awaiting approval |
+| [ui-component-library](ui-component-library/) | shadcn/ui as the component vocabulary; zinc palette, Lyra style | Implemented, chat pane included (the original `requirements.md` was written alongside the work rather than approved in advance; the chat-pane extension was approved first) |
 | [chat-attachments](chat-attachments/) | A file attached in chat becomes text the agent can read; nothing attachable can break a conversation | Implemented |
 | [rfq-reconciliation](rfq-reconciliation/) | RFQ-seeded agreements: document ingestion, deviation register, reconciliation moves | Requirements approved; design drafted, not yet implemented |
 | [agreement-document](agreement-document/) | Canvas recast in the agreement's genre: recitals, operative terms, schedules; editable in place | Draft — awaiting approval |
+| [chat-surface](chat-surface/) | The chat's geometry as a user-chosen mode: sidebar, floating, full screen, hidden | Implemented; the transcript-behaviour half of the verification is still outstanding (see its `tasks.md`) |

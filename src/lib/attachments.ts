@@ -70,42 +70,78 @@ export function describeUploadFailure(failure: {
   }
 }
 
+/** One attached file as the transcript needs to show it. */
+export type MessageAttachment = {
+  id: string;
+  mimeType: string;
+  filename?: string;
+  isImage: boolean;
+  /** Present for images, which the row previews. */
+  url?: string;
+};
+
+function sourceUrl(
+  source: Record<string, unknown> | undefined,
+  mimeType: string,
+): string | undefined {
+  if (!source || typeof source.value !== "string") return undefined;
+  if (source.type === "url") return source.value;
+  if (source.type === "data") return `data:${mimeType};base64,${source.value}`;
+  return undefined;
+}
+
 /**
  * An attachment comes back from the agent as an `image` part whatever it was —
  * the same conversion the agent has to undo (docs/specs/chat-attachments) — so
- * a document renders as an image that cannot load. Re-typing the part by its
- * actual MIME hands it to CopilotKit's own file chip instead.
+ * the part's own type says nothing and the MIME type is the only signal.
  *
  * The filename survives on the message just sent, in the `name=` parameter the
- * upload puts on the MIME type. A message read back from the thread has lost
- * it: the AG-UI conversion keeps only the bare MIME type, so a reopened
- * conversation labels the chip with the type rather than the name.
+ * upload puts on that MIME type. A message read back from the thread has lost
+ * it: the AG-UI conversion keeps only the bare type, so a reopened
+ * conversation has a file to show and no name to call it by.
  */
-export function describeAttachments(content: unknown): unknown {
-  if (!Array.isArray(content)) return content;
-  return content.map((part) => {
-    if (!part || typeof part !== "object") return part;
+export function messageAttachments(content: unknown): MessageAttachment[] {
+  if (!Array.isArray(content)) return [];
+  const attachments: MessageAttachment[] = [];
+  content.forEach((part, index) => {
+    if (!part || typeof part !== "object") return;
     const block = part as Record<string, unknown>;
-    if (block.type !== "image") return part;
+    if (block.type !== "image" && block.type !== "document") return;
 
     const source = block.source as Record<string, unknown> | undefined;
-    const mimeType = (source?.mimeType as string) ?? "";
-    if (!mimeType || mimeType.startsWith("image/")) return part;
-
-    const [type, ...parameters] = mimeType.split(";");
-    const name = parameters
+    const [mimeType = "", ...parameters] = (
+      (source?.mimeType as string) ?? ""
+    ).split(";");
+    const named = parameters
       .find((parameter) => parameter.trim().startsWith("name="))
       ?.trim()
       .slice("name=".length);
     const metadata = block.metadata as Record<string, unknown> | undefined;
+    const isImage = mimeType.startsWith("image/");
 
-    return {
-      ...block,
-      type: "document",
-      source: { ...source, mimeType: type },
-      metadata: { ...metadata, filename: metadata?.filename ?? name },
-    };
+    attachments.push({
+      id: `${index}`,
+      mimeType,
+      filename: typeof metadata?.filename === "string" ? metadata.filename : named,
+      isImage,
+      url: isImage ? sourceUrl(source, mimeType) : undefined,
+    });
   });
+  return attachments;
+}
+
+const FILE_LABELS: Record<string, string> = {
+  "text/plain": "TXT",
+  "text/markdown": "MD",
+  "text/csv": "CSV",
+  "application/json": "JSON",
+};
+
+/** A short badge for a file with no preview: its kind, in three or four letters. */
+export function fileLabel(mimeType: string): string {
+  return (
+    FILE_LABELS[mimeType] ?? (mimeType.split("/")[1] ?? "file").slice(0, 4).toUpperCase()
+  );
 }
 
 export async function uploadWithFilename(file: File) {

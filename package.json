@@ -20,6 +20,7 @@
     "@copilotkit/channels": "0.6.1",
     "@copilotkit/react-core": "1.65.0",
     "@copilotkit/runtime": "1.65.0",
+    "@shadcn/react": "^0.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.7",

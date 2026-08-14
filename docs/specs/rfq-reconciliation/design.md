@@ -40,7 +40,7 @@ Per dropped requirement, the reason is `explain(kept ∪ {dropped_one})` — a m
 
 ## Frontend
 
-- Canvas: a third provenance badge for `document` sources, with the clause in its popover ("your document, clause 4.2 — 'quote'"). Rows whose requirement is in deviation show requested vs offered; a register count sits in the header. Built from the existing shadcn vocabulary; no new component family.
+- Canvas: a third provenance badge for `document` sources, with the clause in its popover ("your document, clause 4.2 — 'quote'"). Rows whose requirement is in deviation show requested vs offered; a register count sits in the header. Built from the existing shadcn vocabulary; no new component family. This rendering is designed against the sheet; if the [agreement-document spec](../agreement-document/requirements.md) lands first, deviations render instead as margin marks on the affected terms (the seam stated in both requirements).
 - Reconciliation moves dispatch *visible* structured messages ("Reconcile deviation: accept 1.6 m/s (rated_speed=mps1_6)") through the shared `card-dispatch` path — not the hidden `Canvas edit:` grammar. Waiving a document requirement is negotiation and belongs in the record; sheet edits are bookkeeping and do not. Prompt wording and message grammar stay coupled, as everywhere.
 - No new chat card. The register's home is the canvas (the durable locus); the agent narrates the top deviations after seeding. A dedicated deviation card was considered and dropped — it would duplicate the canvas state the way the banned aggregate price delta duplicated `compare_frames`, and constitution #10 says smallest mechanism.
 

@@ -28,7 +28,7 @@ Scope decisions:
 - GIVEN two conversations of one workspace, WHEN a change is applied in one and the other is reopened, THEN the canvas shows the workspace's current state — not the reopened thread's checkpoint — and all cards in the reopened transcript are inert whenever its checkpoint no longer matches the workspace state.
 - GIVEN a frame saved in one conversation, WHEN any other conversation of the same workspace runs, THEN the frame is available to compare and adopt — frames are workspace-level.
 - GIVEN a dev-server restart, WHEN the app reloads, THEN workspaces, their agreements, and their conversation lists survive.
-- GIVEN an open workspace on a desktop viewport, WHEN it renders, THEN the agreement canvas holds the primary area with the chat beside it, the operator can drag the boundary between them, and neither can be dragged below the width at which it stops working.
+- GIVEN an open workspace on a desktop viewport, WHEN it renders, THEN the agreement canvas holds the primary area with the chat beside it, the operator can drag the boundary between them, and neither can be dragged below the width at which it stops working. This is the default and the state every load returns to; the operator can move the chat off it — float it, give it the screen, put it away — under the [chat-surface spec](../chat-surface/requirements.md), which owns those modes and leaves this one as it is.
 
 ## Relationship to other specs
 

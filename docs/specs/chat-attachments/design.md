@@ -64,11 +64,11 @@ The middleware prefers `metadata.filename` when present (so the design self-corr
 
 ## Decision 5: the transcript shows a file as a file
 
-An attachment returns from the agent as an AG-UI `image` part whatever it was, because the conversion is symmetrical with the one that breaks the model call. A document therefore renders in the transcript as an image that cannot load — "Failed to load image" against the customer's own message. The user-message slot re-types any part whose MIME is not an image, which hands it to CopilotKit's own document chip rather than its image renderer.
+An attachment returns from the agent as an AG-UI `image` part whatever it was, because the conversion is symmetrical with the one that breaks the model call. Left alone, a document renders in the transcript as an image that cannot load — "Failed to load image" against the customer's own message. The part's real type is read off its MIME string instead, and the user-message slot draws a file row from that.
 
-The name shows on the message just sent, from the `name=` parameter. A message read back from the thread has lost it — the AG-UI conversion keeps only the bare MIME type — so a reopened conversation labels the chip `text/markdown` rather than `brief.md`. Cosmetic, and the alternative is a second transport for a filename.
+The name shows only while the message is local. The round trip strips it — the AG-UI conversion keeps the bare MIME type and drops the part's metadata — and that happens within the same session, as soon as the run echoes the message back, not only when a conversation is reopened. So a row names the file for a moment and its kind thereafter. Cosmetic, and the alternative is a second transport for a filename; what reaches the agent is unaffected.
 
-The chip is an interim: when the chat pane moves onto the project's components, these rows are drawn as `Attachment` rows from the same parse, and the nameless case gets a label that admits what it is rather than wearing a MIME type as a name ([ui-component-library design](../ui-component-library/design.md), decision 7).
+The chip itself is gone: the chat pane draws these rows from the same parse with shadcn's `Attachment`, and the nameless case says what it is rather than wearing a MIME type as a name ([ui-component-library design](../ui-component-library/design.md), decision 7).
 
 ## Decision 6: the prompt line
 
