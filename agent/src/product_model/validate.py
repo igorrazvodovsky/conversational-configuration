@@ -36,6 +36,16 @@ def scenario(solver, title, choices, expect):
     return ok
 
 
+def check_statuses(solver, title, choices, var, expect):
+    """Check per-value statuses of one variable under `choices`; `expect` maps
+    value -> expected status ("forced", "invalid", or "available" for neither)."""
+    live = solver.valid_options(choices)[var]
+    got = {v: live[v] if live[v] in ("forced", "invalid") else "available" for v in expect}
+    ok = got == expect
+    print(f"  [{'ok' if ok else 'FAIL'}] {title}: {got}")
+    return ok
+
+
 def main():
     model = load_model(MODEL_PATH)
     solver = ConfigSolver(model)
@@ -111,6 +121,49 @@ def main():
     failures += not scenario(
         solver, "Hospital + basic service level — conflict",
         {"building_type": "hospital", "service_level": "basic"}, "unsat")
+
+    # Negotiable equipment (R41–R53)
+    tall_eu_office = {"region": "europe", "building_type": "office", "travel": "high_30_50"}
+    failures += not check_statuses(
+        solver, "A tall European office forces the firefighters lift (R47)",
+        tall_eu_office, "firefighters_operation",
+        {"en81_72": "forced", "recall": "invalid", "none": "invalid"})
+    failures += not check_statuses(
+        solver, "…which forces fire-rated doors (R48) and battery backup (R49)",
+        tall_eu_office, "rescue_operation",
+        {"ups": "forced", "ard": "invalid", "manual": "invalid"})
+    failures += not check_statuses(
+        solver, "…and leaves no unrated landing door (R24/R48)",
+        tall_eu_office, "fire_rating", {"none": "invalid"})
+
+    failures += not check_statuses(
+        solver, "North America has recall and nothing else (R46)",
+        {"region": "north_america"}, "firefighters_operation",
+        {"recall": "forced", "en81_72": "invalid", "none": "invalid"})
+    failures += not check_statuses(
+        solver, "Europe has the EN 81-72 lift as the upgrade (R46)",
+        {"region": "europe"}, "firefighters_operation",
+        {"recall": "invalid", "en81_72": "available", "none": "available"})
+
+    failures += not check_statuses(
+        solver, "A machine-room-less lift cannot be hand-wound (R43)",
+        {"drive": "gearless_mrl"}, "rescue_operation", {"manual": "invalid"})
+
+    failures += not check_statuses(
+        solver, "Destination control forces the connected package (R41)",
+        {"dispatch_control": "destination"}, "connectivity_package",
+        {"connected": "forced", "none": "invalid"})
+    failures += not check_statuses(
+        solver, "Destination control rules out the small stop bands (R42)",
+        {"dispatch_control": "destination"}, "stops", {"s2_6": "invalid"})
+
+    failures += not scenario(
+        solver, "Ten-week handover + panoramic glass wall — conflict",
+        {"lead_time": "expedited", "wall_finish": "glass_panoramic"}, "unsat")
+
+    failures += not check_statuses(
+        solver, "A hotel locks its guest floors (R51)",
+        {"building_type": "hotel"}, "access_control", {"none": "invalid"})
 
     print("4. Pricing sanity (longest term yields the lowest monthly):")
     choices = {"building_type": "office", "travel": "mid_15_30", "usage_profile": "medium"}
@@ -195,8 +248,15 @@ def main():
         "headroom": "h3400", "door_type": "telescopic_2", "door_width": "d800",
         "door_finish": "painted", "fire_rating": "none",
         "wall_finish": "painted_steel", "floor": "rubber", "cop": "standard",
-        "mirror": "none", "handrail": "none",
+        "mirror": "none", "handrail": "none", "lead_time": "standard",
+        "dispatch_control": "collective", "rescue_operation": "ard",
+        "firefighters_operation": "none", "access_control": "none",
     }
+    missing = set(model.variables) - set(reference)
+    ok = not missing
+    print(f"  [{'ok' if ok else 'FAIL'}] the reference configuration is complete"
+          + (f" — missing {sorted(missing)}" if missing else ""))
+    failures += not ok
     ok = solver.check(reference)
     print(f"  [{'ok' if ok else 'FAIL'}] reference configuration is valid")
     failures += not ok

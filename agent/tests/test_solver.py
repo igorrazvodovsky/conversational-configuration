@@ -408,7 +408,9 @@ def test_complete_co2_brute_force_cross_check(solver):
         "headroom": "h3400", "door_type": "telescopic_2", "door_width": "d800",
         "door_finish": "painted", "fire_rating": "none",
         "wall_finish": "painted_steel", "cop": "standard",
-        "mirror": "none", "handrail": "none",
+        "mirror": "none", "handrail": "none", "lead_time": "standard",
+        "dispatch_control": "collective", "rescue_operation": "ard",
+        "firefighters_operation": "none", "access_control": "none",
     }
     free = ["energy_package", "energy_class", "floor"]
     assert set(choices) | set(free) == set(solver.model.variables)

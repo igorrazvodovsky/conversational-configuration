@@ -352,7 +352,9 @@ def test_completion_message_no_teaser_when_objectives_agree(empty):
         "headroom": "h3400", "door_type": "telescopic_2", "door_width": "d800",
         "door_finish": "painted", "fire_rating": "none",
         "wall_finish": "painted_steel", "floor": "rubber", "cop": "standard",
-        "mirror": "none", "handrail": "none",
+        "mirror": "none", "handrail": "none", "lead_time": "standard",
+        "dispatch_control": "collective", "rescue_operation": "ard",
+        "firefighters_operation": "none", "access_control": "none",
     }
     config, _ = apply_choices(empty, full, "user")
     config = make_candidate(config)

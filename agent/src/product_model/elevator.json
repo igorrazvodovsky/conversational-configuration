@@ -48,6 +48,15 @@
       ]
     },
     {
+      "name": "lead_time",
+      "label": "Handover date",
+      "group": "agreement",
+      "options": [
+        { "value": "standard", "label": "16 weeks from order", "price": 0, "co2": 0, "note": "the factory's ordinary queue, any finish" },
+        { "value": "expedited", "label": "10 weeks from order", "price": 7500, "co2": 0, "note": "a slot bought out of the queue, stock finishes only" }
+      ]
+    },
+    {
       "name": "building_type",
       "label": "Building type",
       "group": "context",
@@ -179,6 +188,15 @@
       ]
     },
     {
+      "name": "dispatch_control",
+      "label": "Call dispatching",
+      "group": "platform",
+      "options": [
+        { "value": "collective", "label": "Collective control (up/down landing calls)", "price": 0, "co2": 0, "note": "one car answers the call it happens to suit" },
+        { "value": "destination", "label": "Destination control (lobby panels)", "price": 14000, "co2": 60, "note": "passengers are grouped by floor before they board" }
+      ]
+    },
+    {
       "name": "car_size",
       "label": "Car dimensions (width × depth)",
       "group": "dimensions",
@@ -272,6 +290,27 @@
       ]
     },
     {
+      "name": "rescue_operation",
+      "label": "Entrapment rescue",
+      "group": "safety",
+      "options": [
+        { "value": "manual", "label": "Manual release by a technician", "price": 0, "co2": 0, "note": "passengers wait for the call-out to arrive" },
+        { "value": "ard", "label": "Automatic rescue device", "price": 3200, "co2": 60, "note": "the car reaches the nearest floor by itself and opens" },
+        { "value": "ups", "label": "Full battery backup", "price": 9000, "co2": 210, "note": "the lift keeps running through an outage" }
+      ]
+    },
+    {
+      "name": "firefighters_operation",
+      "label": "Firefighters' operation",
+      "group": "safety",
+      "note": "Region-split like accessibility: EN 81-72 firefighters lift in Europe, ASME A17.1 Phase I/II emergency operation in North America.",
+      "options": [
+        { "value": "none", "label": "None", "price": 0, "co2": 0 },
+        { "value": "recall", "label": "Phase I/II emergency operation", "price": 4500, "co2": 45, "note": "the brigade recalls the car and then drives it from inside" },
+        { "value": "en81_72", "label": "EN 81-72 firefighters lift", "price": 12000, "co2": 190, "note": "protected lobby, brigade switch, two hours of operation in a fire" }
+      ]
+    },
+    {
       "name": "wall_finish",
       "label": "Car wall finish",
       "group": "cabin",
@@ -320,6 +359,16 @@
         { "value": "none", "label": "None", "price": 0, "co2": 0 },
         { "value": "one_side", "label": "One side", "price": 250, "co2": 15 },
         { "value": "three_sides", "label": "Three sides", "price": 650, "co2": 40 }
+      ]
+    },
+    {
+      "name": "access_control",
+      "label": "Floor access control",
+      "group": "cabin",
+      "options": [
+        { "value": "none", "label": "Open to every floor", "price": 0, "co2": 0 },
+        { "value": "card_reader", "label": "Card reader in the car", "price": 2800, "co2": 25, "note": "a badge unlocks the floors it is allowed" },
+        { "value": "destination_linked", "label": "Badge at the lobby panel", "price": 5200, "co2": 40, "note": "the badge names the floor, so the panel routes the passenger to a car" }
       ]
     }
   ],
@@ -713,6 +762,104 @@
       "type": "implication",
       "if_all": [{ "var": "energy_package", "in": ["regen"] }],
       "then": { "var": "energy_class", "in": ["a"] }
+    },
+    {
+      "id": "R41",
+      "label": "Destination control is delivered as a connected system",
+      "type": "implication",
+      "if_all": [{ "var": "dispatch_control", "in": ["destination"] }],
+      "then": { "var": "connectivity_package", "in": ["connected"] }
+    },
+    {
+      "id": "R42",
+      "label": "Destination control only earns its place from seven stops up",
+      "type": "implication",
+      "if_all": [{ "var": "dispatch_control", "in": ["destination"] }],
+      "then": { "var": "stops", "in": ["s7_12", "s13_24"] }
+    },
+    {
+      "id": "R43",
+      "label": "A machine-room-less lift has no machine to hand-wind, so rescue must be automatic",
+      "type": "implication",
+      "if_all": [{ "var": "drive", "in": ["gearless_mrl"] }],
+      "then": { "var": "rescue_operation", "in": ["ard", "ups"] }
+    },
+    {
+      "id": "R44",
+      "label": "The four-hour response promise cannot rely on a technician to free passengers",
+      "type": "implication",
+      "if_all": [{ "var": "service_level", "in": ["premium"] }],
+      "then": { "var": "rescue_operation", "in": ["ard", "ups"] }
+    },
+    {
+      "id": "R45",
+      "label": "Hospital lifts must keep running on the building's standby supply",
+      "type": "implication",
+      "if_all": [{ "var": "building_type", "in": ["hospital"] }],
+      "then": { "var": "rescue_operation", "in": ["ups"] }
+    },
+    {
+      "id": "R46",
+      "label": "Region determines the applicable firefighters' operation",
+      "type": "table",
+      "vars": ["region", "firefighters_operation"],
+      "allowed": [
+        ["europe", "none"], ["europe", "en81_72"],
+        ["north_america", "recall"]
+      ]
+    },
+    {
+      "id": "R47",
+      "label": "European public buildings above 30 m require a firefighters lift",
+      "type": "implication",
+      "if_all": [
+        { "var": "region", "in": ["europe"] },
+        { "var": "building_type", "in": ["office", "hotel", "hospital"] },
+        { "var": "travel", "in": ["high_30_50", "very_high_50_75", "tower_75_100"] }
+      ],
+      "then": { "var": "firefighters_operation", "in": ["en81_72"] }
+    },
+    {
+      "id": "R48",
+      "label": "A firefighters lift requires fire-rated landing doors",
+      "type": "implication",
+      "if_all": [{ "var": "firefighters_operation", "in": ["en81_72"] }],
+      "then": { "var": "fire_rating", "in": ["e120", "ei60"] }
+    },
+    {
+      "id": "R49",
+      "label": "A firefighters lift must run for two hours after the mains fail",
+      "type": "implication",
+      "if_all": [{ "var": "firefighters_operation", "in": ["en81_72"] }],
+      "then": { "var": "rescue_operation", "in": ["ups"] }
+    },
+    {
+      "id": "R50",
+      "label": "Badge-at-the-panel access needs destination control to route to",
+      "type": "implication",
+      "if_all": [{ "var": "access_control", "in": ["destination_linked"] }],
+      "then": { "var": "dispatch_control", "in": ["destination"] }
+    },
+    {
+      "id": "R51",
+      "label": "Hotels lock the guest floors",
+      "type": "implication",
+      "if_all": [{ "var": "building_type", "in": ["hotel"] }],
+      "then": { "var": "access_control", "in": ["card_reader", "destination_linked"] }
+    },
+    {
+      "id": "R52",
+      "label": "A made-to-order car wall cannot be built in ten weeks",
+      "type": "implication",
+      "if_all": [{ "var": "lead_time", "in": ["expedited"] }],
+      "then": { "var": "wall_finish", "in": ["painted_steel", "laminate", "brushed_ss"] }
+    },
+    {
+      "id": "R53",
+      "label": "Framed glass landing doors cannot be built in ten weeks",
+      "type": "implication",
+      "if_all": [{ "var": "lead_time", "in": ["expedited"] }],
+      "then": { "var": "door_finish", "in": ["painted", "brushed_ss"] }
     }
   ],
   "footprint": {
