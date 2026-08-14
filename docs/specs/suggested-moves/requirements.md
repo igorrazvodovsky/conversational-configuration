@@ -1,6 +1,6 @@
 # Suggested moves: the pills say what you can do next
 
-Status: draft — awaiting approval.
+Status: implemented.
 
 The suggestion strip above the composer holds four fixed prompts: a hotel new build, a hospital bed lift, an office modernization, and a question about what can be configured. They are entry prompts, and they are right exactly once — on an empty workspace, before anything has been said. Every moment after that they are wrong, and a customer three revisions into a settled agreement is still being offered "we're planning a new 6-storey hotel in Munich".
 
@@ -22,10 +22,10 @@ Serves discovery principle [the agent proposes and the user decides](../../disco
 
 ## Acceptance criteria
 
-- GIVEN a workspace whose agreement has no choices recorded, WHEN the strip renders, THEN it shows the entry prompts it shows today, unchanged in wording.
+- GIVEN a workspace where nothing has been said and nothing recorded, WHEN the strip renders, THEN it shows the entry prompts it shows today, unchanged in wording. *Both tests, not just the second:* a customer who has described the building and been asked a question back has recorded nothing, and offering them a Munich hotel is this spec's own opening complaint arriving one turn in rather than three revisions in. Between the first message and the first recorded choice the strip is empty, which the last criterion here already calls correct.
 - GIVEN a workspace whose agreement has choices, WHEN the strip renders, THEN every pill is a move available on this agreement now, drawn from the user-move inventory and phrased against what is actually in state.
 - GIVEN any pill, THEN it is a move the customer could make, in the customer's voice and in the building's vocabulary — never a question the agent wants answered. Asking is the agent's fallback move (constitution #5), and moving it into the suggestion strip would reintroduce interrogation one pill at a time.
-- GIVEN any pill, WHEN it is clicked, THEN it sends exactly the text it displays as an ordinary user message, on the same path a typed message takes. No pill is a shorthand for a tool call the customer could not have expressed in words, and no pill dispatches a structured message of the kind cards use.
+- GIVEN any pill, WHEN it is clicked, THEN it sends exactly the text it displays as an ordinary user message, on the same path a typed message takes. No pill is a shorthand for a tool call the customer could not have expressed in words, and no pill dispatches a structured message of the kind cards use. The four entry prompts are the standing exception, as the first criterion requires: they keep the short label over a longer message they have always had.
 - GIVEN pills that bear on cost or on footprint, WHEN the strip renders, THEN they appear as a pair or not at all. A strip that offers "make it cheaper" without "lower the carbon" resolves the trade-off by omission, which is the agent's first never-move ([trade-offs are shown as a pair, not collapsed into a score](../../discovery/principles/trade-offs-shown-as-a-pair.md)).
 - GIVEN any pill, THEN it proposes a move and never promises an outcome. A suggested move that turns out to be infeasible is answered the way any other infeasible move is, with the named rules that caused it (constitution #1 and #6) — the strip asserts no feasibility of its own.
 - GIVEN the agent is mid-run, WHEN state is streaming, THEN the pills do not churn under the customer's eye; they settle once when the run ends.

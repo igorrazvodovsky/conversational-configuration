@@ -19,10 +19,12 @@ The pane keeps CopilotKit's own layout — scroll area with the composer absolut
 | `reasoningMessage`'s `header` / `contentView` / `toggle` | dressed to match the `Collapsible` disclosure in `tool-rendering.tsx` | a three-part disclosure, filled slot by slot rather than replaced wholesale |
 | `input`'s `children` | `InputGroup` + `InputGroupTextarea` + `InputGroupAddon` | the composer becomes the same field vocabulary as the rest of the app |
 | `sendButton`, `addMenuButton`, the transcribe buttons | `Button` | each of these slots is typed `ButtonHTMLAttributes`, so a shadcn `Button` receives its handlers and disabled state unchanged |
-| `suggestionView`'s `suggestion` | `Button variant="outline" size="xs"` | the chip vocabulary the canvas uses |
-| `welcomeScreen` | `Empty` | already installed, already the empty state everywhere else |
+| `suggestionView`'s `suggestion` | `Button variant="outline" size="xs" className="pointer-events-auto"` | the chip vocabulary the canvas uses — and see below, the class is not decoration |
+| `welcomeScreen` | `Empty`, and the `suggestionView` prop passed through above the composer | already installed, already the empty state everywhere else; the strip is the whole point of an empty workspace ([suggested moves](../suggested-moves/design.md)) |
 | `cursor` | `Spinner` | |
 | the composer's queue and a file in a sent message | `Attachment` family — `AttachmentGroup` / `AttachmentMedia` / `AttachmentTitle` / `AttachmentDescription` / `AttachmentAction` | the queue has no slot; see decision 6 |
+
+*Two of those slots fail silently rather than visibly, both around suggestions, and both were found only when the strip's contents became worth clicking.* The suggestion container is `pointer-events-none` and CopilotKit's own pill re-enables them on itself; a replacement pill that does not carry `pointer-events-auto` renders perfectly and never fires, so every suggestion in the app was inert. And the welcome screen is handed the bound suggestion view as a prop: a replacement that takes only `input` drops the strip from the one state where an empty workspace has nothing else to say. The general shape: a slot replacement inherits the library's layout assumptions about its own element, and drops whatever it does not name.
 
 The five components this needed — `message-scroller`, `message`, `bubble`, `input-group`, `attachment` — were installed under the [component library](../ui-component-library/design.md)'s rules, which is also where the runtime dependency they pull in is recorded. As everywhere else, the literal `rounded-*` classes they arrive with are stripped here at the call sites: the zero radius ramp is a backstop for token-derived corners only, and a bubble is exactly the kind of thing that ships with a literal one.
 

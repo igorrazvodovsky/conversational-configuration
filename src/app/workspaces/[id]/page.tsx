@@ -29,13 +29,10 @@ import {
   ChatSurfaceHeader,
   useChatSurface,
 } from "@/components/workspace/chat-surface";
+import { SuggestedMoves } from "@/components/workspace/suggested-moves";
 import { WorkspaceSplit } from "@/components/workspace/workspace-split";
 import { StaleThreadContext } from "@/components/generative-ui/card-dispatch";
-import {
-  useConfiguratorUI,
-  useConfiguratorSuggestions,
-  useWorkspaceAttachment,
-} from "@/hooks";
+import { useConfiguratorUI, useWorkspaceAttachment } from "@/hooks";
 
 export default function WorkspacePage({
   params,
@@ -59,7 +56,6 @@ export default function WorkspacePage({
 
 function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   useConfiguratorUI();
-  useConfiguratorSuggestions();
   const { workspace, workspaceName, staleThread, notFound } =
     useWorkspaceAttachment(workspaceId);
   // The second (and last) entry of the shared-attention read channel
@@ -135,6 +131,10 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
             onClick={chatSurface.restore}
           />
         )}
+        {/* Draws nothing: it subscribes to agent state to keep the suggestion
+            strip current (docs/specs/suggested-moves), and does so from a leaf
+            so a streaming reply does not re-render this page. */}
+        <SuggestedMoves />
       </div>
     </StaleThreadContext.Provider>
   );

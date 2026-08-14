@@ -21,6 +21,7 @@ import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import {
   ATTACHMENT_ACCEPT,
   ATTACHMENT_MAX_SIZE,
@@ -72,16 +73,39 @@ const ConfiguratorChatView = Object.assign(ChatView, CopilotChatView);
 const SuggestionPill = forwardRef<
   HTMLButtonElement,
   ComponentProps<typeof CopilotChatSuggestionPill>
->(function SuggestionPill({ icon, isLoading, children, ...props }, ref) {
+>(function SuggestionPill(
+  { icon, isLoading, children, className, ...props },
+  ref,
+) {
   return (
-    <Button ref={ref} variant="outline" size="xs" {...props}>
+    /* pointer-events-auto is not decoration: the library's suggestion
+       container sets pointer-events-none and its own pill re-enables them, so
+       a replacement pill that omits this renders correctly and never fires. */
+    <Button
+      ref={ref}
+      variant="outline"
+      size="xs"
+      className={cn("pointer-events-auto", className)}
+      {...props}
+    >
       {isLoading ? <Spinner /> : icon}
       {children}
     </Button>
   );
 });
 
-function WelcomeScreen({ input }: { input: React.ReactElement }) {
+/* The suggestion slot is passed through rather than dropped: an empty workspace
+   is where the entry prompts are the whole point (docs/specs/suggested-moves),
+   and above the composer is the only place pills may appear. The library's own
+   welcome screen puts them below the input; here they sit where they sit in
+   every other state, so the strip does not move when the first message lands. */
+function WelcomeScreen({
+  input,
+  suggestionView,
+}: {
+  input: React.ReactElement;
+  suggestionView?: React.ReactNode;
+}) {
   return (
     <div className="flex h-full flex-col">
       <Empty className="flex-1">
@@ -91,6 +115,7 @@ function WelcomeScreen({ input }: { input: React.ReactElement }) {
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
+      {suggestionView}
       {input}
     </div>
   );

@@ -34,7 +34,7 @@ All user moves are legal at all times ([configuration can start from any variabl
 | Undo | — | Reverses any move, the agent's included — unbuilt; seeded as the [undo spec](../../specs/undo/requirements.md) |
 | Delegate a scope | "You handle the interior" | Grants a mandate — see §5 |
 | Review the agent's work | Filters canvas to *agent-chosen* | No change; a review pass — see §5 |
-| Accept | "Yes" | The current candidate becomes the agreement. Always possible, because what is shown is always valid ([always show a valid whole](../principles/always-show-a-valid-whole.md)) |
+| Accept | "Yes" | The current candidate becomes the agreement — unbuilt: nothing in state distinguishes a candidate from one the customer has taken, so acceptance is conversational only. Always possible in principle, because what is shown is always valid ([always show a valid whole](../principles/always-show-a-valid-whole.md)) |
 
 ## 3. Agent moves
 

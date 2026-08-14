@@ -1,6 +1,6 @@
 # Suggested moves — design
 
-Status: draft, written alongside the requirements and not yet implemented.
+Status: implemented.
 
 ## Decision 1: templated pills over model-generated ones
 
@@ -8,19 +8,23 @@ Status: draft, written alongside the requirements and not yet implemented.
 
 The static form wins here, recomputed from state through its `deps` argument. Three reasons, in order of weight:
 
-*Generated pills are unassertable.* Constitution #9 confines the scenario harness to tool calls, payloads and state, never prose, precisely so that conversation checks do not become prose review. A model-composed pill is prose, so a dynamic strip could not be checked at all — not for the trade-off pairing, not for whether it offers moves that exist, not for whether it slipped into asking questions. With templates, the harness can assert on which move kinds the strip offers from a given state, which is the acceptance criteria's actual content.
-
 *The pairing rule needs to be a guarantee.* The requirement that cost and footprint pills appear together or not at all is a never-move dressed as a rendering rule. Under templates it is a property of the code. Under generation it is an instruction the model usually follows, and the failure is silent and looks like a reasonable strip.
+
+*The strip must not churn, and a stable order needs a deterministic source.* The requirement that pills settle once when a run ends assumes the same state produces the same strip. A model call does not offer that even at temperature zero once the transcript is part of its input, so a generated strip would reshuffle across recomputations that changed nothing.
 
 *Cost.* A generated strip is one extra model call every time the agreement changes, including after every canvas edit, for a surface the customer may never look at.
 
-The counter-argument is real and should be recorded: templated pills will read stiffer than generated ones, and the whole point is to speak in the building's vocabulary about *this* building. If the walkthrough finds the strip reads as boilerplate, the fallback is the dynamic form with the pairing enforced by post-filtering the generated list rather than by instruction, and the harness losing its grip on this surface accepted explicitly.
+What this does *not* buy is automated verification. The catalogue is TypeScript evaluated in the browser; the scenario harness is Python asserting on tool calls, payloads and state from live runs, and the repo carries no frontend test runner. Neither can see the strip. Templates make it *reviewable by reading* — the pairing rule is a line of code rather than a hoped-for behaviour — and that is the whole of the checking advantage. Adding a frontend test runner for this one surface would run against constitution #9, which assigns UI to running the app, and #10.
+
+The counter-argument is real and should be recorded: templated pills will read stiffer than generated ones, and the whole point is to speak in the building's vocabulary about *this* building. If the walkthrough finds the strip reads as boilerplate, the fallback is the dynamic form with the pairing enforced by post-filtering the generated list rather than by instruction.
 
 ## Decision 2: the templates follow the recitals' discipline
 
 The [agreement document spec](../agreement-document/requirements.md) already requires that recitals prose is produced by deterministic templates over state and model display data, never composed by the model — constitution #6 extended to the record. Pills are chat-side, not the record, so that rule does not bind them. They should follow it anyway, for decision 1's reasons, and reuse the same source of phrasing: the model's display labels and glosses, so a pill and the term it refers to call the same thing by the same name.
 
-Where the templates live is the one open implementation question. `lib/configurator.ts` already holds the projection helpers the canvas renders through and is the natural home; whether the move catalogue sits beside them or in its own module is a first-implementation call, not a design commitment.
+The catalogue lives in its own module, `src/lib/suggested-moves.ts`, rather than beside the projection helpers in `lib/configurator.ts`. With review-by-reading standing in for an automated check, one file that holds every family — and nothing else — is worth more than proximity to the helpers it calls.
+
+A move pill's title *is* its message: the chip shows the sentence it sends. That is what makes the strip teach — the customer reads a sentence they could have typed, and clicking it is indistinguishable from typing it. The four entry prompts keep their existing short title over a long message, which the first acceptance criterion preserves unchanged; every pill this spec adds is short enough to be its own chip.
 
 ## Decision 3: the move catalogue is the inventory, filtered by state
 
@@ -28,16 +32,21 @@ Each pill family is a predicate over the configuration plus the text to offer wh
 
 | Family | Offered when | Move |
 |---|---|---|
-| Entry prompts | No choices recorded | The four existing prompts, unchanged |
+| Entry prompts | Nothing said, nothing recorded, no candidate | The four existing prompts, unchanged, and nothing beside them |
+| Answer the document | A requirement of the customer's document is still in deviation | The first such clause, named, asking for what it asked for |
 | The trade-off pair | A candidate exists | *Make it cheaper* and *lower the carbon*, always both |
-| Answer the document | An outstanding deviation exists | The specific unanswered requirement, named by its clause |
-| Ask why | A value is solver-forced or agent-chosen | Why that value is what it is |
-| Revise by intent | Choices exist | A revision phrased against a recorded outcome term |
-| Accept | A candidate exists and no deviation is outstanding | Take the agreement as it stands |
+| Ask why | A value is solver-forced or agent-chosen | Why that term reads as it does — the term named, not the value (see the notes below) |
+| Revise by intent | A usage profile is in effect and it is not the heaviest | What heavier traffic would change |
 
-The table is the starting point, not a fixed set; what it must preserve is that every family maps to a move the inventory already lists, so a pill can never offer something the system has no move for. *Fork and compare* is deliberately absent until the comparison view has a canvas placement — the [nonlinear interaction spec](../nonlinear-interaction/requirements.md) leaves that open, and offering the move before it has a surface would produce a result with nowhere to go.
+The table is the starting point, not a fixed set; what it must preserve is that every family maps to a move the inventory already lists, so a pill can never offer something the system has no move for.
 
-How many pills show at once, and in what order, is a rendering question for the first implementation. The order must be stable across recomputations so the strip does not reshuffle under the customer.
+Two inventory moves are deliberately absent, for the same reason. *Fork and compare* waits until the comparison view has a canvas placement — the [nonlinear interaction spec](../nonlinear-interaction/requirements.md) leaves that open. *Accept* waits until accepting means something in state: nothing today distinguishes a candidate from an agreement the customer has taken, so the pill would send a sentence with nowhere to land, and the agent would have to answer it with warmth alone.
+
+Emptiness is the canvas's test, not a second one: choices recorded, or a candidate standing. The two surfaces have to agree about what an untouched workspace is, and an RFQ-seeded workspace is correctly not one — its document-sourced choices are choices. State that has not arrived yet falls to the entry prompts rather than to an empty strip, so a reload never blanks the surface on its way up.
+
+*The entry prompts need a second test the other families do not: an empty transcript.* An agreement with nothing recorded is not necessarily an untouched one. A customer who described the building and got a question back has recorded nothing, and the strip that greets them with a Munich hotel is this spec's opening complaint, arriving one turn in instead of three revisions in. So the entry branch reads `agent.messages` as well as the configuration, and between the first message and the first recorded choice the strip is empty — the criterion that an empty strip is correct, doing the work it was written for.
+
+The order is the table's order, and the cap is three *families*, never three pills. A cap counted in pills could emit *make it cheaper* and drop *lower the carbon*, which is the first never-move arrived at by rendering; the pair is one entry that yields two pills, so no cap can reach between them.
 
 ## Decision 4: dispatch is the plain path, and this is a constraint not a convenience
 
@@ -47,19 +56,38 @@ Those prefixes exist because a card stands for one atomic tool call and the agen
 
 This also keeps the strip out of the agreement's mechanics entirely. Nothing here can dispatch a state change; the agent decides what a pill's sentence means, the same way it decides what a typed sentence means, and the solver decides whether it is allowed.
 
-## Decision 5: recomputation is bound to settled state
+## Decision 5: the catalogue is evaluated only while the agent is idle
 
-The `deps` array is keyed on the configuration and on `isRunning`, so pills recompute once when a run ends rather than on every streamed state delta. That satisfies the requirement that pills do not churn mid-run, and it means a canvas edit updates the strip on the same boundary as everything else the canvas discards and re-derives.
+During a run the previous result is held, so a run has exactly one transition, at its end, whatever the stream does in between. A canvas edit therefore moves the strip on the same boundary as everything else the canvas discards and re-derives.
 
-Registration stays where it is, in `use-configurator-ui.tsx` beside the tool renderers, called from the workspace page. That hook already re-renders on agent activity, so reading configuration there adds no new render pressure — unlike the header, where the [chat surface design](../chat-surface/design.md) decision 5 documents why `useAgent` may not be called.
+The obvious alternative — key `useConfigureSuggestions`'s `deps` on the configuration — would satisfy nothing, since `agent.state.configuration` is a fresh object on every streamed delta. But no `deps` argument is passed at all, and that is worth stating because it looks like an omission. The hook builds its config inside a memo whose dependencies already include the config object, itself a fresh literal every render; `deps` only appends to that list. What actually prevents re-registration is downstream: the hook serializes the built config and compares it with the last one, so an unchanged strip registers nothing however often it is handed over. A signature in `deps` would be a second, weaker copy of a check the library already performs. The signature is still computed — it is what decides whether the held result is replaced — but it stays inside this component.
 
-## Verification plan
+Registration lives in `components/workspace/suggested-moves.tsx`, a component that renders `null`, rather than beside the tool renderers in `use-configurator-ui.tsx` as a hook the workspace page calls. The tool renderers register statically and subscribe to nothing; a state-derived strip has to call `useAgent()`, which re-renders its caller on every agent event, during a streaming reply every token. Called from the page, that caller is the page: chat, canvas and attachment hook together. This is the render-scope rule the [chat surface design](../chat-surface/design.md) states for the header — its decision 5 pushed the unread watcher down into a leaf for the same reason, and its decision 7 made "nothing in the container may subscribe to agent state" the invariant. A leaf that draws nothing is the smallest thing that can subscribe.
 
-The conversation harness can check the move-kind composition from a seeded state, which is what makes decision 1 worth its stiffness. Assertions read which families the strip offers, never the pill text:
+*It joins the hydrated tree, and that was checked rather than assumed*, because the page's standing rule is that nothing minting a React id may. Hydration mismatches do appear while working on this page, and they are the dev server's rather than the page's: the first load after any edit reports one and the next load with the same code does not, the server HTML is byte-stable across the edit that supposedly caused it, a bare `<div>` in the same position reproduces it identically, and a production build reports nothing at all. Three of those four rule this component out; the fourth says there is nothing to fix.
 
-- From an empty configuration, the four entry prompts and nothing else.
-- From a state with a candidate, both trade-off pills present, neither alone.
-- From an RFQ-seeded state with an outstanding deviation, the answer-the-document family present and naming the right clause.
-- From a state whose deviations are all answered, that family gone.
+## Decision 6: `available` stays explicit
 
-By hand, against the running app: pills settle once at the end of a run rather than flickering through it; a canvas edit updates them; clicking one sends visible text identical to the pill's own and produces the same result as typing it.
+`useConfigureSuggestions` defaults a static config to `before-first-message`. Every pill this spec adds exists only after the first message, so dropping the `available: "always"` the current call already carries would delete the feature silently, leaving a strip that still works on an empty workspace and never appears again.
+
+## Verification
+
+By running the app (constitution #9), which is the whole of the check — see decision 1 for why the scenario harness cannot reach this surface. Checked against saved workspaces covering each family, plus one conversation driven end to end:
+
+- An empty workspace opens with the four entry prompts and nothing beside them.
+- A workspace with a candidate and no outstanding deviation offers *make it cheaper* and *lower the carbon* and, where a value is forced or agent-chosen, the question about it. Neither trade-off pill ever appeared alone.
+- An RFQ-seeded workspace with a pending deviation led with its clause, ahead of the pair.
+- A workspace with two recorded choices, no candidate and nothing forced showed an empty strip, which is the intended answer rather than a failure.
+- A conversation one turn old, where the customer had described the building and the agent had asked a question rather than recording anything, showed the four entry prompts — the failure this spec was written about, reproduced. The transcript test in decision 3 is the fix, and the state is now empty-strip.
+- Across a run the strip is absent, and returns once when the run ends: the library renders the view only while idle, and the frozen catalogue means what returns is computed from settled state.
+- Clicking a pill sent a visible user message identical to the chip's own text, and the agent answered it as it answers the sentence typed.
+
+The one thing the harness could reach is the far side of the dispatch criterion — that a pill's sentence, sent as ordinary user text, lands on the tool call it should. That is a claim about the agent, not about the strip, and whether it earns a scenario of its own is a separate call.
+
+## Notes from implementation
+
+*Two silent faults in the chat pane had to be fixed before any of this was visible*, both recorded in the [chat pane design](../chat-pane/design.md) where the slots belong. The project's replacement suggestion pill lacked `pointer-events-auto`, which the library's container requires of its own pill, so every suggestion in the app rendered correctly and did nothing when clicked. And the replacement welcome screen took only the `input` prop, dropping the bound suggestion view, so an empty workspace — the one state where the entry prompts are exactly right — was the one state that never showed them. Both predate this spec.
+
+*A known gap, and it is not this spec's.* Reloading a page onto an existing conversation sometimes leaves `agent.isRunning` true indefinitely — the transcript finishes replaying, every tool row shows complete, and the composer still offers a stop button. CopilotKit renders the suggestion view only while idle, so on those loads the strip stays away until the next real run ends. Nothing here sets `isRunning`, and the behaviour predates this work; it is recorded because it is the one thing that can make a correct strip invisible.
+
+*The ask-why pill names the term, not the value.* "Why is the service level 24/7 call-out, 8 h response, 99.5 % uptime?" is a paragraph on a chip; "Why this service level?" is a chip. The value is on the canvas next to the question, which is where values live.
