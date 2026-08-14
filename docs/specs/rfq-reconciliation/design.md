@@ -50,7 +50,13 @@ Recognize a pasted requirements document and ingest instead of eliciting; map on
 
 ## Fixtures
 
-Two authored documents in `agent/fixtures/rfq/`, plain text a presenter pastes: one satisfiable-with-gaps (clean seed, gap elicitation), one over-constrained (reuses the modernization-vs-3.0 m/s conflict the repair machinery is already demonstrated on, so the deviation's core is a known quantity). Illustrative artifacts, same epistemic status as the pricing data.
+Two authored documents in `agent/fixtures/rfq/`, plain text a presenter pastes: one satisfiable-with-gaps (clean seed, gap elicitation), one over-constrained (reuses the modernization-vs-3.0 m/s conflict the repair machinery is already demonstrated on, so the deviation's core is a known quantity). Illustrative artifacts, same epistemic status as the pricing data. Both speak only the stage-1 groups; every `platform`, `dimensions`, `doors` and `cabin` value in the seeded candidate is solver-forced, never document-stated.
+
+`residential-new-build.txt` states nine requirements (residential / europe / new_build, 24 m travel, 1000 kg, 1.6 m/s, medium traffic, standard service level, EN 81-70) and leaves `contract_term`, `stops` and `connectivity_package` unstated — the gaps elicitation must target. Verified against the solver: jointly satisfiable, cheapest completion €901/month.
+
+`office-tower-modernization.txt` states twelve, of which `installation=modernization` and `rated_speed=mps3_0` are the intended conflict. Verified: unsatisfiable, minimal core exactly those two choices under R04 (speed sets minimum headroom) and R28 (modernization cannot raise the existing headroom) — R03/R27 are an equivalent pit-depth core the solver may return instead. Two single-drop maximal subsets exist, so this fixture exercises the tie-break rather than merely the count: dropping `rated_speed` completes at €1,951/month and offers 2.5 m/s, dropping `installation` at €2,021/month. Cheapest-completion picks the first, which is also the only one a modernization customer would recognize as an answer — evidence for the objective argued above, and a caution that the tie-break is load-bearing, not decoration.
+
+Both documents carry realistic clauses no model variable covers — a monthly budget cap, a handover date and liquidated damages, a 2 h response time (the premium level offers 4 h), a service-credit regime, unit counts. These exercise the `unmapped` path. The budget cap is the sharp one: requirements.md names *budget per month* as stage-1 vocabulary, but the model has no budget variable, so a cap can only ever be reported as unmapped — and the over-constrained fixture's cheapest completion (€1,951) breaches its stated €1,800 cap, a pressure the register cannot express. Either the model gains a budget constraint or the vocabulary line is narrowed; unresolved, and out of this spec's implementation scope.
 
 ## Testing
 

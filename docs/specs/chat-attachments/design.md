@@ -68,7 +68,7 @@ An attachment returns from the agent as an AG-UI `image` part whatever it was, b
 
 The name shows only while the message is local. The round trip strips it — the AG-UI conversion keeps the bare MIME type and drops the part's metadata — and that happens within the same session, as soon as the run echoes the message back, not only when a conversation is reopened. So a row names the file for a moment and its kind thereafter. Cosmetic, and the alternative is a second transport for a filename; what reaches the agent is unaffected.
 
-The chip itself is gone: the chat pane draws these rows from the same parse with shadcn's `Attachment`, and the nameless case says what it is rather than wearing a MIME type as a name ([ui-component-library design](../ui-component-library/design.md), decision 7).
+The chip itself is gone: the chat pane draws these rows from the same parse with shadcn's `Attachment`, and the nameless case says what it is rather than wearing a MIME type as a name ([chat pane design](../chat-pane/design.md), *attachments get the shadcn vocabulary in both places*).
 
 ## Decision 6: the prompt line
 

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The transcript (docs/specs/ui-component-library design 7).
+ * The transcript (docs/specs/chat-pane).
  *
  * CopilotKit renders the rows; the scroller owns where they sit. Every direct
  * child of the content is wrapped in an item, and the user's turns are the

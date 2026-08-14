@@ -16,7 +16,7 @@ These constrain the interaction design. They are not up for rediscovery; only th
 
 | File | Brown's activity | What it settles |
 |---|---|---|
-| [problem-framing.md](problem-framing.md) | Frame the problem | Problem statement, objectives, context, and the [seven assertions](assertions/) under test |
+| [problem-framing.md](problem-framing.md) | Frame the problem | Problem statement, objectives, context, and the [assertions](assertions/) under test |
 | [direction.md](direction.md) | Set the direction | One concept, the [eight principles](principles/), the models worth making |
 | [phase-plan.md](phase-plan.md) | Plan your approach | Activity balance, milestones, constraints, stop signals |
 | [brief.md](brief.md) | Document the outcome | The standing summary — start here if you read only one |

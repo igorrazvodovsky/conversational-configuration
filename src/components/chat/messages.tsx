@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Message rows (docs/specs/ui-component-library design 7).
+ * Message rows (docs/specs/chat-pane).
  *
  * Each row is composed through the slot's `children`, which hands back the
  * pieces CopilotKit already rendered — markdown, tool calls, the toolbar — for

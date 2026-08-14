@@ -43,7 +43,7 @@ Its width is `400px`, above the 360px floor the sidebar measured (below that the
 
 ## Decision 4: the mode control is chrome around the chat, not inside it
 
-The switcher lives in a small header bar in the chat container, rendered by `chat-surface.tsx` *around* `ConfiguratorChat` — not inside it. `ConfiguratorChat` is a slot composition against `CopilotChat` (the [component library](../ui-component-library/design.md) decision 7) and adding a layout control into that composition would mean either a fifth thing fighting for the pane's flex layout or a slot used for something that is not chat. Keeping it outside also keeps the chat identical in all four modes, which is what the requirements ask for.
+The switcher lives in a small header bar in the chat container, rendered by `chat-surface.tsx` *around* `ConfiguratorChat` — not inside it. `ConfiguratorChat` is a slot composition against `CopilotChat` (the [chat pane design](../chat-pane/design.md)) and adding a layout control into that composition would mean either a fifth thing fighting for the pane's flex layout or a slot used for something that is not chat. Keeping it outside also keeps the chat identical in all four modes, which is what the requirements ask for.
 
 The control is a `DropdownMenu` of radio items — the same shape as the Notion reference, and the only shadcn primitive that gives a current-value checkmark in a menu. It is installed with `npx shadcn@latest add dropdown-menu`, per the component library's rule. Beside it, a hide button. Both are `Button variant="ghost" size="icon-xs"`, the vocabulary the rest of the chrome uses.
 

@@ -2,7 +2,7 @@
 
 /**
  * The chat pane, composed from CopilotChat's slots
- * (docs/specs/ui-component-library design 7). Nothing here patches the
+ * (docs/specs/chat-pane). Nothing here patches the
  * package or reaches into its markup with CSS: every replacement goes in
  * through a prop the library already exposes, and the behaviour it owns —
  * streaming, markdown, transcription, interrupts, tool-call rendering —

@@ -1,6 +1,6 @@
 # Configuration as a field — vocabulary, the elevator benchmark, industry CPQ
 
-Status: literature and practice review, unchanged since 2026-08. Split from the former `docs/research-and-outline.md` §2 (first three subsections). Grounds the propose-check-repair framing in [../discovery/problem-framing.md](../discovery/problem-framing.md) §3 and the model scale in spec [001](../specs/product-model/design.md).
+Status: literature and practice review, unchanged since 2026-08. Split from the former `docs/research-and-outline.md` §2 (first three subsections). Grounds the propose-check-repair framing in [../discovery/problem-framing.md](../discovery/problem-framing.md) §3 and the model scale in the [product-model spec](../specs/product-model/design.md).
 
 ## The research field
 

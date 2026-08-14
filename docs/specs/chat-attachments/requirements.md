@@ -30,7 +30,7 @@ Scope decision: text-extractable files only — plain text, markdown, csv, json.
 ## Relationship to other specs
 
 - [RFQ reconciliation](../rfq-reconciliation/requirements.md): owns what an inbound requirements document does. Its ingestion is specified for pasted text; this spec is the file equivalent of that paste, and whether an attached file becomes a supported RFQ entrance — with document provenance and a deviation register — is that spec's decision, not this one's. Until it lands, an attached document reads as ordinary conversation.
-- [UI component library](../ui-component-library/requirements.md): resolves its open decision on the attachment queue in the direction of keeping attachments. This spec adds the accept filter, the size cap and the rejection message around it; the queue's own appearance is that spec's, and its chat-pane work replaces CopilotKit's chrome there with shadcn's `Attachment`.
+- [Chat pane](../chat-pane/requirements.md): settles that the composer's attachment queue stays rather than being dropped, and owns how it looks — the queue and the file rows in a sent message are drawn there with shadcn's `Attachment` in place of CopilotKit's chip. This spec adds the accept filter, the size cap and the rejection message around it.
 - [Agent tools](../agent-tools/requirements.md): no new tool, no state change. A file arrives as message content and is acted on through the existing tools, so provenance, ripple and staleness behave as they already do.
 
 ## Out of scope

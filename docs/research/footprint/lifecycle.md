@@ -1,6 +1,6 @@
 # Elevator life-cycle profile — where the carbon actually is
 
-Status: evidence memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §1. Provenance tags (*retrieved* / *derived* / *assumed*) as defined in [README.md](../README.md#provenance-tags). Grounds spec [008](../../specs/environmental-footprint/requirements.md).
+Status: evidence memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §1. Provenance tags (*retrieved* / *derived* / *assumed*) as defined in [README.md](../README.md#provenance-tags). Grounds the [environmental-footprint spec](../../specs/environmental-footprint/requirements.md).
 
 Working question for this note and the four that follow it: what does an elevator's life-cycle carbon actually look like, which of it responds to the choices our configurator exposes, and what may we honestly say about illustrative numbers in a UI?
 

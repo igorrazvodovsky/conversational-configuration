@@ -8,7 +8,7 @@ Cost and footprint are held side by side, with the differing variables named. No
 
 *Test.* After seeing the comparison, can the user say *which options* differ and what each costs?
 
-*The line the agent may not cross.* Resolving the cost/footprint weighting on the user's behalf is the irreducible user decision ([../models/Conversation moves.md](../models/Conversation%20moves.md) §3). The current implementation completes on cheapest price, which is a silent 100%-cost weighting — a known violation, not a decision.
+*The line the agent may not cross.* Resolving the cost/footprint weighting on the user's behalf is the irreducible user decision ([../models/Conversation moves.md](../models/Conversation%20moves.md) §3). The current implementation completes on cheapest price but solves the other objective in the same call and discloses both deltas whenever the two disagree — a disclosed default, not a silent weighting ([footprint spec](../../specs/environmental-footprint/design.md)). Whether disclosure suffices, or the first proposal must arrive as a pair, remains open in [../models/Conversation moves.md](../models/Conversation%20moves.md) §6.
 
 ## Related
 

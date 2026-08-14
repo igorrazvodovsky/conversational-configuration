@@ -37,6 +37,10 @@ Revisits the [agent-tools decision](../agent-tools/design.md): still no streamin
 - Verified end-to-end in the browser (hotel scenario): needs elicitation → forced EN 81-70/MRL cascade → €61,700 candidate on the canvas; `ask_choices` rendered scale (2500 kg greyed as out-of-range) + detail list (1800×2700 unavailable) with cheapest markers, and "Apply 2 choices" recorded one batch; the used card went inert.
 - Hidden-edit round trip verified in the browser (EP-3000 workspace): a clean edit (mirror → half-height) left the conversation completely untouched — no echo, no tool chips, no reply — while rippling edits produced only the consequence ("Rated load 800 kg… forces the car size to 1350 × 1400 mm", "eco energy package… forces the modelled energy class to B"); switching threads and back replayed the conversation with the hidden messages still hidden.
 
+## Pending amendment, from discovery
+
+The [surface architecture model](../../discovery/models/Surface%20architecture.md) §2 rules that pending revisions, repair sets and comparisons are document-side artifacts — the canvas will host them, with chat carrying only their narration. The fuller statement of what changes, and why the built chat-card placement is faulted, is in the [nonlinear-interaction design](../nonlinear-interaction/design.md) (*Pending amendment*); the spec work waits on the [agreement-document spec](../agreement-document/requirements.md) building the target surface.
+
 ## Testing
 
 Component-level rendering is verified by running the app (constitution #9). The `ask_choices` payload builder is a pure function in `agent/src/configuration.py` with unit tests (valid/invalid flagging, price deltas, cheapest marker, control-selection heuristic, multi-variable payloads). Manual end-to-end pass: hotel scenario via chips + a canvas edit that triggers a forced cascade.

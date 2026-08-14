@@ -4,6 +4,8 @@ Status: implemented.
 
 Replaces the todo canvas with a configuration spec sheet synced to `agent.state.configuration`, and gives the agent a way to ask questions as clickable, solver-valid option controls in chat. After this feature the prototype is the full chat+canvas hybrid the research argues for ([docs/research/interaction-literature.md](../../research/interaction-literature.md), thread D).
 
+Serves discovery principle [the canvas remembers; the chat explains](../../discovery/principles/canvas-remembers-chat-explains.md), and puts two assertions under test: [the canvas is the durable state](../../discovery/assertions/canvas-is-the-durable-state.md) (the sheet half) and [generated controls beat free text](../../discovery/assertions/generated-controls-beat-free-text.md) (the `ask_choices` half). (Cited back-in: the spec predates the discovery layer.)
+
 ## Stories
 
 - As a customer, I can always see the whole configuration at a glance beside the chat: decisions grouped as on a spec sheet, what's been chosen (and by whom), what the rules forced, what's still open, and the current total price — the canvas, not the transcript, is where I orient (constitution #7).

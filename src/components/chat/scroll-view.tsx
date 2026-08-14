@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The transcript's scroll container (docs/specs/ui-component-library design 7).
+ * The transcript's scroll container (docs/specs/chat-pane).
  *
  * Three things this takes over from CopilotKit's own view, each of which fails
  * quietly: `autoScroll={false}` on the chat, so its stick-to-bottom and this

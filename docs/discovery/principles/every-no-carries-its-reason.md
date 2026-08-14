@@ -8,7 +8,7 @@ Unavailability, forcing, and conflict are always accompanied by the named rules 
 
 *Test.* Does the reason survive being checked against the model file?
 
-*Where it needs a second mechanism.* Discretionary agent choices have no unsat core to ground them, so the same discipline runs through named default heuristics (D-rules) in the product model rather than through cores ([../models/Conversation moves.md](../models/Conversation%20moves.md) §5).
+*Where it needs a second mechanism.* Discretionary agent choices have no unsat core to ground them, so the same discipline runs through named default heuristics (D-rules) in the product model rather than through cores ([../models/Conversation moves.md](../models/Conversation%20moves.md) §5). Specified, not yet in the model — the gap is recorded in the [product-model design](../../specs/product-model/design.md).
 
 ## Related
 

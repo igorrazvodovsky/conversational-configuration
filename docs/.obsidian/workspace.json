@@ -183,6 +183,11 @@
   },
   "active": "0a96195340f5dc8d",
   "lastOpenFiles": [
+    "specs/undo/requirements.md",
+    "specs/undo",
+    "specs/chat-pane/design.md",
+    "specs/chat-pane/requirements.md",
+    "specs/chat-pane",
     "specs/chat-surface/tasks.md",
     "specs/chat-surface/tasks.md.tmp.89498.f728d2fca4eb",
     "specs/chat-surface/design.md",
@@ -213,11 +218,6 @@
     "specs/agreement-workspace",
     "specs/environmental-footprint/tasks.md",
     "specs/environmental-footprint/design.md",
-    "specs/service-agreement/tasks.md",
-    "specs/service-agreement/requirements.md",
-    "specs/service-agreement/design.md",
-    "specs/service-agreement",
-    "specs/environmental-footprint",
-    "specs/eaas-pivot"
+    "specs/service-agreement"
   ]
 }

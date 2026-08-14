@@ -6,7 +6,7 @@ The agent may fill forced values, propose completions and flag dead ends without
 
 *Rules out* silent defaults for aesthetic or budget-sensitive choices. It is also why green variable-value ordering — biasing the solver toward lower-carbon options — is deferred: a search bias is exactly a silent discretionary preference ([footprint spec](../../specs/environmental-footprint/requirements.md), *considered and deferred*).
 
-*Test.* Can the user always tell who chose a value — and undo it in one move? Answered by the provenance tag being visible on the canvas, not recorded in the transcript ([../models/Conversation moves.md](../models/Conversation%20moves.md) §1).
+*Test.* Can the user always tell who chose a value — and undo it in one move? The first half is answered by the provenance tag being visible on the canvas, not recorded in the transcript ([../models/Conversation moves.md](../models/Conversation%20moves.md) §1); the undo half is unbuilt, seeded as the [undo spec](../../specs/undo/requirements.md).
 
 *Standing tension with [always show a valid whole](always-show-a-valid-whole.md),* which pulls toward the agent choosing a lot early. The resolution is visible provenance plus cheap reversal.
 

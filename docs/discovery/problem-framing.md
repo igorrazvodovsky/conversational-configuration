@@ -55,7 +55,7 @@ Only the context that changes design decisions.
 
 *Content.* ~20 user-facing decisions over ~30–80 constraints; footprint and price data are illustrative with plausible relative magnitudes, and RFQ documents are authored fixtures of the same epistemic status — there is no access to real tenders. Small enough that the whole configuration fits on one canvas — which is a fidelity limitation to state honestly, since a real platform exposes 20–40 decisions over 250+ parameters and the canvas would not fit.
 
-*Process.* Solo prototyping, no budget, no access to job performers, spec-anchored workflow, with the six specs through the service agreement implemented and the demo-scenarios and footprint specs still in draft ([../specs/README.md](../specs/README.md)). Discovery has to be cheap and continuous; there will be no discovery phase with a start and an end date.
+*Process.* Solo prototyping, no budget, no access to job performers, spec-anchored workflow, with most of the feature register implemented and the rest in flight ([../specs/README.md](../specs/README.md), the current statuses). Discovery has to be cheap and continuous; there will be no discovery phase with a start and an end date.
 
 ## 4. Assertions under test
 
@@ -63,7 +63,7 @@ The interaction-design hypotheses the prototype exists to examine. Each is provi
 
 | Assertion | Evidence today |
 |---|---|
-| [The canvas, not the transcript, is the durable locus of state](assertions/canvas-is-the-durable-state.md); the chat is for negotiation and explanation | Research (thread D/E), implemented in 004/005 |
+| [The canvas, not the transcript, is the durable locus of state](assertions/canvas-is-the-durable-state.md); the chat is for negotiation and explanation | Research (thread D/E), implemented by the [configuration canvas](../specs/configuration-canvas/requirements.md) and [nonlinear interaction](../specs/nonlinear-interaction/requirements.md) |
 | [Showing a valid candidate to react to beats asking a question sequence](assertions/candidate-beats-questions.md) | Strong in the recommender literature (critiquing surveys), untested here |
 | [Generated in-chat controls beat free text](assertions/generated-controls-beat-free-text.md) when the user lacks vocabulary | Chen et al. 2025 shows large margins on comparison-heavy tasks |
 | [Nonlinear revision becomes tolerable when the ripple is shown *at the moment of revision*](assertions/ripple-at-the-moment-of-revision.md), with repairs proposed | The design bet of [nonlinear interaction](../specs/nonlinear-interaction/requirements.md); no evidence yet |
@@ -77,6 +77,7 @@ Three are load-bearing: [a candidate beats a question sequence](assertions/candi
 
 ## 5. Open questions the framing does not settle
 
+- Where does initiative sit — does the agent wait to be asked, propose unasked, or condition on confidence? *Decided 2026-08-13: propose first, once anchored — [models/Conversation moves.md](models/Conversation%20moves.md) §6.*
 - What is the unit of revision: a single variable, a named frame, or an intent expressed in outcome terms?
 - How much of the ripple to show — the full consequence set, the minimal core, or a narrated summary? *Decided 2026-08-13: minimal core plus repair deltas by default, full set one move away, narration never load-bearing — [models/Ripple storyboard.md](models/Ripple%20storyboard.md) §3.*
 - Does the canvas represent one configuration with history, or several live candidates at once? (the [nonlinear-interaction spec](../specs/nonlinear-interaction/requirements.md) says frames; the visual model is unresolved.)

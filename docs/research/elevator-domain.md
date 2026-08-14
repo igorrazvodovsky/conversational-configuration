@@ -1,6 +1,6 @@
 # Elevator domain data — decisions, dimensions, coupled constraints
 
-Status: domain reference, unchanged since 2026-08. Split from the former `docs/research-and-outline.md` §2 ("What a real elevator configuration involves"). Grounds the variable set and scale target of spec [001](../specs/product-model/design.md).
+Status: domain reference, unchanged since 2026-08. Split from the former `docs/research-and-outline.md` §2 ("What a real elevator configuration involves"). Grounds the variable set and scale target of the [product-model spec](../specs/product-model/design.md).
 
 From KONE Elevator Planner (https://elevatorplanner.kone.com/), MonoSpace 500 DX planning data (EN 81-20), Schindler Plan, EN 81-20 dimension tables:
 

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Attachments in the chat pane (docs/specs/ui-component-library design 7).
+ * Attachments in the chat pane (docs/specs/chat-pane).
  *
  * A file shows up twice — queued in the composer, then in the message that
  * carried it — and both are drawn from the same components. The queue has no

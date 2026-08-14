@@ -8,7 +8,7 @@ Requirements approved 2026-08-14; design drafted the same day. Nothing implement
 - [ ] Tools: `ingest_rfq` (atomic seed + record + candidate + freeze), `reconcile_requirement` (accept / revise / open, revise path reusing `revise()` and the repair payload); `get_configuration` register summary
 - [ ] System prompt additions (coupled to the "Reconcile deviation: …" message grammar)
 - [ ] Canvas: document provenance badge with clause popover, deviation state on rows, register count in header; reconciliation dispatch via `card-dispatch` (visible messages)
-- [ ] Fixtures: two authored RFQ documents in `agent/fixtures/rfq/` (satisfiable-with-gaps; over-constrained on the modernization conflict)
+- [x] Fixtures: two authored RFQ documents in `agent/fixtures/rfq/` (satisfiable-with-gaps; over-constrained on the modernization conflict) — requirement sets verified against the solver, expectations recorded in design.md
 - [ ] Verify by running the app against both fixtures (constitution #9); browser pass notes into design.md
 - [ ] Demo scenario 5 harness coverage (lands with the demo-scenarios harness, not before)
 - [ ] Reconcile requirements.md/design.md with what was actually built; update the solver-service spec for `seed`

@@ -53,7 +53,8 @@ The modes are described by what they trade, not by the moment they belong to. Wh
 ## Relationship to other specs
 
 - [Agreement workspace](../agreement-workspace/requirements.md): owns the split (`workspace-split.tsx`) that sidebar mode *is*. That spec is amended, not replaced — the mode is a layer above it, and sidebar mode must remain the split it describes, resizable floors and all.
-- [UI component library](../ui-component-library/requirements.md): the mode control and the floating panel come from installed shadcn primitives, and the chat inside them is the same slot composition (design decision 7) in every mode — no second chat, no CSS reaching into CopilotKit's markup.
+- [UI component library](../ui-component-library/requirements.md): the mode control and the floating panel come from installed shadcn primitives.
+- [Chat pane](../chat-pane/requirements.md): the chat inside every mode is that spec's slot composition, unchanged — no second chat, no CSS reaching into CopilotKit's markup.
 - [Configuration canvas](../configuration-canvas/requirements.md): unchanged, but floating mode is the first surface where a canvas edit happens with the chat overlapping it. The `Canvas edit:` dispatch and its hidden-message handling must behave identically.
 
 ## Out of scope

@@ -1,6 +1,6 @@
 # Claims and vocabulary — what we may honestly say about our numbers
 
-Status: constraint memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §4. Binds spec [008](../../specs/environmental-footprint/requirements.md) and any UI copy that shows a footprint figure.
+Status: constraint memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §4. Binds the [environmental-footprint spec](../../specs/environmental-footprint/requirements.md) and any UI copy that shows a footprint figure.
 
 Verdict: *we can call our numbers an estimate, a model, or an illustration. We cannot call them an EPD, a declaration, a class, or a verified figure, and we cannot invite cross-manufacturer comparison. As of 27 September 2026 some of the tempting phrasings are not merely sloppy but unlawful in the EU.*
 

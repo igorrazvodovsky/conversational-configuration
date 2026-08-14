@@ -61,7 +61,7 @@ Framed around the service offering: elicitation targets the building and its out
 ## Frontend
 
 - `src/lib/configurator.ts`: types for the `pricing` block; `formatMonthly()`; `monthlyDelta(option, termMonths)` — the single place the frontend re-derives money, from the same imported JSON the agent reads.
-- Canvas (`config-canvas/index.tsx`): no layout logic for the grouping — group order does it. The header is the agreement header: monthly figure with its objective named ("cheapest completion"), title "Service agreement". The existing provenance badges (you/agent/auto/proposed) carry the requirements' provenance clause; they correspond to the four provenance strata in [the conversation move inventory](../../discovery/models/Conversation%20moves.md) §1.
+- Canvas (`config-canvas/index.tsx`): no layout logic for the grouping — group order does it. The header is the agreement header: monthly figure with its objective named ("cheapest completion"), title "Service agreement". The existing provenance badges (you/agent/auto/proposed) carry the requirements' provenance clause. They carry three of the four provenance strata in [the conversation move inventory](../../discovery/models/Conversation%20moves.md) §1 — you/agent/auto for user-chosen, agent-chosen and solver-forced; *proposed* marks the candidate's suggestion on an open row, which is not a stratum, and the model's fourth stratum, *derived*, has no badge of its own — derived hardware renders as forced or proposed depending on how it was computed.
 - `frame-comparison.tsx`, `ask-choices.tsx`: render /month values from the payloads; no structural difference from other cards.
 
 ## Validation and tests

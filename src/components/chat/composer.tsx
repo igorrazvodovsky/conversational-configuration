@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The composer (docs/specs/ui-component-library design 7).
+ * The composer (docs/specs/chat-pane).
  *
  * The leaf slots are plain textarea and button props, so this project's field
  * and button take them unchanged — handlers, disabled state, Enter-to-send and

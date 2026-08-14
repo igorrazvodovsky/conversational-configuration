@@ -1,6 +1,6 @@
 # Footprint assumptions to fix — service life, grid factor, usage profile
 
-Status: evidence memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §5. Provenance tags as defined in [README.md](../README.md#provenance-tags). These three defaults are what spec [008](../../specs/environmental-footprint/requirements.md)'s assumptions panel has to declare.
+Status: evidence memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §5. Provenance tags as defined in [README.md](../README.md#provenance-tags). These three defaults are what the [environmental-footprint spec](../../specs/environmental-footprint/requirements.md)'s assumptions panel has to declare.
 
 Verdict: *all three defaults are retrievable and defensible. The only genuinely contested one is the grid factor, where the EPD convention and the physically-honest answer differ — recommend the EPD convention as the default with a decarbonising scenario as an inspectable alternative.*
 

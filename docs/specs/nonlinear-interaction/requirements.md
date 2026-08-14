@@ -4,6 +4,8 @@ Status: implemented (approved 2026-08-13; browser-verified same day).
 
 The prototype's actual research contribution ([docs/research/interaction-literature.md](../../research/interaction-literature.md), thread E): revising constrained choices with ripple explanation and repair, comparing parallel candidate configurations, and resuming mid-configuration. Everything before this made revision *safe* (atomic rejection); this feature makes it *productive*.
 
+Serves discovery principle [changing your mind is a normal move, not a restart](../../discovery/principles/revision-is-not-a-restart.md), and is the named design bet of the load-bearing assertion [ripple at the moment of revision](../../discovery/assertions/ripple-at-the-moment-of-revision.md); resumption also enacts [the canvas is the durable state](../../discovery/assertions/canvas-is-the-durable-state.md). (Cited back-in: the spec predates the discovery layer.)
+
 ## Stories
 
 - As a customer, when I change an earlier decision and it collides with later ones, I'm not just told no — I see what the change would cost: which of my other choices would have to give, and concrete repair options I can pick with one tap (constitution #7).

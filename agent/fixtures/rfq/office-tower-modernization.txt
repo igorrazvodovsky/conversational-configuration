@@ -1,0 +1,106 @@
+HALDANE ESTATES GmbH
+REQUEST FOR QUOTATION — RFQ MOD-2026-07
+
+Lift modernization and service agreement
+Kranhaus Nord, Bank Tower — car no. 3 (low-rise-to-top shuttle)
+
+Issued: 11 February 2026
+Responses due: 6 March 2026, 12:00 CET
+Contact: r.velden@haldane-estates.example
+
+
+1. BACKGROUND
+
+1.1 Kranhaus Nord is a 1987 office tower under a phased refurbishment.
+The lift group is being modernized car by car; this RFQ covers car no. 3.
+
+1.2 The works are a modernization within the existing shaft. The shaft,
+pit and machine room are as built in 1987 and are not being altered:
+the structural works package for this phase does not extend below the
+lowest landing or above the existing overrun, and no permission has been
+sought for either.
+
+1.3 As with the rest of the group, the replacement is procured as a
+service. Bidders shall quote a monthly charge over the contract term
+covering equipment, installation, maintenance and the performance
+commitments in section 5. Capital purchase quotations are not sought.
+
+
+2. THE BUILDING
+
+2.1 Kranhaus Nord is a commercial office building, let to eleven
+tenants. Ground-floor reception is public; the tower floors are
+tenant-access.
+
+2.2 The building is in Frankfurt am Main, Germany. European codes apply.
+
+2.3 Car no. 3 travels 92 metres from the ground lobby to level 24.
+
+2.4 The car serves 18 landings.
+
+2.5 Following the refurbishment the building will be at full occupancy,
+approximately 2,100 people. Car no. 3 carries near-continuous traffic
+through the working day and is the group's principal shuttle at peak.
+
+
+3. PERFORMANCE REQUIREMENTS
+
+3.1 Rated speed shall be 3.0 m/s. Our traffic study (Voss & Partner,
+November 2025, appended separately) sets this figure as the requirement
+for a five-minute handling capacity of 12 % at the morning peak.
+
+3.2 Rated load shall be 1600 kg (21 persons).
+
+3.3 The lift shall be accessible in accordance with EN 81-70, consistent
+with the rest of the modernized group.
+
+
+4. TENANT AND LEGAL COMMITMENTS
+
+4.1 Two tenant leases signed in 2025 contain lift performance schedules
+that this specification is written to satisfy. Bidders should assume
+these commitments cannot be varied without tenant consent.
+
+4.2 The building's accessibility certification is being renewed on
+completion of the phase.
+
+
+5. SERVICE AND AVAILABILITY
+
+5.1 The service agreement shall provide 24/7 call-out cover with remote
+monitoring and diagnostics.
+
+5.2 Contracted availability shall be no less than 99.9 % measured over a
+rolling twelve-month period.
+
+5.3 Response time to a reported failure shall be no longer than 2 hours
+during building hours.
+
+5.4 Availability below the level in 5.2 in any two consecutive months
+shall trigger a service credit of 15 % of the monthly charge.
+
+5.5 The contract term shall be 15 years, coterminous with the building's
+refurbishment financing.
+
+
+6. COMMERCIAL
+
+6.1 The monthly charge shall not exceed EUR 1,800 per lift per month.
+
+6.2 Cars 4 and 5 are expected to follow in 2027 on the same terms.
+Bidders may state a group rate but shall price this RFQ standalone.
+
+6.3 Possession of the shaft is available from 4 May 2026 for a maximum
+of 14 weeks. The building remains occupied throughout.
+
+
+7. RESPONSE FORMAT
+
+7.1 Bidders shall respond clause by clause, stating compliance, partial
+compliance or non-compliance against each numbered requirement.
+
+7.2 Any deviation from a numbered requirement shall be stated as a
+deviation, with the reason and the alternative offered. Silent
+substitution is grounds for disqualification.
+
+— End of RFQ MOD-2026-07 —

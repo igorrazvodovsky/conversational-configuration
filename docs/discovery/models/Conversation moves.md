@@ -1,4 +1,4 @@
-Answers *where does initiative sit, and what is the agent allowed to do unasked?* — including the delegation boundary — and decides the initiative default left open in [problem-framing.md](../problem-framing.md) §5 Q1.
+Answers *where does initiative sit, and what is the agent allowed to do unasked?* — including the delegation boundary — and decides the initiative default left open in [problem-framing.md](../problem-framing.md) §5.
 
 ## 1. The board and the pieces
 
@@ -17,6 +17,8 @@ Every value on the document carries a provenance tag — the mechanism that reso
 
 The test for [the agent proposes, the user disposes](../principles/agent-proposes-user-disposes.md) — *can the user always tell who chose a value, and undo it in one move?* — is answered by this tag being visible on the canvas, not recorded in the transcript.
 
+A fifth provenance is approved but unbuilt: *document* — a value seeded from the customer's own inbound RFQ, carrying its clause ([rfq-reconciliation](../../specs/rfq-reconciliation/requirements.md)). In this table's terms it sits beside *user-chosen*: the user's organization chose it, upstream of the conversation, and the agent may change it only by proposing — through the reconciliation moves that spec defines.
+
 ## 2. User moves
 
 All user moves are legal at all times ([any door is an entrance](../principles/any-door-is-an-entrance.md)). No move is refused because of when it is made; a move may be *answered* with a no, which always carries its core ([every "no" carries its reason](../principles/every-no-carries-its-reason.md)).
@@ -29,7 +31,7 @@ All user moves are legal at all times ([any door is an entrance](../principles/a
 | Ask why | "Why can't I have the glass cab?" | No document change; explanation from the named core |
 | Revise by intent | "Make it cheaper" · "lower the carbon" | Agent proposes candidate changes as a ripple; nothing applies until accepted ([changing your mind is not a restart](../principles/revision-is-not-a-restart.md)) |
 | Fork and compare | "Show me both" | Second candidate held beside the first, differing variables named ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md)) |
-| Undo | — | Reverses any move, the agent's included |
+| Undo | — | Reverses any move, the agent's included — unbuilt; seeded as the [undo spec](../../specs/undo/requirements.md) |
 | Delegate a scope | "You handle the interior" | Grants a mandate — see §5 |
 | Review the agent's work | Filters canvas to *agent-chosen* | No change; a review pass — see §5 |
 | Accept | "Yes" | The current candidate becomes the agreement. Always possible, because what is shown is always valid ([always show a valid whole](../principles/always-show-a-valid-whole.md)) |
@@ -78,7 +80,7 @@ So *everything beneath the outcome terms is delegable; the trade-off between the
 
 *Delegate.* The user grants a mandate over a named scope ("you pick the interior", "optimize for carbon within the budget"). A mandate widens what the agent may set *agent-chosen* without asking; it never crosses the [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md) line — "optimize for carbon within the budget" is legal precisely because the user has just made the trade-off themselves and delegated only its execution.
 
-*Fill.* Within a mandate the agent sets values tagged *agent-chosen*, each with a reason. Discretionary choices have no unsat core to ground their reasons, so the same discipline as [every "no" carries its reason](../principles/every-no-carries-its-reason.md) needs a different mechanism: default heuristics live in the product model as named rules (D-ids beside the R-ids — declarative data per constitution #2, admissible grounds per #6 as amended), and the agent verbalizes them rather than composing a justification. A reason that cannot be traced to a D-rule is a reason the agent may not give.
+*Fill.* Within a mandate the agent sets values tagged *agent-chosen*, each with a reason. Discretionary choices have no unsat core to ground their reasons, so the same discipline as [every "no" carries its reason](../principles/every-no-carries-its-reason.md) needs a different mechanism: default heuristics live in the product model as named rules (D-ids beside the R-ids — declarative data per constitution #2, admissible grounds per #6 as amended; not yet in the model — the gap is recorded in the [product-model design](../../specs/product-model/design.md)), and the agent verbalizes them rather than composing a justification. A reason that cannot be traced to a D-rule is a reason the agent may not give.
 
 *Escalate.* The obligatory inverse of delegation. Triggers: the agent encounters a choice inside its mandate that moves the cost/footprint pair in opposite directions; no D-rule covers the choice; or the mandate leads into a dead end. Escalation returns the decision with the options and both deltas laid out — it is the fixed-rule approximation of Horvitz's confidence-conditional initiative (§6).
 
@@ -94,7 +96,7 @@ Three options were on the table:
 2. *Propose first, once anchored.* Chosen. As soon as the situation description grounds a candidate — roughly, building type plus scale — the agent proposes a *complete, valid, provenance-marked* draft and negotiation proceeds by critique. This is propose-check-repair given a conversational surface, and the only default under which the demo can exercise [a candidate beats a question sequence](../assertions/candidate-beats-questions.md) and [always show a valid whole](../principles/always-show-a-valid-whole.md) at all.
 3. *Confidence-conditional (Horvitz).* Right in principle; not honestly implementable with no interaction data to condition on. The escalation triggers in §5 are its fixed-rule stand-in.
 
-*Standing tension, named but not settled.* A complete candidate must be completed against *some* objective, and the first never-move (§3) forbids the agent from resolving the cost/footprint weighting itself. The two collide precisely at the first proposal — which arrives at the moment of highest anchoring risk. The current implementation completes on cheapest price, which under this model is a silent 100%-cost weighting: a known violation, not a decision. Two candidate settlements, neither yet chosen: the first proposal arrives as a *pair* — one cost-leaning, one footprint-leaning — making [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md) the opening move rather than a later feature; or *anchored* is redefined to include an expressed budget-or-carbon leaning, so the weighting is user-supplied before any completion runs. The ripple storyboard and comparison model should inform the choice.
+*Standing tension, settled for now by disclosure.* A complete candidate must be completed against *some* objective, and the first never-move (§3) forbids the agent from resolving the cost/footprint weighting itself. The two collide precisely at the first proposal — which arrives at the moment of highest anchoring risk. The interim settlement, made with the [footprint spec](../../specs/environmental-footprint/design.md): the completion defaults to cheapest, but every proposal also solves the other objective and, when the two assignments differ, discloses how many variables differ and both deltas — a disclosed default rather than a silent weighting. Two stronger settlements stay on the table for when the comparison model is drawn: the first proposal arrives as a *pair* — one cost-leaning, one footprint-leaning — making [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md) the opening move rather than a later feature; or *anchored* is redefined to include an expressed budget-or-carbon leaning, so the weighting is user-supplied before any completion runs. Whether disclosure is enough is a walkthrough question: if the disclosed alternative is never taken up, the default was doing the weighting after all, and this reopens toward one of the two.
 
 Failure signals to watch in the walkthrough ([phase-plan.md](../phase-plan.md) §3 task 6): the early proposal anchors the user into accepting agent defaults they should have contested — the stated failure mode of [a candidate beats a question sequence](../assertions/candidate-beats-questions.md), or the first proposal arrives before the situation supports it and reads as presumptuous. Either would reopen this decision toward a later anchor point, not toward waiting.
 
@@ -103,12 +105,12 @@ Failure signals to watch in the walkthrough ([phase-plan.md](../phase-plan.md) �
 - How a mandate is *afforded* — a canvas control on a section, a chat utterance, or both. Canvas anatomy territory, as is the per-artifact canvas form of the document-side artifacts named in §1.
 - Whether delegation should deepen for the returning operator (the primary persona). Session-map territory.
 - The accountability framing: an *agent-chosen* term in a signed service agreement carries a weight the provenance tag alone may not discharge.
-- Unit of revision and ripple disclosure ([problem-framing.md](../problem-framing.md) §5 Q2–Q3) — the ripple storyboard's job, though §5's review move constrains it: whatever disclosure level is chosen must also work for reviewing delegated work.
+- Unit of revision and ripple disclosure (both in [problem-framing.md](../problem-framing.md) §5) — the ripple storyboard's job, though §5's review move constrains it: whatever disclosure level is chosen must also work for reviewing delegated work.
 
 ## Related
 
 - [surface-architecture.md](Surface%20architecture.md) — the pattern and form inside which §1's placement ruling sits
 - [the agent proposes, the user disposes](../principles/agent-proposes-user-disposes.md) — the principle this model operationalizes; it also enacts [always show a valid whole](../principles/always-show-a-valid-whole.md), [the canvas remembers, the chat explains](../principles/canvas-remembers-chat-explains.md), [every "no" carries its reason](../principles/every-no-carries-its-reason.md), [any door is an entrance](../principles/any-door-is-an-entrance.md) and [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md)
 - [../direction.md](../direction.md) §3 — the model index
-- [../problem-framing.md](../problem-framing.md) §5 — Q1 is decided here; Q2–Q4 are not
+- [../problem-framing.md](../problem-framing.md) §5 — the initiative question is decided here; the others are not
 - [../phase-plan.md](../phase-plan.md) §3 — task 1 of the current cycle
