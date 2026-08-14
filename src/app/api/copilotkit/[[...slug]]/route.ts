@@ -31,15 +31,13 @@ const runtime = new CopilotRuntime({
   a2ui: {
     injectA2UITool: false,
   },
-  mcpApps: {
-    servers: [
-      {
-        type: "http",
-        url: process.env.MCP_SERVER_URL || "https://mcp.excalidraw.com",
-        serverId: "example_mcp_app",
-      },
-    ],
-  },
+  // No `mcpApps`. The starter declared an example MCP server here, and a
+  // non-empty server list is not inert configuration: `configureAgentForRequest`
+  // attaches `MCPAppsMiddleware` to the per-request agent clone, and its `run()`
+  // connects to every listed server and calls `listTools()` on *every* agent run,
+  // appending whatever UI tools come back to the tool list the model sees. That
+  // put a per-turn round trip to a third-party host in front of a tool surface
+  // constitution #1 depends on staying about the agreement.
 });
 
 const app = createCopilotEndpoint({

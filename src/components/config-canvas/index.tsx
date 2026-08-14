@@ -20,7 +20,7 @@
  * customer's own document is negotiation, not bookkeeping.
  */
 
-import { useAgent } from "@copilotkit/react-core/v2";
+import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bookmark } from "lucide-react";
@@ -65,6 +65,7 @@ export function ConfigCanvas({
   workspaceLoaded: boolean;
 }) {
   const { agent } = useAgent();
+  const { copilotkit } = useCopilotKit();
   const config: Configuration = agent.state?.configuration ?? EMPTY;
   const isRunning = agent.isRunning;
   const frames = config.frames ?? [];
@@ -82,9 +83,16 @@ export function ConfigCanvas({
     if (!isRunning) setPending({});
   }, [isRunning]);
 
+  // Through the CopilotKit core, exactly as the composer and the in-chat cards
+  // do, and never `agent.runAgent()` — see the note in
+  // `generative-ui/card-dispatch.ts`. It matters most here: a canvas edit is
+  // the turn where what the operator has open is most worth the agent knowing,
+  // and the bare call sends an empty `context`.
   const dispatch = (content: string) => {
     agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
-    agent.runAgent();
+    copilotkit.runAgent({ agent }).catch((error: unknown) => {
+      console.error("canvas edit: runAgent failed", error);
+    });
   };
 
   // The register, derived here from the frozen document block and the values

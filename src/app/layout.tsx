@@ -41,6 +41,15 @@ export default function RootLayout({
           <TooltipProvider delayDuration={300}>
             <CopilotKit
               runtimeUrl="/api/copilotkit"
+              /*
+                The inspector defaults to on for localhost, which is every run
+                of this prototype. It brings CopilotKit's announcement bubble
+                with it, and that bubble has no switch of its own: the
+                web-inspector element keeps its visibility private and renders
+                into a shadow root, so neither a prop nor CSS can reach it.
+                Turning the whole inspector off is the only supported control.
+              */
+              enableInspector={false}
               inspectorDefaultAnchor={{ horizontal: "right", vertical: "top" }}
               a2ui={{ catalog: demonstrationCatalog }}
               openGenerativeUI={{}}

@@ -10,11 +10,12 @@ The point of the decomposition is [gaps.md](gaps.md): with each verdict in its o
 
 | Note | What it holds | What it grounds | Evidence |
 |---|---|---|---|
-| [interaction-literature.md](interaction-literature.md) | Five HCI/CRS/configuration threads and the gap at their intersection | The novelty claim; several of the [assertions](../discovery/assertions/); the [canvas](../specs/configuration-canvas/requirements.md) and [nonlinear-interaction](../specs/nonlinear-interaction/requirements.md) specs | Published, peer-reviewed. Solid |
+| [interaction-literature.md](interaction-literature.md) | Five HCI/CRS/configuration threads and the gap at their intersection | The novelty claim; several of the [assertions](../discovery/assertions/); the [canvas](../specs/agreement-document/requirements.md) and [nonlinear-interaction](../specs/nonlinear-interaction/requirements.md) specs | Published, peer-reviewed. Solid |
 | [configuration-field.md](configuration-field.md) | Configuration as a research field, the elevator benchmark, industry CPQ practice | Propose-check-repair framing; the scale of the [product model](../specs/product-model/requirements.md) | Solid; the CPQ half is vendor material read critically |
 | [elevator-domain.md](elevator-domain.md) | Real decisions, dimensions and coupled constraints | The variable set of the [product model](../specs/product-model/requirements.md) | Manufacturer planning data. Solid for illustrative modelling |
 | [solver-choice.md](solver-choice.md) | Why Z3, and what its three operations license the interface to claim | The [solver service](../specs/solver-service/requirements.md); [every refusal names the rules that caused it](../discovery/principles/refusals-name-their-rules.md) | Evaluated, then verified by implementation |
 | [architecture-consensus.md](architecture-consensus.md) | The layer diagram the research and the repo agree on | Every implemented spec, as built | Synthesis of the notes above |
+| [copilotkit-surface.md](copilotkit-surface.md) | What the platform offers at this tier, what the repo uses, and what each unused piece was rejected for | [shared attention](../specs/shared-attention/requirements.md), [suggested moves](../specs/suggested-moves/requirements.md), and the removal of the starter's MCP configuration | Read out of the installed packages, not the docs. Solid, with the unrun questions listed in its §5 |
 | [gaps.md](gaps.md) | The register: literature gaps, retrievable gaps, gaps reading cannot close | Deciding what is worth reading next | — |
 
 ### [footprint/](footprint/README.md) — the sustainability thread
