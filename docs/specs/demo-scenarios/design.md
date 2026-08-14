@@ -54,7 +54,7 @@ Rate limits are therefore a first-class failure, not weather: retry with exponen
 
 ## Built so far, and what is verified
 
-The harness and scenario 2 are built; scenarios 1, 3, 4 and 5 and the presenter document are not, and scenario 5 stays blocked on [rfq-reconciliation](../rfq-reconciliation/requirements.md). Scenario 2 came first because it is the flow a context change had already broken once ([agent-tools](../agent-tools/design.md), *revise over record*).
+The harness and scenario 2 are built; scenarios 1, 3, 4 and 5 and the presenter document are not — scenario 5 unblocked once [rfq-reconciliation](../rfq-reconciliation/requirements.md) was built. Scenario 2 came first because it is the flow a context change had already broken once ([agent-tools](../agent-tools/design.md), *revise over record*).
 
 Verified 2026-08-14: `uv run pytest` runs 89 unit tests and deselects the scenario; `pytest -m scenario` passes scenario 2's ten assertions against the live agent in ~16s; `python tests/compare_refs.py HEAD` creates and cleans its worktree, runs both arms sequentially, and reports all ten assertions equal across the two trees — which reproduces, through the harness, the conclusion the throwaway A/B reached about the de-duplicated prompt.
 

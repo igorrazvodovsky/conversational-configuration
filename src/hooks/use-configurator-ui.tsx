@@ -43,6 +43,25 @@ export const useConfiguratorUI = () => {
     }) => <RepairOptions {...props} />,
   });
 
+  // A reconciliation that collides returns the same repair payload as any
+  // other revision, so it renders with the same cards — the criterion "a
+  // reconciliation goes through the revision-with-repair flow" falling out of
+  // reuse (docs/specs/rfq-reconciliation). Every other outcome is plain text,
+  // which RepairOptions renders as a compact tool row.
+  useRenderTool({
+    name: "reconcile_requirement",
+    parameters: z.object({
+      variable: z.string(),
+      move: z.string(),
+      value: z.string().optional(),
+    }),
+    render: (props: {
+      toolCallId: string;
+      status: string;
+      result?: string;
+    }) => <RepairOptions {...props} />,
+  });
+
   // Frame comparisons render as a two-column diff card (docs/specs/nonlinear-interaction).
   useRenderTool({
     name: "compare_frames",

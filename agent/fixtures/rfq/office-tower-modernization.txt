@@ -39,8 +39,8 @@ tenant-access.
 2.4 The car serves 18 landings.
 
 2.5 Following the refurbishment the building will be at full occupancy,
-approximately 2,100 people. Car no. 3 carries near-continuous traffic
-through the working day and is the group's principal shuttle at peak.
+approximately 2,100 people. Car no. 3 is the group's principal shuttle
+and is in near-constant demand from 07:00 until the building empties.
 
 
 3. PERFORMANCE REQUIREMENTS

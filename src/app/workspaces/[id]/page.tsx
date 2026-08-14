@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/empty";
 import { ConfigCanvas } from "@/components/config-canvas";
 import { ConfiguratorChat } from "@/components/chat";
-import { ConversationSidebar } from "@/components/workspace/conversation-sidebar";
 import {
   ChatRestoreButton,
   ChatSurfaceHeader,
@@ -89,35 +88,40 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
 
   return (
     <StaleThreadContext.Provider value={staleThread}>
-      <div className="flex h-dvh w-full overflow-hidden bg-background">
-        <ConversationSidebar
-          workspace={workspace}
-          workspaceName={workspaceName}
-          activeThreadId={configuration?.threadId}
-          onSelect={(threadId) => configuration?.setActiveThreadId(threadId)}
-          onNew={() => configuration?.startNewThread()}
-        />
-        <div className="relative h-dvh min-w-0 flex-1">
-          <WorkspaceSplit
-            canvas={<ConfigCanvas />}
-            chat={<ConfiguratorChat />}
-            chatHeader={
-              <ChatSurfaceHeader
-                mode={chatSurface.mode}
-                onSelect={chatSurface.select}
-                onHide={chatSurface.hide}
-                onUnseenReply={chatSurface.noteReply}
-              />
-            }
-            mode={chatSurface.mode}
-          />
-          {chatSurface.mode === "hidden" && (
-            <ChatRestoreButton
-              unseenReplies={chatSurface.unseenReplies}
-              onClick={chatSurface.restore}
+      {/* Two surfaces, no navigation column: the conversation list rides in the
+          chat's header and the workspace's identity at the head of the canvas
+          (docs/specs/chat-surface, decisions 7 and 8). */}
+      <div className="relative h-dvh w-full overflow-hidden bg-background">
+        <WorkspaceSplit
+          canvas={
+            <ConfigCanvas
+              workspaceName={workspaceName}
+              workspaceLoaded={workspace !== null}
             />
-          )}
-        </div>
+          }
+          chat={<ConfiguratorChat />}
+          chatHeader={
+            <ChatSurfaceHeader
+              mode={chatSurface.mode}
+              onSelect={chatSurface.select}
+              onHide={chatSurface.hide}
+              onUnseenReply={chatSurface.noteReply}
+              workspace={workspace}
+              activeThreadId={configuration?.threadId}
+              onSelectConversation={(threadId) =>
+                configuration?.setActiveThreadId(threadId)
+              }
+              onNewConversation={() => configuration?.startNewThread()}
+            />
+          }
+          mode={chatSurface.mode}
+        />
+        {chatSurface.mode === "hidden" && (
+          <ChatRestoreButton
+            unseenReplies={chatSurface.unseenReplies}
+            onClick={chatSurface.restore}
+          />
+        )}
       </div>
     </StaleThreadContext.Provider>
   );

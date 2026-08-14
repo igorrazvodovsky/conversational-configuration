@@ -98,6 +98,18 @@ def save_configuration(workspace_id: str, configuration: dict) -> dict:
     return record
 
 
+def attach_rfq(workspace_id: str, document_text: str) -> dict:
+    """Freeze the requirements document on the workspace record
+    (docs/specs/rfq-reconciliation). The raw text is reference material, not
+    working state: it never enters the shared configuration, and deleting
+    every conversation leaves it untouched."""
+    record = get_workspace(workspace_id)
+    record["rfq_document"] = {"text": document_text, "ingestedAt": _now()}
+    record["updatedAt"] = _now()
+    _write(record)
+    return record
+
+
 def register_thread(workspace_id: str, thread_id: str) -> dict:
     """Attach a conversation to the workspace (idempotent)."""
     record = get_workspace(workspace_id)

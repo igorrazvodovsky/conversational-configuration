@@ -8,11 +8,26 @@
  * as a structured message handled by set_choices, so the solver stays the
  * single source of validity. The message is hidden from the chat — the sheet
  * is the record of the edit, the conversation only carries consequences.
+ *
+ * On a document-seeded agreement it also carries the deviation register
+ * (docs/specs/rfq-reconciliation): document provenance with its clause, and
+ * requested-versus-offered on the rows a requirement could not reach. Those
+ * moves dispatch *visible* messages — waiving a requirement of the customer's
+ * own document is negotiation, not bookkeeping.
  */
 
 import { useAgent } from "@copilotkit/react-core/v2";
 import { useEffect, useState } from "react";
-import { Bookmark, Check, Lock, Sparkles, User } from "lucide-react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Bookmark,
+  Check,
+  FileText,
+  Lock,
+  Sparkles,
+  User,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,16 +52,23 @@ import {
   Candidate,
   Configuration,
   ModelVariable,
+  RegisterEntry,
+  Source,
+  acceptOfferedMessage,
   canvasEditMessage,
   footprintBlock,
   formatCO2,
   formatMonthly,
+  leaveOpenMessage,
   modelGroups,
   monthlyDelta,
   optionLabel,
   productModel,
+  registerEntries,
+  reviseRequirementMessage,
   termMonthsInEffect,
 } from "@/lib/configurator";
+import { PLACEHOLDER_NAME } from "@/lib/workspaces";
 
 const EMPTY: Configuration = {
   choices: {},
@@ -55,7 +77,15 @@ const EMPTY: Configuration = {
   frames: [],
 };
 
-export function ConfigCanvas() {
+export function ConfigCanvas({
+  workspaceName,
+  workspaceLoaded,
+}: {
+  /** Resolved by use-workspace-attachment (agent state wins); null = unnamed. */
+  workspaceName: string | null;
+  /** False until the record arrives, so the placeholder is not shown too early. */
+  workspaceLoaded: boolean;
+}) {
   const { agent } = useAgent();
   const config: Configuration = agent.state?.configuration ?? EMPTY;
   const isRunning = agent.isRunning;
@@ -78,18 +108,80 @@ export function ConfigCanvas() {
     agent.runAgent();
   };
 
+  // The register, derived here from the frozen document block and the values
+  // already in state (docs/specs/rfq-reconciliation).
+  const register = registerEntries(config);
+  const byVariable = new Map<string, RegisterEntry[]>();
+  for (const entry of register) {
+    byVariable.set(entry.variable, [
+      ...(byVariable.get(entry.variable) ?? []),
+      entry,
+    ]);
+  }
+  const openDeviations = register.filter((e) => e.status === "deviation");
+
+  // Picking an option on a row the document speaks to is a reconciliation, not
+  // bookkeeping: it dispatches a visible message rather than the hidden canvas
+  // edit, because moving away from the customer's own requirement is
+  // negotiation and belongs in the record.
   const dispatchChoice = (variable: string, value: string) => {
     setPending((p) => ({ ...p, [variable]: value }));
-    dispatch(canvasEditMessage([{ variable, value }]));
+    dispatch(
+      byVariable.has(variable)
+        ? reviseRequirementMessage(variable, value)
+        : canvasEditMessage([{ variable, value }]),
+    );
   };
 
   return (
     <ScrollArea className="h-full bg-background">
       <div className="max-w-3xl mx-auto px-8 py-8">
         <header className="mb-6 flex items-end justify-between gap-4">
-          <div>
+          <div className="min-w-0">
+            {/* The workspace's identity and the way out of it: the canvas is the
+                surface present in every chat mode, so it carries them
+                (docs/specs/chat-surface, decision 8). A Link and a span mint no
+                ids, which is what makes this safe in the hydrated tree. */}
+            <div className="mb-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+              <Button
+                asChild
+                variant="link"
+                size="xs"
+                className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground hover:no-underline"
+              >
+                <Link href="/">
+                  <ArrowLeft />
+                  All elevators
+                </Link>
+              </Button>
+              <span aria-hidden>/</span>
+              {workspaceName ? (
+                <span className="truncate" title={workspaceName}>
+                  {workspaceName}
+                </span>
+              ) : (
+                <span className="truncate italic">
+                  {workspaceLoaded ? PLACEHOLDER_NAME : "…"}
+                </span>
+              )}
+            </div>
             <h1 className="text-xl font-semibold">Service agreement</h1>
             <p className="text-sm text-muted-foreground">{productModel.name}</p>
+            {register.length > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {openDeviations.length > 0
+                  ? `${openDeviations.length} of ${register.length} requirements from your document not met`
+                  : `all ${register.length} requirements from your document answered`}
+                {/* answered-but-not-met stays counted: waiving and revising
+                    settle a requirement, they do not retire it */}
+                {(["waived", "revised"] as const).map((status) => {
+                  const count = register.filter(
+                    (e) => e.status === status,
+                  ).length;
+                  return count ? ` · ${count} ${status}` : "";
+                })}
+              </p>
+            )}
           </div>
           <div className="text-right">
             {config.candidate ? (
@@ -167,7 +259,9 @@ export function ConfigCanvas() {
                     termMonths={termMonthsInEffect(config)}
                     disabled={isRunning}
                     pendingValue={pending[variable.name]}
+                    requirements={byVariable.get(variable.name)}
                     onSelect={dispatchChoice}
+                    onDispatch={dispatch}
                   />
                 ))}
               </CardContent>
@@ -254,7 +348,7 @@ function FootprintSummary({ config }: { config: Configuration }) {
 function currentDisplay(
   variable: ModelVariable,
   config: Configuration,
-): { value: string | null; kind: "user" | "agent" | "forced" | "proposed" | "open" } {
+): { value: string | null; kind: Source | "forced" | "proposed" | "open" } {
   const chosen = config.choices[variable.name];
   if (chosen) return { value: chosen.value, kind: chosen.source };
   const statuses = config.statuses[variable.name];
@@ -270,9 +364,124 @@ function currentDisplay(
 const KIND_BADGE: Record<string, { label: string; icon?: React.ReactNode }> = {
   user: { label: "you", icon: <User /> },
   agent: { label: "agent", icon: <Sparkles /> },
+  document: { label: "document", icon: <FileText /> },
   forced: { label: "auto", icon: <Lock /> },
   proposed: { label: "proposed" },
 };
+
+/**
+ * "Why is this value here?" answered with "your document, clause N" — the
+ * third provenance source's popover (docs/specs/rfq-reconciliation). The
+ * clause and its quote are the frozen block's own words; nothing is derived.
+ */
+function ClausePopover({
+  entries,
+  children,
+}: {
+  entries: RegisterEntry[];
+  children: React.ReactNode;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent align="end" className="p-3 text-xs">
+        <p className="mb-2 text-muted-foreground">Your document asks:</p>
+        <dl className="space-y-2">
+          {entries.map((entry) => (
+            <div key={entry.clause + entry.quote}>
+              <dt className="font-medium">
+                clause {entry.clause} — {optionLabel(entry.variable, entry.value)}
+              </dt>
+              <dd className="text-muted-foreground italic">“{entry.quote}”</dd>
+            </div>
+          ))}
+        </dl>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/**
+ * What the document asked, next to what the agreement now says, on the row it
+ * affects — plus the moves that answer it. Shown while the requirement is an
+ * open deviation, while it is waived, and while it is revised: story three of
+ * the requirements asks to see the document's ask *always*, and a mark is not
+ * a reason to stop showing it. The *reason* a value cannot be reached is not
+ * here — it traces to a solver core the agent narrates in chat, which is where
+ * every other grounded explanation in this app lives.
+ */
+function DeviationStrip({
+  entries,
+  disabled,
+  onDispatch,
+}: {
+  entries: RegisterEntry[];
+  disabled: boolean;
+  onDispatch: (content: string) => void;
+}) {
+  const first = entries[0];
+  const waived = first.status === "waived";
+  // Grouped by requested value, never flattened onto the first one: a document
+  // may ask two different values of one term, and joining every clause number
+  // under one label would misquote the customer's own document.
+  const asks = [...new Set(entries.map((e) => e.value))].map((value) => ({
+    value,
+    clauses: entries
+      .filter((e) => e.value === value)
+      .map((e) => e.clause)
+      .filter(Boolean),
+  }));
+
+  return (
+    <div className="mt-2 rounded-none border-l-2 border-muted-foreground/40 pl-3 text-xs">
+      <p className="text-muted-foreground">
+        {asks.map(({ value, clauses }, i) => (
+          <span key={value}>
+            {i > 0 && "; "}
+            {clauses.length ? `Clause ${clauses.join(", ")} asked ` : "Your document asked "}
+            <span className="font-medium text-foreground">
+              {optionLabel(first.variable, value)}
+            </span>
+          </span>
+        ))}
+        {first.offered && (
+          <>
+            {" · offered "}
+            <span className="font-medium text-foreground">
+              {optionLabel(first.variable, first.offered)}
+            </span>
+          </>
+        )}
+        {waived && " · waived, still listed"}
+        {first.status === "revised" && " · you revised this"}
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {!waived && first.offered && (
+          <Button
+            size="xs"
+            variant="outline"
+            disabled={disabled}
+            className="font-normal hover:border-primary"
+            onClick={() =>
+              onDispatch(acceptOfferedMessage(first.variable, first.offered!))
+            }
+          >
+            Accept {optionLabel(first.variable, first.offered)}
+          </Button>
+        )}
+        <Button
+          size="xs"
+          variant="ghost"
+          disabled={disabled}
+          className="font-normal text-muted-foreground"
+          onClick={() => onDispatch(leaveOpenMessage(first.variable))}
+        >
+          {waived ? "Reopen" : "Leave open"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function VariableRow({
   variable,
@@ -280,14 +489,18 @@ function VariableRow({
   termMonths,
   disabled,
   pendingValue,
+  requirements,
   onSelect,
+  onDispatch,
 }: {
   variable: ModelVariable;
   config: Configuration;
   termMonths: number;
   disabled: boolean;
   pendingValue?: string;
+  requirements?: RegisterEntry[];
   onSelect: (variable: string, value: string) => void;
+  onDispatch: (content: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const display = pendingValue
@@ -296,6 +509,11 @@ function VariableRow({
   const statuses = config.statuses[variable.name] ?? {};
   const badge = display.kind in KIND_BADGE ? KIND_BADGE[display.kind] : null;
   const editable = display.kind !== "forced";
+  // Everything the agreement does not currently meet, however it was answered:
+  // waived and revised requirements are answered, never forgotten, and the
+  // document's ask stays visible next to the value that replaced it
+  // (docs/specs/rfq-reconciliation).
+  const unmet = requirements?.filter((e) => e.status !== "met");
 
   return (
     <Collapsible
@@ -304,31 +522,61 @@ function VariableRow({
       disabled={disabled || !editable}
       className="px-3 py-2"
     >
-      <CollapsibleTrigger className="flex w-full items-center gap-3 text-left disabled:cursor-default">
-        <span className="flex-1 text-sm">{variable.label}</span>
-        <span
-          className={
-            display.kind === "proposed"
-              ? "text-sm italic text-muted-foreground"
-              : display.value
-                ? "text-sm font-medium"
-                : "text-sm text-muted-foreground"
-          }
-        >
-          {display.value
-            ? variable.options.find((o) => o.value === display.value)?.label
-            : "—"}
-        </span>
-        {badge && (
-          <Badge
-            variant="secondary"
-            className="gap-1 px-2 py-0.5 text-[10px] font-normal text-muted-foreground"
+      {/* The badge is a sibling of the trigger, never a child: a document
+          badge is itself a popover trigger, and a button inside a button is
+          invalid HTML that fails hydration on every load. */}
+      <div className="flex w-full items-center gap-3">
+        <CollapsibleTrigger className="flex flex-1 items-center gap-3 text-left disabled:cursor-default">
+          <span className="flex-1 text-sm">{variable.label}</span>
+          <span
+            className={
+              display.kind === "proposed"
+                ? "text-sm italic text-muted-foreground"
+                : display.value
+                  ? "text-sm font-medium"
+                  : "text-sm text-muted-foreground"
+            }
           >
-            {badge.icon}
-            {badge.label}
-          </Badge>
-        )}
-      </CollapsibleTrigger>
+            {display.value
+              ? variable.options.find((o) => o.value === display.value)?.label
+              : "—"}
+          </span>
+        </CollapsibleTrigger>
+        {badge &&
+          (requirements?.length ? (
+            <ClausePopover entries={requirements}>
+              <Badge
+                asChild
+                variant="secondary"
+                className="gap-1 px-2 py-0.5 text-[10px] font-normal text-muted-foreground"
+              >
+                <button
+                  title="why this value is here"
+                  className="underline decoration-dotted underline-offset-2"
+                >
+                  {badge.icon}
+                  {badge.label}
+                </button>
+              </Badge>
+            </ClausePopover>
+          ) : (
+            <Badge
+              variant="secondary"
+              className="gap-1 px-2 py-0.5 text-[10px] font-normal text-muted-foreground"
+            >
+              {badge.icon}
+              {badge.label}
+            </Badge>
+          ))}
+      </div>
+
+      {unmet && unmet.length > 0 && (
+        <DeviationStrip
+          entries={unmet}
+          disabled={disabled}
+          onDispatch={onDispatch}
+        />
+      )}
 
       <CollapsibleContent className="mt-2 flex flex-wrap gap-1.5">
         {variable.options.map((option) => {

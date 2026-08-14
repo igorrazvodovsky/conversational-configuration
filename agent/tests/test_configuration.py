@@ -1,5 +1,7 @@
 """Acceptance tests for docs/specs/agent-tools (pure state transitions)."""
 
+import json
+
 import pytest
 
 from src.configuration import (
@@ -9,7 +11,10 @@ from src.configuration import (
     build_repair_payload,
     empty_configuration,
     frame_comparison,
+    ingest,
     make_candidate,
+    reconcile,
+    register,
     revise,
     save_frame,
     withdraw_choices,
@@ -368,3 +373,248 @@ def test_adopt_frame_replaces_atomically(with_candidate):
                                     "objective": frame["objective"]}
     # the frame remains stored after adoption
     assert [f["name"] for f in adopted["frames"]] == ["practical"]
+
+
+# -- RFQ reconciliation (docs/specs/rfq-reconciliation) -------------------
+
+# The over-constrained fixture (agent/fixtures/rfq/office-tower-modernization.txt)
+# as an extraction should produce it: clause 3.1's 3.0 m/s cannot hold with
+# clause 1.2's modernization.
+FIXTURE_B = [
+    {"variable": "building_type", "value": "office", "clause": "2.1",
+     "quote": "Kranhaus Nord is a commercial office building"},
+    {"variable": "region", "value": "europe", "clause": "2.2",
+     "quote": "The building is in Frankfurt am Main, Germany"},
+    {"variable": "installation", "value": "modernization", "clause": "1.2",
+     "quote": "The works are a modernization within the existing shaft"},
+    {"variable": "travel", "value": "tower_75_100", "clause": "2.3",
+     "quote": "Car no. 3 travels 92 metres"},
+    {"variable": "stops", "value": "s13_24", "clause": "2.4",
+     "quote": "The car serves 18 landings"},
+    {"variable": "usage_profile", "value": "heavy", "clause": "2.5",
+     "quote": "in near-constant demand from 07:00"},
+    {"variable": "rated_speed", "value": "mps3_0", "clause": "3.1",
+     "quote": "Rated speed shall be 3.0 m/s"},
+    {"variable": "rated_load", "value": "kg1600", "clause": "3.2",
+     "quote": "Rated load shall be 1600 kg"},
+    {"variable": "accessibility", "value": "en81_70", "clause": "3.3",
+     "quote": "accessible in accordance with EN 81-70"},
+    {"variable": "connectivity_package", "value": "connected", "clause": "5.1",
+     "quote": "24/7 call-out cover with remote monitoring"},
+    {"variable": "service_level", "value": "premium", "clause": "5.2",
+     "quote": "availability shall be no less than 99.9 %"},
+    {"variable": "contract_term", "value": "y15", "clause": "5.5",
+     "quote": "The contract term shall be 15 years"},
+]
+
+
+@pytest.fixture()
+def seeded(empty):
+    config, _, _ = ingest(empty, FIXTURE_B, [], budget_cap=1800)
+    return config
+
+
+def test_ingest_records_every_kept_requirement_with_document_provenance(seeded):
+    sources = {c["source"] for c in seeded["choices"].values()}
+    assert sources == {"document"}
+    assert seeded["choices"]["installation"] == {"value": "modernization",
+                                                 "source": "document"}
+    # the one requirement the rules cannot meet is not recorded as a choice
+    assert "rated_speed" not in seeded["choices"]
+
+
+def test_ingest_freezes_the_document_and_seeds_a_valid_whole(seeded):
+    stored = seeded["rfq"]["requirements"]
+    assert len(stored) == len(FIXTURE_B)
+    assert all(r["reconciliation"] == "pending" for r in stored)
+    assert {(r["variable"], r["clause"], r["quote"]) for r in stored} == {
+        (r["variable"], r["clause"], r["quote"]) for r in FIXTURE_B
+    }
+    assert seeded["rfq"]["budget_cap"] == 1800
+    assert seeded["candidate"]["assignment"]["rated_speed"] == "mps2_5"
+    assert SOLVER.check(seeded["candidate"]["assignment"])
+
+
+def test_register_names_requested_offered_and_status(seeded):
+    entries = register(seeded)
+    assert len(entries) == len(FIXTURE_B)
+    deviations = [e for e in entries if e["status"] == "deviation"]
+    assert len(deviations) == 1
+    assert deviations[0]["variable"] == "rated_speed"
+    assert deviations[0]["requested"] == "mps3_0"
+    assert deviations[0]["offered"] == "mps2_5"
+    assert deviations[0]["clause"] == "3.1"
+    assert all(e["status"] == "met" for e in entries if e["variable"] != "rated_speed")
+
+
+def test_register_of_an_unseeded_agreement_is_empty(empty):
+    assert register(empty) == []
+
+
+def test_ingest_demotes_unknown_codes_instead_of_dropping_them(empty):
+    entries = FIXTURE_B + [
+        {"variable": "budget", "value": "eur1800", "clause": "6.1", "quote": "cap"},
+        {"variable": "rated_load", "value": "kg9999", "clause": "9.9", "quote": "bogus"},
+    ]
+    config, _, demoted = ingest(empty, entries, [])
+    assert [u["clause"] for u in demoted] == ["6.1", "9.9"]
+    assert "no product variable" in demoted[0]["note"]
+    assert "is not a value of" in demoted[1]["note"]
+    # nothing silently dropped: every demoted clause is listed as unmapped
+    assert {u["clause"] for u in config["rfq"]["unmapped"]} == {"6.1", "9.9"}
+    assert len(config["rfq"]["requirements"]) == len(FIXTURE_B)
+
+
+def test_ingest_keeps_the_document_s_own_unmapped_clauses(empty):
+    config, _, _ = ingest(empty, FIXTURE_B,
+                          [{"clause": "6.3", "quote": "Possession of the shaft",
+                            "note": "programme, not a product variable"}])
+    assert config["rfq"]["unmapped"][0]["clause"] == "6.3"
+
+
+def test_ingest_twice_is_rejected(seeded):
+    with pytest.raises(ValueError, match="already seeded"):
+        ingest(seeded, FIXTURE_B, [])
+
+
+def test_ingest_rejects_an_already_configured_agreement(empty):
+    config, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
+    with pytest.raises(ValueError, match="already has recorded choices"):
+        ingest(config, FIXTURE_B, [])
+
+
+def test_ingest_maps_nothing_is_rejected(empty):
+    with pytest.raises(ValueError, match="maps to a product variable"):
+        ingest(empty, [{"variable": "budget", "value": "x", "clause": "6.1",
+                        "quote": "cap"}], [])
+
+
+def test_failed_ingest_leaves_no_partial_state(empty):
+    before = json.loads(json.dumps(empty))
+    with pytest.raises(ValueError):
+        ingest(empty, [{"variable": "nope", "value": "x", "clause": "1", "quote": "q"}], [])
+    assert empty == before
+
+
+def test_accept_waives_the_requirement_and_pins_the_offered_value(seeded):
+    config, _, applied = reconcile(seeded, "rated_speed", "accept")
+    assert applied == "mps2_5"
+    # pinned as the customer's own choice, so a later revision cannot move it
+    # silently — but the requirement stays listed, never forgotten
+    assert config["choices"]["rated_speed"] == {"value": "mps2_5", "source": "user"}
+    entry = next(e for e in register(config) if e["variable"] == "rated_speed")
+    assert entry["status"] == "waived"
+    assert entry["requested"] == "mps3_0"
+
+
+def test_accept_needs_something_offered(empty):
+    config, _, _ = ingest(empty, [FIXTURE_B[0]], [])
+    with pytest.raises(ValueError, match="already meets the document"):
+        reconcile(config, "building_type", "accept")
+
+
+def test_revise_marks_the_requirement_and_moves_the_agreement(seeded):
+    """Adjusting a requirement moves the agreement, never the document: the
+    register still shows what clause 5.2 asked for."""
+    config, _, applied = reconcile(seeded, "service_level", "revise", "standard")
+    assert applied == "standard"
+    assert config["choices"]["service_level"] == {"value": "standard", "source": "user"}
+    entry = next(e for e in register(config) if e["variable"] == "service_level")
+    assert entry["status"] == "revised"
+    assert entry["requested"] == "premium"  # the document is frozen
+    assert entry["offered"] == "standard"
+
+
+def test_revising_back_onto_the_document_reads_as_met(empty):
+    """The register is the diff, not a history of moves: an agreement that
+    lands on the document's value complies, whatever happened on the way."""
+    config, _, _ = ingest(empty, FIXTURE_B[:6], [])
+    config, _, _ = reconcile(config, "usage_profile", "revise", "medium")
+    assert next(e for e in register(config)
+                if e["variable"] == "usage_profile")["status"] == "revised"
+    config, _, _ = reconcile(config, "usage_profile", "revise", "heavy")
+    assert next(e for e in register(config)
+                if e["variable"] == "usage_profile")["status"] == "met"
+
+
+def test_revise_that_collides_raises_for_the_repair_flow(seeded):
+    """Insisting on the document's own figure collides with the modernization
+    the document also states — so the customer meets the repair flow, and a
+    new deviation is never created silently."""
+    config, _, _ = reconcile(seeded, "rated_speed", "accept")
+    with pytest.raises(ConflictError):
+        reconcile(config, "rated_speed", "revise", "mps3_0")
+    # rejected transitions leave the agreement and the marks untouched
+    assert config["choices"]["rated_speed"]["value"] == "mps2_5"
+    assert next(e for e in register(config)
+                if e["variable"] == "rated_speed")["status"] == "waived"
+
+
+def test_open_puts_a_reconciled_requirement_back(seeded):
+    config, _, _ = reconcile(seeded, "rated_speed", "accept")
+    config, _, applied = reconcile(config, "rated_speed", "open")
+    assert applied is None
+    assert next(e for e in register(config)
+                if e["variable"] == "rated_speed")["status"] == "deviation"
+
+
+def test_reconcile_moves_every_clause_on_one_variable_together(empty):
+    """Three clauses bearing on service level are one disagreement, answered
+    once — that is how a tender reads."""
+    entries = [
+        {"variable": "installation", "value": "modernization", "clause": "1.2", "quote": "a"},
+        {"variable": "rated_speed", "value": "mps3_0", "clause": "3.1", "quote": "b"},
+        {"variable": "service_level", "value": "premium", "clause": "4.1", "quote": "24/7"},
+        {"variable": "service_level", "value": "premium", "clause": "4.2", "quote": "8 h"},
+        {"variable": "service_level", "value": "premium", "clause": "4.3", "quote": "99.5 %"},
+    ]
+    config, _, _ = ingest(empty, entries, [])
+    config, _, _ = reconcile(config, "service_level", "revise", "standard")
+    marks = [e["status"] for e in register(config) if e["variable"] == "service_level"]
+    assert marks == ["revised", "revised", "revised"]
+
+
+def test_duplicate_clauses_do_not_outvote_a_single_one(empty):
+    """Fewest deviations counts distinct requested values, not clauses —
+    otherwise a term a document repeats three times would drag the whole
+    seeding toward it."""
+    entries = [
+        {"variable": "installation", "value": "modernization", "clause": "1.2", "quote": "a"},
+        {"variable": "rated_speed", "value": "mps3_0", "clause": "3.1", "quote": "b"},
+        {"variable": "rated_speed", "value": "mps3_0", "clause": "3.2", "quote": "c"},
+        {"variable": "rated_speed", "value": "mps3_0", "clause": "3.3", "quote": "d"},
+    ]
+    config, seeded_result, _ = ingest(empty, entries, [])
+    assert len(seeded_result.deviations) == 1
+    assert config["choices"]["installation"]["value"] == "modernization"
+
+
+def test_the_frozen_reference_survives_every_later_transition(seeded):
+    """Reconciliation and revision move the agreement; the document does not
+    move. Deleting a conversation loses nothing but the argument."""
+    immutable = [{k: v for k, v in r.items() if k != "reconciliation"}
+                 for r in seeded["rfq"]["requirements"]]
+    config, _, _ = reconcile(seeded, "rated_speed", "accept")
+    config, _ = apply_choices(config, {"wall_finish": "laminate"}, "user")
+    config = make_candidate(config)
+    config = save_frame(config, "as offered")
+    config = adopt_frame(config, "as offered")
+    config = withdraw_choices(config, ["stops"])
+    config = make_candidate(config)
+
+    assert [{k: v for k, v in r.items() if k != "reconciliation"}
+            for r in config["rfq"]["requirements"]] == immutable
+    # the marks survive too, and the register still derives against the document
+    assert next(e for e in register(config)
+                if e["variable"] == "rated_speed")["status"] == "waived"
+    assert len(register(config)) == len(immutable)
+
+
+def test_reconciling_an_unseeded_agreement_is_rejected(empty):
+    with pytest.raises(ValueError, match="not seeded from a document"):
+        reconcile(empty, "rated_speed", "open")
+
+
+def test_reconciling_a_variable_the_document_is_silent_on(seeded):
+    with pytest.raises(ValueError, match="states no requirement"):
+        reconcile(seeded, "wall_finish", "open")

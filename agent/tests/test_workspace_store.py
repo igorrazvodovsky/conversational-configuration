@@ -71,3 +71,25 @@ def test_unknown_workspace_raises():
         workspace_store.rename_workspace("deadbeef", "Tower")
     with pytest.raises(KeyError):
         workspace_store.get_workspace("../escape")
+
+
+def test_attach_rfq_freezes_the_document_text():
+    record = workspace_store.create_workspace({"choices": {}})
+    workspace_store.attach_rfq(record["id"], "RFQ 2026/HV-114 ...")
+    stored = workspace_store.get_workspace(record["id"])
+    assert stored["rfq_document"]["text"] == "RFQ 2026/HV-114 ..."
+    assert stored["rfq_document"]["ingestedAt"]
+
+
+def test_attach_rfq_survives_configuration_writes():
+    """The document is reference material, not working state: nothing the
+    conversation does to the agreement touches it."""
+    record = workspace_store.create_workspace({"choices": {}})
+    workspace_store.attach_rfq(record["id"], "the document")
+    workspace_store.save_configuration(record["id"], {"choices": {"region": "europe"}})
+    assert workspace_store.get_workspace(record["id"])["rfq_document"]["text"] == "the document"
+
+
+def test_attach_rfq_unknown_workspace():
+    with pytest.raises(KeyError):
+        workspace_store.attach_rfq("deadbeef", "text")

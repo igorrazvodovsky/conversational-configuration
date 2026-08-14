@@ -9,9 +9,13 @@ import rawModel from "../../agent/src/product_model/elevator.json";
 
 export type OptionStatus = "chosen" | "forced" | "invalid" | "open";
 
+/** "document" is the third provenance source (docs/specs/rfq-reconciliation):
+ * a value the customer's own requirements document states. */
+export type Source = "user" | "agent" | "document";
+
 export interface Choice {
   value: string;
-  source: "user" | "agent";
+  source: Source;
 }
 
 /** Lifetime kg CO₂e (docs/specs/environmental-footprint). Absent on threads
@@ -38,11 +42,80 @@ export interface Frame {
   objective?: "price" | "co2";
 }
 
+/** The frozen requirements document an RFQ-seeded agreement diverges from
+ * (docs/specs/rfq-reconciliation). Immutable after ingestion apart from the
+ * `reconciliation` mark — which is what lets the register be derived here
+ * rather than stored. */
+export interface Requirement {
+  variable: string;
+  value: string;
+  clause: string;
+  quote: string;
+  reconciliation: "pending" | "waived" | "revised";
+}
+
+export interface RFQ {
+  requirements: Requirement[];
+  unmapped: { clause: string; quote: string; note: string }[];
+  budget_cap?: number;
+}
+
 export interface Configuration {
   choices: Record<string, Choice>;
   statuses: Record<string, Record<string, OptionStatus>>;
   candidate: Candidate | null;
   frames?: Frame[]; // absent on threads persisted before docs/specs/nonlinear-interaction
+  rfq?: RFQ; // only on document-seeded agreements
+}
+
+export type RegisterStatus = "met" | "waived" | "revised" | "deviation";
+
+export interface RegisterEntry extends Requirement {
+  offered: string | null;
+  status: RegisterStatus;
+}
+
+/**
+ * What the agreement currently says for a variable: the recorded choice, else
+ * the value the rules force, else the candidate's. Never a validity judgment —
+ * every status here comes from the solver (docs/specs/constitution.md #1).
+ */
+export function liveValue(
+  config: Configuration,
+  variable: string,
+): string | null {
+  const chosen = config.choices[variable];
+  if (chosen) return chosen.value;
+  const forced = Object.entries(config.statuses[variable] ?? {}).find(
+    ([, s]) => s === "forced",
+  );
+  if (forced) return forced[0];
+  return config.candidate?.assignment[variable] ?? null;
+}
+
+/**
+ * The deviation register: the document's requirements against the live
+ * agreement, one entry per requirement. Derived, never stored — the same
+ * comparison the agent makes, recomputed on every render from the frozen
+ * block and the values already in state, so it cannot go stale. The *rules*
+ * behind a deviation are not in state; they are narrated in chat, grounded in
+ * a solver core (docs/specs/rfq-reconciliation design).
+ */
+export function registerEntries(config: Configuration): RegisterEntry[] {
+  return (config.rfq?.requirements ?? []).map((requirement) => {
+    const offered = liveValue(config, requirement.variable);
+    // met first: an agreement back on the document's value complies,
+    // whatever mark reconciliation left behind
+    const status: RegisterStatus =
+      offered === requirement.value
+        ? "met"
+        : requirement.reconciliation === "waived"
+          ? "waived"
+          : requirement.reconciliation === "revised"
+            ? "revised"
+            : "deviation";
+    return { ...requirement, offered, status };
+  });
 }
 
 export interface ModelOption {
@@ -203,6 +276,36 @@ export function repairMessage(
 
 export const abandonMessage =
   "Abandon the revision — keep the configuration as it is.";
+
+/**
+ * Reconciliation moves (docs/specs/rfq-reconciliation). Deliberately *visible*
+ * messages, unlike the hidden `Canvas edit:` grammar: waiving or adjusting a
+ * requirement of the customer's own document is negotiation and belongs in the
+ * record, where sheet bookkeeping does not. The agent maps each onto one
+ * reconcile_requirement call — prompt wording and this grammar are coupled.
+ */
+const RECONCILE_PREFIX = "Reconcile deviation: ";
+
+export function acceptOfferedMessage(
+  variable: string,
+  offered: string,
+): string {
+  const label = variablesByName.get(variable)?.label ?? variable;
+  return `${RECONCILE_PREFIX}accept the offered ${label}, ${optionLabel(variable, offered)} (${variable}=${offered})`;
+}
+
+export function reviseRequirementMessage(
+  variable: string,
+  value: string,
+): string {
+  const label = variablesByName.get(variable)?.label ?? variable;
+  return `${RECONCILE_PREFIX}change ${label} to ${optionLabel(variable, value)} (${variable}=${value})`;
+}
+
+export function leaveOpenMessage(variable: string): string {
+  const label = variablesByName.get(variable)?.label ?? variable;
+  return `${RECONCILE_PREFIX}leave ${label} (${variable}) open`;
+}
 
 export function adoptMessage(frameName: string): string {
   return `Adopt frame "${frameName}"`;

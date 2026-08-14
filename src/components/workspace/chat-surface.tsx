@@ -28,6 +28,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { WorkspaceRecord } from "@/lib/workspaces";
+import { ConversationMenu } from "./conversation-menu";
 
 /** Hidden is a mode like the others; only the visible three are switchable. */
 export type ChatSurfaceMode = "sidebar" | "floating" | "fullscreen" | "hidden";
@@ -107,19 +109,70 @@ function useUnseenReplies(hidden: boolean, onUnseenReply: () => void) {
   }, [hidden, replies, onUnseenReply]);
 }
 
+/**
+ * The bar itself: a flex container that calls no hook of its own beyond the
+ * hydration flag, so the conversation menu is not dragged into the mode
+ * controls' render scope — those re-render on every streamed token, this one
+ * only when the workspace's conversations change (design 7). Nothing here may
+ * subscribe to agent state: one such hook re-renders both leaves and the split
+ * buys nothing.
+ */
 export function ChatSurfaceHeader({
   mode,
   onSelect,
   onHide,
   onUnseenReply,
+  workspace,
+  activeThreadId,
+  onSelectConversation,
+  onNewConversation,
 }: {
   mode: ChatSurfaceMode;
   onSelect: (mode: VisibleMode) => void;
   onHide: () => void;
   onUnseenReply: () => void;
+  workspace: WorkspaceRecord | null;
+  activeThreadId: string | undefined;
+  onSelectConversation: (threadId: string) => void;
+  onNewConversation: () => void;
+}) {
+  const hydrated = useHydrated();
+
+  return (
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b px-2 py-1">
+      <ConversationMenu
+        workspace={workspace}
+        activeThreadId={activeThreadId}
+        onSelect={onSelectConversation}
+        onNew={onNewConversation}
+        interactive={hydrated}
+      />
+      <ChatModeControls
+        mode={mode}
+        onSelect={onSelect}
+        onHide={onHide}
+        onUnseenReply={onUnseenReply}
+        hydrated={hydrated}
+      />
+    </div>
+  );
+}
+
+/** The leaf that watches the agent, and so the only thing a stream re-renders. */
+function ChatModeControls({
+  mode,
+  onSelect,
+  onHide,
+  onUnseenReply,
+  hydrated,
+}: {
+  mode: ChatSurfaceMode;
+  onSelect: (mode: VisibleMode) => void;
+  onHide: () => void;
+  onUnseenReply: () => void;
+  hydrated: boolean;
 }) {
   const current = GEOMETRIES.find((g) => g.mode === mode) ?? GEOMETRIES[0];
-  const hydrated = useHydrated();
   useUnseenReplies(mode === "hidden", onUnseenReply);
   const trigger = (
     <Button variant="ghost" size="icon-xs" title="Chat layout">
@@ -129,7 +182,7 @@ export function ChatSurfaceHeader({
   );
 
   return (
-    <div className="flex shrink-0 items-center justify-end gap-1 border-b px-2 py-1">
+    <div className="flex shrink-0 items-center gap-1">
       {hydrated ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
@@ -161,7 +214,8 @@ export function ChatSurfaceHeader({
 }
 
 /**
- * The menu is mounted after hydration, and this is not a styling nicety.
+ * Both menus in this header are mounted after hydration, and this is not a
+ * styling nicety.
  * A Radix menu present during the hydration pass shifts the `useId` values of
  * the *whole* page — every canvas disclosure comes back with a different id
  * than the server sent, and React reports a mismatch on every load. This is the

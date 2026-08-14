@@ -47,7 +47,7 @@ The switcher lives in a small header bar in the chat container, rendered by `cha
 
 The control is a `DropdownMenu` of radio items — the same shape as the Notion reference, and the only shadcn primitive that gives a current-value checkmark in a menu. It is installed with `npx shadcn@latest add dropdown-menu`, per the component library's rule. Beside it, a hide button. Both are `Button variant="ghost" size="icon-xs"`, the vocabulary the rest of the chrome uses.
 
-*The menu mounts after hydration, and that is load-bearing.* A Radix menu present during the hydration pass shifts React's `useId` values across the *whole page*: every canvas disclosure hydrates with an id the server never sent, and React reports a mismatch on every load. This is the hazard `workspace-split.tsx` already documents for the panel group, and it was verified here by bisection — a clean HEAD worktree served beside the change showed no mismatch, removing the menu removed it, giving Radix explicit `id`s did not. So the server and the first client render agree on a plain button, and a mounted flag swaps the menu in a tick later. The rule this leaves behind: *nothing that mints an id may be added to this page's hydrated tree.*
+*The menus mount after hydration, and that is load-bearing.* A Radix menu present during the hydration pass shifts React's `useId` values across the *whole page*: every canvas disclosure hydrates with an id the server never sent, and React reports a mismatch on every load. This is the hazard `workspace-split.tsx` already documents for the panel group, and it was verified here by bisection — a clean HEAD worktree served beside the change showed no mismatch, removing the menu removed it, giving Radix explicit `id`s did not. So the server and the first client render agree on a plain button, and a mounted flag swaps the menu in a tick later. The rule this leaves behind: *nothing that mints an id may be added to this page's hydrated tree* — it governs both menus in this header, and the conversation switcher (decision 7) is gated on the same `useHydrated` flag for the same reason.
 
 When hidden, the only affordance is a single `Button` fixed to the bottom-right of the workspace area. It restores *the mode the user last had*, held in a ref beside the mode state — hiding from full screen and restoring into sidebar would be the app choosing a geometry.
 
@@ -61,9 +61,29 @@ While hidden, the agent can still speak — a repair proposal, a rejected `Canva
 
 ## Decision 6: what stays untouched
 
-Sidebar mode is byte-for-byte the split the [agreement workspace](../agreement-workspace/design.md) specifies — same 62/38 default, same 360px pixel floors, same vertical stack below `lg`, still unpersisted. The other three modes bypass the panel group's sizing entirely, so its floors and its stacking behaviour do not apply to them; below `lg`, floating and fullscreen render as they do at desktop width, and floating's fixed 400px is narrower than the viewport at every width the app is verified in.
+Sidebar mode is byte-for-byte the split the [agreement workspace](../agreement-workspace/design.md) specifies — same 62/38 default, same 360px pixel floors, same vertical stack below `lg`, still unpersisted. What left the page is the fixed navigation column beside that split (decisions 7 and 8), not anything the panel group does. The other three modes bypass the group's sizing entirely, so its floors and its stacking behaviour do not apply to them; below `lg`, floating and fullscreen render as they do at desktop width, and floating's fixed 400px is narrower than the viewport at every width the app is verified in.
 
 The dispatch grammar is untouched: cards, canvas edits and the `Canvas edit:` filter behave identically in all four modes, because none of them re-render the chat's contents.
+
+## Decision 7: the conversation switcher is a sibling of the mode control, not a parent
+
+The switcher sits at the left of the same header bar, opposite the mode and hide buttons: a `DropdownMenu` whose trigger is the active conversation's label with a chevron, and beside it an icon button that starts a new one. Both are the header's vocabulary already — `Button variant="ghost"`, `DropdownMenuRadioGroup` for the current-value checkmark — so no new primitive is installed. Rows are grouped under `DropdownMenuLabel` headings by day (Today, Yesterday, then the date), which is the visible shape of the Notion reference and the only thing a date-labelled list needs to become readable at a dozen entries.
+
+*The header is three components, and the split is about render scope.* `useUnseenReplies` calls `useAgent()`, which re-renders its caller on every streamed token — decision 5 pushed the watcher down into the header for exactly that reason, when the header was two buttons. Hanging the conversation list off the same component would pull the whole list back into per-token rendering. So `ChatSurfaceHeader` is a bare flex container that calls no hook, with two leaves beside each other: `ConversationMenu` (props only — the workspace record, the active thread, two callbacks) and `ChatModeControls` (the watcher, the mode menu, the hide button). A streaming reply re-renders the second and never the first — which holds only while the container stays hookless, so that is the invariant: *nothing in `ChatSurfaceHeader` itself may subscribe to agent state.* One hook there re-renders both leaves and the split buys nothing.
+
+The page keeps ownership of the data: it already holds `workspace` from `useWorkspaceAttachment` and drives threads through `useCopilotChatConfiguration()`'s `setActiveThreadId` / `startNewThread`, and those call sites do not move. Nothing about registration, hydration or staleness changes — this is the same imperative pair the [agreement workspace](../agreement-workspace/design.md) specifies, called from a different button.
+
+Carried over from the column it replaces, because each is a decision and not a detail: newest first; the current conversation checked; "New conversation" disabled while the active thread is unregistered, with the reason in a native `title` and `disabled:pointer-events-auto` so the title survives ([component library](../ui-component-library/design.md) decision 4); and a line telling the user an unregistered conversation joins the list on its first message. The empty state is reworded — the list is no longer *beside* the sheet, so it now says the conversation below starts one.
+
+*Two consequences, both accepted.* Hidden mode has no switcher: the pane is `inert` and `opacity-0`, so a conversation change means restoring the chat first. That follows from the requirements rather than fighting them — hiding the chat is saying you are done with conversations, and the restore control is one click. And below `lg` the list gains a home it never had: the old column was `max-lg:hidden`, so a narrow viewport listed no conversations at all.
+
+## Decision 8: the workspace's identity moves to the head of the canvas
+
+With the list gone, the navigation column held two lines of text, so it goes too. Its contents move into the canvas header, above the "Service agreement" title: the back link to the elevator list, then the workspace's name, as one breadcrumb line. The canvas is the right host — it is the surface that is present in every mode, including hidden, which is the same argument decision 7 makes in reverse for the conversation list.
+
+`ConfigCanvas` takes the resolved name as a prop rather than reading it. The precedence the [agreement workspace](../agreement-workspace/design.md) fixes — `agent.state.workspace_name` ?? the fetched record's name ?? the placeholder — is resolved in `useWorkspaceAttachment` and stays there; the canvas renders what it is handed, including the italic placeholder, and the name still changes the moment `name_workspace` returns.
+
+A `Link` and a `span` mint no ids, so this breadcrumb is safe in the hydrated tree — unlike everything in decision 4's paragraph. The page wrapper loses its flex row and the `h-dvh` aside with it; the split now fills the viewport on its own.
 
 ## Verification
 
@@ -77,3 +97,7 @@ Constitution #9 — by running the app, in both themes:
 - hidden with a canvas edit that draws a reply: the dot appears, the pane does not open itself, restoring returns to the previous mode and clears the dot
 - an in-chat card clicked in floating and in fullscreen: the dispatched string is the same one sidebar mode sends
 - a reload in each mode: the workspace comes back in sidebar
+- the console on load, with both menus in the header: no hydration mismatch, in any mode — this fails as a report rather than as a break, so it is only ever caught by looking
+- a workspace with conversations from more than one day: the menu groups them Today / Yesterday / date, newest first, the current one checked; picking an older one swaps the transcript and leaves the canvas on workspace state, with that transcript's cards inert
+- new conversation from the header, then the header again: the trigger says it is a new conversation and the start control is unavailable with its reason on hover
+- the menu opened and closed with the transcript scrolled up: the position does not move

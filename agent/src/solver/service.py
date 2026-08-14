@@ -51,6 +51,26 @@ class Repair:
     rules: tuple[tuple[str, str], ...]    # rules that make dropped incompatible
 
 
+@dataclass(frozen=True)
+class Deviation:
+    """One requested (variable, value) the seeded whole cannot satisfy, with
+    what it offers instead and the rules separating the two."""
+    variable: str
+    requested: str
+    offered: str
+    rules: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
+class Seed:
+    """A solver-valid whole satisfying a maximal subset of the requirements
+    (docs/specs/rfq-reconciliation)."""
+    kept: tuple[tuple[str, str], ...]
+    deviations: tuple[Deviation, ...]
+    assignment: dict[str, str]
+    price: int
+
+
 class ConfigSolver:
     def __init__(self, model: ProductModel):
         self.model = model
@@ -226,6 +246,85 @@ class ConfigSolver:
             # Next repair must retain at least one choice this one dropped.
             opt.add(Or([self.sel[c] for c in dropped]))
         return out
+
+    def seed(
+        self, requirements: list[tuple[str, str]], limit: int = 5
+    ) -> Seed:
+        """A valid whole satisfying a maximal subset of `requirements`
+        (docs/specs/rfq-reconciliation).
+
+        Every requirement is soft with weight 1 and nothing is held hard, so
+        the optimum keeps as many as can hold together — *fewest deviations
+        first*. Ties are real, so equal-count optima are enumerated with the
+        same blocking loop `repairs()` uses (bounded by `limit`) and the one
+        whose cheapest-monthly completion is cheapest wins; equal prices go to
+        the lexicographically first dropped set, so the result never depends
+        on Z3's enumeration order.
+
+        Duplicate pairs are collapsed before weighting — several clauses may
+        bear on the same (variable, value), and counting it twice would
+        distort "fewest deviations". Two clauses asking *different* values of
+        one variable are kept as two pairs; the exactly-one structure then
+        drops one of them, with no named rule to cite.
+        """
+        pairs = list(dict.fromkeys(requirements))  # dedupe, order-stable
+        unknown = [p for p in pairs if p not in self.sel]
+        if unknown:
+            raise ValueError(f"unknown (variable, value) requirements: {unknown}")
+
+        opt = Optimize()
+        self._add_structure(opt)
+        self._add_rules(opt, tracked=False)
+        for pair in pairs:
+            opt.add_soft(self.sel[pair], 1)
+
+        optima: list[tuple[tuple[str, str], ...]] = []
+        best_count: int | None = None
+        while len(optima) < limit and opt.check() == sat:
+            m = opt.model()
+            kept = tuple(
+                p for p in pairs
+                if is_true(m.evaluate(self.sel[p], model_completion=True))
+            )
+            if best_count is None:
+                best_count = len(kept)
+            elif len(kept) < best_count:
+                break  # past the optimum — every later model keeps fewer
+            optima.append(kept)
+            # Next model must give up at least one of this subset's members,
+            # which (the subset being maximal) means a different subset.
+            opt.add(Or([Not(self.sel[p]) for p in kept]))
+
+        assert optima, "seeding is unsatisfiable — the product model has no valid whole"
+
+        scored = [(self.complete(dict(kept)), kept) for kept in optima]
+        (assignment, price), kept = min(
+            scored,
+            key=lambda s: (s[0][1], sorted(p for p in pairs if p not in set(s[1]))),
+        )
+
+        deviations = []
+        for var, val in pairs:
+            if (var, val) in set(kept):
+                continue
+            # Why it cannot hold: a minimal conflict within kept + this one.
+            # When the *document* asks two values of one variable, adding this
+            # pair only overwrites the kept one and nothing is unsat — the
+            # separating rule is the structural exactly-one, which is not a
+            # named product rule and is not narrated as one.
+            conflict = self.explain({**dict(kept), var: val})
+            deviations.append(Deviation(
+                variable=var,
+                requested=val,
+                offered=assignment[var],
+                rules=conflict.rules if conflict else (),
+            ))
+        return Seed(
+            kept=kept,
+            deviations=tuple(deviations),
+            assignment=assignment,
+            price=price,
+        )
 
     def _lifetime_co2_grams(self):
         """Lifetime CO2e in grams as a Z3 integer term: embodied is separable

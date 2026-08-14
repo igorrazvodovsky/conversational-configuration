@@ -12,13 +12,15 @@ from langchain.tools import ToolRuntime, tool
 from langgraph.types import Command
 
 from src import workspace_store
-from src.solver import TERM_VAR, ConfigSolver, ConflictError, load_model
+from src.solver import TERM_VAR, ConfigSolver, ConflictError, Seed, load_model
 
 MODEL_PATH = Path(__file__).parent / "product_model" / "elevator.json"
 MODEL = load_model(MODEL_PATH)
 SOLVER = ConfigSolver(MODEL)
 
-Source = Literal["user", "agent"]
+# "document" is the third provenance source (docs/specs/rfq-reconciliation):
+# a value the customer's own requirements document states.
+Source = Literal["user", "agent", "document"]
 
 
 class Choice(TypedDict):
@@ -59,11 +61,41 @@ class Frame(TypedDict):
     objective: NotRequired[Objective]
 
 
+# The frozen reference an RFQ-seeded agreement diverges from
+# (docs/specs/rfq-reconciliation). Requirements are immutable after ingestion —
+# variable, value, clause and quote never change — and tools may only move the
+# `reconciliation` mark. That is what makes the register derivable: it is
+# always the difference between this block and the live agreement, so it
+# cannot go stale.
+class Requirement(TypedDict):
+    variable: str
+    value: str
+    clause: str
+    quote: str
+    reconciliation: Literal["pending", "waived", "revised"]
+
+
+class Unmapped(TypedDict):
+    clause: str
+    quote: str
+    note: str  # why no model variable carries it
+
+
+class RFQ(TypedDict):
+    requirements: list[Requirement]
+    unmapped: list[Unmapped]
+    # A monthly cap the document states, reported against the candidate price
+    # as arithmetic — never a solver constraint (the model has no budget
+    # variable). Absent when the document states none.
+    budget_cap: NotRequired[int]
+
+
 class Configuration(TypedDict):
     choices: dict[str, Choice]
     statuses: dict[str, dict[str, str]]  # var -> value -> chosen|forced|invalid|open
     candidate: Candidate | None
     frames: list[Frame]
+    rfq: NotRequired[RFQ]  # only on document-seeded agreements
 
 
 class AgentState(BaseAgentState):
@@ -123,6 +155,16 @@ def _frames(config: Configuration) -> list[Frame]:
     return config.get("frames", [])
 
 
+def _carry_rfq(config: Configuration, new_config: Configuration) -> Configuration:
+    """Keep the frozen RFQ reference across a transition that rebuilds the
+    configuration wholesale. The register is the difference between it and the
+    live agreement, so dropping it would erase the document, not the diff."""
+    rfq = config.get("rfq")
+    if rfq is not None:
+        new_config["rfq"] = rfq
+    return new_config
+
+
 def apply_choices(
     config: Configuration, new_choices: dict[str, str], source: Source
 ) -> tuple[Configuration, dict[str, str]]:
@@ -141,12 +183,12 @@ def apply_choices(
         var: val for var, val in _forced(statuses).items()
         if _forced(config["statuses"]).get(var) != val
     }
-    new_config: Configuration = {
+    new_config: Configuration = _carry_rfq(config, {
         "choices": choices,
         "statuses": statuses,
         "candidate": _keep_candidate(config["candidate"], merged),
         "frames": _frames(config),
-    }
+    })
     return new_config, newly_forced
 
 
@@ -156,12 +198,12 @@ def withdraw_choices(config: Configuration, variables: list[str]) -> Configurati
         raise ValueError(f"unknown variables: {unknown}")
     choices = {var: c for var, c in config["choices"].items() if var not in variables}
     remaining = {var: c["value"] for var, c in choices.items()}
-    return {
+    return _carry_rfq(config, {
         "choices": choices,
         "statuses": SOLVER.valid_options(remaining),
         "candidate": _keep_candidate(config["candidate"], remaining),
         "frames": _frames(config),
-    }
+    })
 
 
 def _state_footprint(assignment: dict[str, str]) -> Footprint:
@@ -301,12 +343,221 @@ def adopt_frame(config: Configuration, name: str) -> Configuration:
         candidate["footprint"] = frame["footprint"]
     if "objective" in frame:
         candidate["objective"] = frame["objective"]
-    return {
+    # Every choice becomes source "user": adopting is the customer's decision,
+    # so a frame adopted over a document-seeded agreement clears the document
+    # badges. The register still derives correctly from the frozen block —
+    # the provenance of the *current* values is genuinely the adoption.
+    return _carry_rfq(config, {
         "choices": {v: {"value": val, "source": "user"} for v, val in assignment.items()},
         "statuses": SOLVER.valid_options(assignment),
         "candidate": candidate,
         "frames": _frames(config),
+    })
+
+
+# -- RFQ reconciliation (docs/specs/rfq-reconciliation) -------------------
+
+RegisterStatus = Literal["met", "waived", "revised", "deviation"]
+ReconcileMove = Literal["accept", "revise", "open"]
+
+
+class RegisterEntry(TypedDict):
+    variable: str
+    requested: str
+    offered: str | None  # what the agreement says instead; None while undecided
+    clause: str
+    quote: str
+    status: RegisterStatus
+
+
+def live_value(config: Configuration, variable: str) -> str | None:
+    """What the agreement currently says for a variable: the recorded choice,
+    else the value the rules force, else the candidate's — the same precedence
+    the canvas renders."""
+    choice = config["choices"].get(variable)
+    if choice:
+        return choice["value"]
+    forced = _forced(config["statuses"]).get(variable)
+    if forced:
+        return forced
+    candidate = config["candidate"]
+    return candidate["assignment"].get(variable) if candidate else None
+
+
+def register(config: Configuration) -> list[RegisterEntry]:
+    """The deviation register: the document's requirements against the live
+    agreement, one entry per requirement (a tender is answered clause by
+    clause, so three clauses bearing on one variable are three entries).
+
+    Derived, never stored — recomputed from the frozen block and the live
+    assignment on every call, so it cannot go stale.
+    """
+    rfq = config.get("rfq")
+    if not rfq:
+        return []
+    entries: list[RegisterEntry] = []
+    for requirement in rfq["requirements"]:
+        offered = live_value(config, requirement["variable"])
+        # met first: an agreement that landed back on the document's value
+        # complies, whatever mark reconciliation left behind.
+        if offered == requirement["value"]:
+            status: RegisterStatus = "met"
+        elif requirement["reconciliation"] == "waived":
+            status = "waived"
+        elif requirement["reconciliation"] == "revised":
+            status = "revised"
+        else:
+            status = "deviation"
+        entries.append({
+            "variable": requirement["variable"],
+            "requested": requirement["value"],
+            "offered": offered,
+            "clause": requirement["clause"],
+            "quote": requirement["quote"],
+            "status": status,
+        })
+    return entries
+
+
+def ingest(
+    config: Configuration,
+    entries: list[dict],
+    unmapped: list[dict],
+    budget_cap: int | None = None,
+) -> tuple[Configuration, Seed, list[Unmapped]]:
+    """Seed an agreement from an extracted requirements document.
+
+    Returns (new configuration, the solver's seeding result, the entries
+    demoted to unmapped). Either fully applies or raises, leaving `config`
+    untouched — the transition is built as a new value and never mutates.
+    """
+    if config.get("rfq") is not None:
+        raise ValueError(
+            "this agreement was already seeded from a document — re-tendering "
+            "is not supported; start a new elevator for a new document"
+        )
+    if config["choices"]:
+        raise ValueError(
+            "this agreement already has recorded choices — seed a document "
+            "into a fresh elevator so the document is the starting position"
+        )
+
+    requirements: list[Requirement] = []
+    demoted: list[Unmapped] = []
+    for entry in entries:
+        variable, value = entry.get("variable", ""), entry.get("value", "")
+        clause, quote = entry.get("clause", ""), entry.get("quote", "")
+        if variable not in MODEL.variables:
+            demoted.append({"clause": clause, "quote": quote,
+                            "note": f"no product variable {variable!r}"})
+        elif value not in MODEL.variables[variable].values:
+            demoted.append({"clause": clause, "quote": quote,
+                            "note": f"{value!r} is not a value of {variable}"})
+        else:
+            requirements.append({"variable": variable, "value": value,
+                                 "clause": clause, "quote": quote,
+                                 "reconciliation": "pending"})
+    if not requirements:
+        raise ValueError(
+            "nothing in this document maps to a product variable — record what "
+            "it states in conversation instead of seeding it"
+        )
+
+    seeded = SOLVER.seed([(r["variable"], r["value"]) for r in requirements])
+    new_config, _ = apply_choices(config, dict(seeded.kept), "document")
+    # The candidate is seed's own whole, not a recomputed one: cost-free
+    # variables leave several equally cheap completions and complete() picks
+    # among them arbitrarily, so re-solving could offer a value the seeding
+    # result never named.
+    new_config = {**new_config, "candidate": {
+        "assignment": dict(seeded.assignment),
+        "price": seeded.price,
+        "footprint": _state_footprint(seeded.assignment),
+        "objective": "price",
+    }}
+    rfq: RFQ = {
+        "requirements": requirements,
+        "unmapped": [
+            {"clause": u.get("clause", ""), "quote": u.get("quote", ""),
+             "note": u.get("note", "")}
+            for u in unmapped
+        ] + demoted,
     }
+    if budget_cap is not None:
+        rfq["budget_cap"] = budget_cap
+    new_config["rfq"] = rfq
+    return new_config, seeded, demoted
+
+
+def _requirements_on(config: Configuration, variable: str) -> list[Requirement]:
+    rfq = config.get("rfq")
+    if not rfq:
+        raise ValueError("this agreement was not seeded from a document")
+    on_variable = [r for r in rfq["requirements"] if r["variable"] == variable]
+    if not on_variable:
+        raise ValueError(
+            f"the document states no requirement on {variable}; "
+            f"it states: {sorted({r['variable'] for r in rfq['requirements']})}"
+        )
+    return on_variable
+
+
+def _mark(config: Configuration, variable: str, reconciliation: str) -> RFQ:
+    rfq = config["rfq"]
+    return {
+        **rfq,
+        "requirements": [
+            {**r, "reconciliation": reconciliation} if r["variable"] == variable else r
+            for r in rfq["requirements"]
+        ],
+    }
+
+
+def reconcile(
+    config: Configuration,
+    variable: str,
+    move: ReconcileMove,
+    value: str | None = None,
+) -> tuple[Configuration, dict[str, str], str | None]:
+    """Reconcile the document's requirements on one variable. Every clause
+    bearing on that variable moves together — they are one disagreement,
+    answered once.
+
+    Returns (new configuration, newly forced values, the value now recorded).
+    Raises ConflictError from the `revise` move exactly as `revise_choices`
+    does, so a colliding reconciliation reaches the customer as repair options.
+    """
+    clauses = _requirements_on(config, variable)
+
+    if move == "open":
+        return {**config, "rfq": _mark(config, variable, "pending")}, {}, None
+
+    if move == "accept":
+        offered = live_value(config, variable)
+        if offered is None:
+            raise ValueError(
+                f"nothing is offered for {variable} yet — propose a completion "
+                "before accepting what it offers"
+            )
+        if any(r["value"] == offered for r in clauses):
+            raise ValueError(
+                f"the agreement already meets the document on {variable} — "
+                "there is nothing to waive"
+            )
+        # Pinned as a user choice: waiving is the customer's decision, and
+        # pinning stops a later revision silently moving a value they
+        # explicitly accepted.
+        new_config, newly_forced = revise(config, {variable: offered}, [], "user")
+        return {**new_config, "rfq": _mark(new_config, variable, "waived")}, newly_forced, offered
+
+    if move == "revise":
+        if value is None:
+            raise ValueError("the 'revise' move needs the value to change to")
+        new_config, newly_forced = revise(config, {variable: value}, [], "user")
+        mark = "revised" if any(r["value"] != value for r in clauses) else "pending"
+        return {**new_config, "rfq": _mark(new_config, variable, mark)}, newly_forced, value
+
+    raise ValueError(f"unknown reconciliation move {move!r}; use accept, revise or open")
 
 
 # -- ask_choices payload (docs/specs/configuration-canvas) --------------------------------------
@@ -684,6 +935,232 @@ def adopt_frame_tool(name: str, runtime: ToolRuntime) -> Command:
     })
 
 
+# -- RFQ tools (docs/specs/rfq-reconciliation) ----------------------------
+
+
+def _register_lines(config: Configuration) -> list[str]:
+    """The register as the agent should read it: pending deviations first,
+    then what was reconciled and how — so "where do we stand" answers from
+    state, with waived requirements still named."""
+    entries = register(config)
+    if not entries:
+        return []
+    lines = []
+    pending = [e for e in entries if e["status"] == "deviation"]
+    if pending:
+        lines.append(f"Open deviations from the document ({len(pending)}):")
+        lines += [
+            f"- clause {e['clause']}: asked {_label(e['variable'], e['requested'])}"
+            f" ({e['variable']}={e['requested']}), offers "
+            + (_label(e["variable"], e["offered"]) if e["offered"] else "nothing yet")
+            for e in pending
+        ]
+    else:
+        lines.append("No open deviations — the agreement is clean against the document.")
+    for status, heading in (("waived", "Waived (still listed, never forgotten)"),
+                            ("revised", "Revised by the customer")):
+        marked = [e for e in entries if e["status"] == status]
+        if marked:
+            lines.append(f"{heading}: " + ", ".join(
+                f"clause {e['clause']} asked {_label(e['variable'], e['requested'])}"
+                f", agreement says "
+                + (_label(e["variable"], e["offered"]) if e["offered"] else "—")
+                for e in marked
+            ))
+    met = sum(1 for e in entries if e["status"] == "met")
+    lines.append(f"Met: {met} of {len(entries)} requirements.")
+    return lines
+
+
+def _budget_lines(config: Configuration) -> list[str]:
+    """The document's monthly cap against the candidate — arithmetic on a
+    solver-computed price and a figure the document states, never a rule."""
+    rfq = config.get("rfq")
+    candidate = config["candidate"]
+    if not rfq or "budget_cap" not in rfq or not candidate:
+        return []
+    cap, price = rfq["budget_cap"], candidate["price"]
+    if price <= cap:
+        return [f"The document caps the charge at {cap} EUR/month; this candidate "
+                f"is {price} — within it."]
+    return [f"The document caps the charge at {cap} EUR/month; this candidate is "
+            f"{price} — {price - cap} over. The model has no budget variable, so "
+            "this is a commercial pressure to raise, not a rule violation."]
+
+
+@tool
+def ingest_rfq(
+    requirements: list[dict],
+    unmapped: list[dict],
+    document_text: str,
+    runtime: ToolRuntime,
+    budget_cap: int | None = None,
+) -> Command:
+    """Seed this agreement from the customer's requirements document (an RFQ,
+    tender or specification they pasted or attached). Call describe_product
+    first, then call this ONCE with everything the document states.
+
+    `requirements` is one entry per numbered clause that maps to a product
+    variable: {"variable": "rated_speed", "value": "mps3_0", "clause": "3.1",
+    "quote": "Rated speed shall be 3.0 m/s"}. Map only what the document
+    actually states — never a requirement it does not make, and never a
+    priority it does not express. Several clauses may bear on the same
+    variable; list each one, with its own clause number.
+
+    `unmapped` is every requirement the document makes that no product
+    variable carries: {"clause": "5.3", "quote": "...", "note": "handover
+    date"}. Nothing is silently dropped — if you cannot map it, list it here.
+
+    `budget_cap` is a monthly ceiling the document states, in EUR/month, if it
+    states one.
+
+    The solver seeds a complete valid agreement satisfying as many
+    requirements as can hold together; each one it cannot meet comes back as a
+    deviation with the offered value and the rules that separate them.
+    """
+    config = _get_config(runtime)
+    try:
+        new_config, seeded, demoted = ingest(config, requirements, unmapped, budget_cap)
+    except ValueError as e:
+        return Command(update={"messages": [
+            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
+        ]})
+
+    rfq = new_config["rfq"]
+    lines = [
+        f"Seeded from the document: {len(seeded.kept)} of "
+        f"{len(rfq['requirements'])} requirements recorded, candidate at "
+        f"{new_config['candidate']['price']} EUR/month."
+    ]
+    if seeded.deviations:
+        lines.append(
+            f"{len(seeded.deviations)} requirement(s) the rules cannot meet — "
+            "present each as a negotiable position, never a verdict, and offer "
+            "the three moves (accept what is offered, change the requirement, "
+            "leave it open):"
+        )
+        for d in seeded.deviations:
+            clauses = ", ".join(
+                r["clause"] for r in rfq["requirements"]
+                if r["variable"] == d.variable and r["value"] == d.requested
+            )
+            rules = ("; ".join(f"{rid}: {label}" for rid, label in d.rules)
+                     or "the document asks for two different values of this term")
+            lines.append(
+                f"- {MODEL.variables[d.variable].label} (clause {clauses}): asked "
+                f"{_label(d.variable, d.requested)}, offered "
+                f"{_label(d.variable, d.offered)}. Because {rules}"
+            )
+    else:
+        lines.append("Every requirement is met — no deviations to reconcile.")
+
+    if demoted:
+        lines.append("Could not be mapped as given, listed as unmapped: " + "; ".join(
+            f"clause {u['clause']} ({u['note']})" for u in demoted
+        ))
+    if rfq["unmapped"]:
+        lines.append(
+            f"{len(rfq['unmapped'])} clause(s) no product variable carries "
+            "(say so plainly if the customer asks about them): "
+            + ", ".join(u["clause"] for u in rfq["unmapped"] if u["clause"])
+        )
+    lines += _budget_lines(new_config)
+
+    forced = _forced(new_config["statuses"])
+    undecided = [
+        var for var in MODEL.variables
+        if var not in new_config["choices"] and var not in forced
+    ]
+    lines.append(
+        "The document leaves these open — ask about these and nothing else: "
+        + (", ".join(undecided) or "nothing; the document settles everything")
+    )
+    _commit(runtime, new_config)
+    workspace_id = runtime.state.get("workspace_id")
+    if workspace_id:
+        try:
+            workspace_store.attach_rfq(workspace_id, document_text)
+        except KeyError:
+            print(f"workspace {workspace_id!r} not found — RFQ text not persisted")
+    return Command(update={
+        "configuration": new_config,
+        "messages": [ToolMessage(content="\n".join(lines), tool_call_id=runtime.tool_call_id)],
+    })
+
+
+@tool
+def reconcile_requirement(
+    variable: str,
+    move: ReconcileMove,
+    runtime: ToolRuntime,
+    value: str | None = None,
+) -> Command:
+    """Reconcile the document's requirement on one variable — the customer's
+    answer to a deviation.
+
+    move="accept": the customer takes what the agreement offers. The
+    requirement is waived — recorded as waived, never forgotten, and still
+    listed when you summarize.
+    move="revise": the customer changes their requirement; `value` is the new
+    option code. If it collides with other recorded choices you get repair
+    options back instead, exactly as revise_choices does.
+    move="open": put it back to pending, changing nothing else.
+
+    Every clause of the document bearing on that variable moves together.
+    """
+    config = _get_config(runtime)
+    try:
+        new_config, newly_forced, applied = reconcile(config, variable, move, value)
+    except ValueError as e:
+        return Command(update={"messages": [
+            ToolMessage(content=f"ERROR: {e}", tool_call_id=runtime.tool_call_id)
+        ]})
+    except ConflictError as conflict:
+        # Only "revise" can collide — "accept" pins a value the agreement
+        # already holds — so only it has a revision to build repairs for.
+        if value is None:
+            return Command(update={"messages": [
+                ToolMessage(content=_conflict_payload(conflict),
+                            tool_call_id=runtime.tool_call_id)
+            ]})
+        try:
+            payload = build_repair_payload(config, {variable: value})
+        except ConflictError as e:
+            return Command(update={"messages": [
+                ToolMessage(content=_conflict_payload(e), tool_call_id=runtime.tool_call_id)
+            ]})
+        return Command(update={"messages": [
+            ToolMessage(content=json.dumps(payload), tool_call_id=runtime.tool_call_id)
+        ]})
+
+    clauses = ", ".join(
+        r["clause"] for r in new_config["rfq"]["requirements"] if r["variable"] == variable
+    )
+    if move == "accept":
+        lines = [f"Waived clause {clauses}: the agreement's "
+                 f"{_label(variable, applied)} stands, and the requirement stays "
+                 "listed as waived."]
+    elif move == "revise":
+        lines = [f"Clause {clauses} revised: {MODEL.variables[variable].label} is "
+                 f"now {_label(variable, applied)}."]
+    else:
+        lines = [f"Clause {clauses} left open — still an unreconciled deviation."]
+    if newly_forced:
+        lines.append(
+            "Now forced by the rules (announce these to the customer): "
+            + ", ".join(f"{_label(v, val)} ({v})" for v, val in newly_forced.items())
+        )
+    if new_config["candidate"] is None and config["candidate"] is not None:
+        lines.append("The previous candidate no longer fits and was discarded — "
+                     "propose a completion to price the reconciled agreement.")
+    lines += _register_lines(new_config)
+    _commit(runtime, new_config)
+    return Command(update={
+        "configuration": new_config,
+        "messages": [ToolMessage(content="\n".join(lines), tool_call_id=runtime.tool_call_id)],
+    })
+
+
 @tool
 def name_workspace(name: str, runtime: ToolRuntime) -> Command:
     """Name (or rename) this elevator's entry — a short identifying name like
@@ -748,6 +1225,8 @@ def get_configuration(runtime: ToolRuntime) -> str:
         lines.append("Saved frames: " + ", ".join(
             f"{f['name']} ({f['price']} EUR/month)" for f in _frames(config)
         ))
+    lines += _register_lines(config)
+    lines += _budget_lines(config)
     return "\n".join(lines)
 
 
@@ -834,6 +1313,8 @@ def describe_product() -> str:
 
 configuration_tools = [
     name_workspace,
+    ingest_rfq,
+    reconcile_requirement,
     set_choices,
     revise_choices,
     clear_choices,

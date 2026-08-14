@@ -462,6 +462,111 @@ def test_complete_co2_monthly_tiebreak(tmp_path):
     assert assignment["x"] == "cheap"
 
 
+# -- seed (docs/specs/rfq-reconciliation) ---------------------------------
+
+# The two authored fixtures in agent/fixtures/rfq/, as the requirement sets an
+# extraction should produce from them.
+FIXTURE_A = [  # residential-new-build.txt — jointly satisfiable
+    ("building_type", "residential"), ("region", "europe"),
+    ("installation", "new_build"), ("travel", "mid_15_30"),
+    ("usage_profile", "medium"), ("rated_load", "kg1000"),
+    ("rated_speed", "mps1_6"), ("accessibility", "en81_70"),
+    ("service_level", "standard"),
+]
+FIXTURE_B = [  # office-tower-modernization.txt — over-constrained
+    ("building_type", "office"), ("region", "europe"),
+    ("installation", "modernization"), ("travel", "tower_75_100"),
+    ("stops", "s13_24"), ("usage_profile", "heavy"),
+    ("rated_speed", "mps3_0"), ("rated_load", "kg1600"),
+    ("accessibility", "en81_70"), ("connectivity_package", "connected"),
+    ("service_level", "premium"), ("contract_term", "y15"),
+]
+
+
+def test_seed_satisfiable_keeps_everything(solver):
+    seeded = solver.seed(FIXTURE_A)
+    assert seeded.deviations == ()
+    assert set(seeded.kept) == set(FIXTURE_A)
+    for var, val in FIXTURE_A:
+        assert seeded.assignment[var] == val
+    assert seeded.price == solver.complete(dict(FIXTURE_A))[1]
+
+
+def test_seed_empty_requirements_is_the_cheapest_whole(solver):
+    seeded = solver.seed([])
+    assert (seeded.kept, seeded.deviations) == ((), ())
+    assert solver.check(seeded.assignment)
+    # equal to complete()'s price, not necessarily to its assignment: cost-free
+    # variables leave several equally cheap wholes and complete() picks among
+    # them arbitrarily (see the ingest note in design.md)
+    assert seeded.price == solver.complete({})[1]
+
+
+def test_seed_drops_only_what_it_must(solver):
+    """The modernization fixture: exactly one requirement gives way, and the
+    seeded whole is valid and satisfies all the others."""
+    seeded = solver.seed(FIXTURE_B)
+    assert len(seeded.deviations) == 1
+    assert len(seeded.kept) == len(FIXTURE_B) - 1
+    assert solver.check(seeded.assignment)
+    for var, val in seeded.kept:
+        assert seeded.assignment[var] == val
+
+
+def test_seed_tiebreak_picks_the_cheapest_completion(solver):
+    """Two single-drop subsets exist — dropping the speed requirement and
+    dropping the modernization one. The cheaper completion wins, which is the
+    one a modernization customer would recognize as an answer."""
+    seeded = solver.seed(FIXTURE_B)
+    deviation = seeded.deviations[0]
+    assert (deviation.variable, deviation.requested) == ("rated_speed", "mps3_0")
+    assert deviation.offered == "mps2_5"
+    # the alternative maximal subset is valid too, and dearer
+    alternative = {v: val for v, val in FIXTURE_B if v != "installation"}
+    assert solver.check(alternative)
+    assert seeded.price < solver.complete(alternative)[1]
+
+
+def test_seed_deviation_cites_the_rules_that_separate_the_pair(solver):
+    """Speed sets a minimum headroom a modernization cannot raise. The solver
+    may return the equivalent pit-depth core instead, so assert on the core
+    choices and accept either rule pair (design.md)."""
+    deviation = solver.seed(FIXTURE_B).deviations[0]
+    rule_ids = {rid for rid, _ in deviation.rules}
+    assert rule_ids & {"R03", "R04", "R27", "R28"}
+    assert all(label for _, label in deviation.rules)
+
+
+def test_seed_is_deterministic(solver):
+    first = solver.seed(FIXTURE_B)
+    for _ in range(3):
+        again = solver.seed(FIXTURE_B)
+        assert again.kept == first.kept
+        assert again.deviations == first.deviations
+        assert again.price == first.price
+
+
+def test_seed_ignores_duplicate_pairs(solver):
+    """Several clauses may bear on one (variable, value) — counting it more
+    than once would distort fewest-deviations."""
+    doubled = FIXTURE_B + [("rated_speed", "mps3_0"), ("installation", "modernization")]
+    assert solver.seed(doubled) == solver.seed(FIXTURE_B)
+
+
+def test_seed_document_asking_two_values_of_one_variable(solver):
+    """One of them must give way on the exactly-one structure alone — a
+    deviation with no named product rule to cite."""
+    seeded = solver.seed([("service_level", "basic"), ("service_level", "premium")])
+    assert len(seeded.deviations) == 1
+    assert seeded.deviations[0].variable == "service_level"
+    assert seeded.deviations[0].rules == ()
+
+
+def test_seed_rejects_unknown_requirements(solver):
+    with pytest.raises(ValueError, match="unknown"):
+        solver.seed([("building_type", "spaceport")])
+
+
 # -- performance ----------------------------------------------------------
 
 def test_operation_latency(solver):

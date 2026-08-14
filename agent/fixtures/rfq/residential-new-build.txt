@@ -39,8 +39,8 @@ metres. The number of served levels is subject to confirmation against
 the final architectural set (issue D, expected mid-March) and bidders
 should state their assumption.
 
-2.4 Expected traffic is steady residential use through the day, with
-morning and evening peaks. The building has 46 apartments.
+2.4 The building has 46 apartments. The lift is in use throughout the
+day, with the heaviest demand before 09:00 and between 17:00 and 19:00.
 
 
 3. PERFORMANCE REQUIREMENTS
