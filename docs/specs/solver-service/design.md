@@ -26,5 +26,5 @@ pytest in `agent/tests/test_solver.py` covering every acceptance criterion, incl
 ## Notes from implementation
 
 - Measured on the elevator model: `check` ~2.6 ms, `valid_options` (one `consequences()` call) ~3.2 ms — comfortably under the 100 ms target; no fallback needed.
-- A conflict can have several independent minimal explanations (modernization + 3.0 m/s fails via pit *and* via headroom); `explain` returns one MUS, whichever Z3's core surfaces. Enumerating all MUSes is deferred until a feature needs it (likely 005 repair suggestions).
+- A conflict can have several independent minimal explanations (modernization + 3.0 m/s fails via pit *and* via headroom); `explain` returns one MUS, whichever Z3's core surfaces. Enumerating all MUSes is deferred until a feature needs it (the [nonlinear-interaction](../nonlinear-interaction/design.md) repairs did not).
 - `Conflict.describe()` renders the explanation as a human-readable sentence using variable/option labels and rule labels — the string agent tools can pass straight to the LLM.

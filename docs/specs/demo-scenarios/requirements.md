@@ -1,13 +1,14 @@
 # Demo scenarios: scripted walkthroughs as definition of done
 
-Status: draft — awaiting approval.
+Status: approved 2026-08-14. The harness and scenario 2 are built; the remaining scenarios and the presenter document are not.
 
 The prototype's closing feature (the last step of the original research outline; the scenarios are the direction's worked examples, [docs/discovery/direction.md](../../discovery/direction.md) §4): five scripted walkthroughs that exercise every research claim. They serve two audiences at once — a presenter who needs a repeatable demo, and the repo itself, which needs an executable definition of done that fails when a change breaks a demonstrated behavior.
 
 ## Stories
 
 - As the researcher presenting this prototype, I have a walkthrough document per scenario — what to type or click, what to point at on screen, what must happen — so any demo run is repeatable and I never improvise past a broken step.
-- As a developer changing the model, solver, or agent, I can run the scenarios as automated checks and learn immediately when a demonstrated behavior regressed — without eyeballing four manual demos.
+- As a developer changing the model, solver, or agent, I can run the scenarios as automated checks and learn immediately when a demonstrated behavior regressed — without eyeballing five manual demos.
+- As a developer changing the agent's context — the system prompt, a tool docstring, the model — I can run the scenarios against two git refs and read a per-assertion comparison, so the behavioral cost of a context change is measured rather than argued. A prompt edit is cheap to make, invisible to every other check in the repo, and can silently cost a whole interaction flow.
 - As a skeptical audience member, each scenario maps to a named research claim (articulation barrier, revision with repair, parallel candidates, renewal as revision, tender as entrance), so the demo is an argument, not a tour.
 
 ## The five scenarios
@@ -31,6 +32,9 @@ The prototype's closing feature (the last step of the original research outline;
 - GIVEN scenario 4's restored thread, WHEN the customer's next turn is the bare dimension statement "the shaft is 1800 by 1700" (no canvas control, no pending question), THEN it is recorded as a user-sourced choice on the shaft variable — with repairs offered as in scenario 2 if it conflicts — and no already-settled variable is re-elicited.
 - GIVEN scenario 5, WHEN the fixture is ingested, THEN every seeded choice carries source `document` with its clause, the deviation register equals the solver's seed partition (never the LLM's reading), the candidate is solver-valid, no document-settled variable is re-elicited, each reconciliation move applies atomically through the structured message grammar, and the waived requirement still appears in the closing state summary. (Deferred with the feature: the [rfq-reconciliation spec](../rfq-reconciliation/requirements.md) is approved but unimplemented; the harness gains this scenario in the change that lands it.)
 - GIVEN a product-model change that alters a value or price a scenario references, WHEN the harness runs, THEN the affected scenario fails rather than drifting silently (scripts assert against the live model, not hardcoded copies of it).
+- GIVEN two git refs, WHEN the harness runs in comparison mode, THEN each scenario runs against both trees from identical inputs and the report gives per-assertion outcomes side by side, so a difference names the assertion that moved rather than a score that fell.
+- GIVEN a run that a provider rate limit interrupts, WHEN a conversation cannot complete after backoff, THEN the run fails loudly and names the affected scenarios — never drops them silently. A comparison missing different cells on each side is not a weaker result, it is a false one.
+- GIVEN any harness run, WHEN it creates workspaces, THEN they are written to a throwaway store and never to `agent/data/workspaces`, so a test run cannot pollute or overwrite the developer's own agreements.
 - The harness runs via an explicit pytest marker, is skipped cleanly when OPENAI_API_KEY is absent, and does not run as part of the default `uv run pytest`.
 
 ## Out of scope

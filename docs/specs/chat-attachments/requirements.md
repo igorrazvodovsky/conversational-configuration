@@ -1,6 +1,6 @@
 # Chat attachments
 
-Status: draft — awaiting approval (2026-08-14).
+Status: implemented 2026-08-14.
 
 The chat composer offers a paperclip, and the file it takes goes nowhere: every non-image attachment is delivered to the model as an image and the run fails with `invalid_image_format`. Worse, the rejected content persists in the thread, so the conversation stays broken for every message after it. This spec makes an attached file arrive as something the agent can read, and makes every file it cannot read fail in the composer rather than in the run.
 

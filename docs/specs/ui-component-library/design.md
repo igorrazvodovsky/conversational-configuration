@@ -4,7 +4,7 @@
 
 Components come from `npx shadcn@latest add`, never hand-written. That is what makes `src/components/ui/` current upstream source rather than a set of approximations that drift, and it is why adding a surface should start by reaching for a primitive.
 
-`shadcn init` is still not used: it wants to author `globals.css` wholesale, and this stylesheet carries things the CLI knows nothing about — the CopilotKit font override, the showcase pill rules, the inspector positioning, and a `dark` variant that has to be broader than shadcn's default. `components.json` is written by hand instead; `add` needs nothing else.
+`shadcn init` is still not used: it wants to author `globals.css` wholesale, and this stylesheet carries things the CLI knows nothing about — the CopilotKit font override, the showcase pill rules, the inspector positioning, and a `dark` variant that has to be broader than shadcn's default: `@custom-variant dark (&:where(.dark, .dark *))`, declared after the stylesheet imports so it wins — the default `&:is(.dark *)` misses the `<html>` element `ThemeProvider` stamps. `components.json` is written by hand instead; `add` needs nothing else.
 
 ## Decision 2: shadcn's own palette, in oklch
 
@@ -119,3 +119,11 @@ Everything else `chat-attachments` added to this surface already follows the voc
 Constitution #9: UI is verified by running the app. `npm run build` cannot see a missing utility class, a changed padding, or a corner that stayed round, so the check is the running app in both themes across the elevator list, the workspace split view with a populated canvas, an expanded canvas row, the footprint popover, and all three in-chat cards.
 
 The chat pane adds a behavioural half to that check, because the slots carry behaviour and not only appearance: a reply long enough to scroll, read while it streams; a card clicked and its dispatched string confirmed verbatim; a thread switched while the pane is scrolled back.
+
+## Notes from implementation
+
+- The browser pass ran in both themes across every in-scope surface. Dispatch was confirmed verbatim on all three cards and a canvas edit; a used card goes inert exactly as before; the reply anchor and the composer clearance were measured, not eyeballed; and every disabled control whose `title` carries a reason computes `pointer-events: auto` — re-checked after the Lyra switch on both the `Button` and `ToggleGroupItem` paths, since Lyra keeps `disabled:pointer-events-none` and the workaround is still load-bearing.
+- Two things the pass did not reach: drag-and-drop and paste into the composer (the file input was driven directly; the drop-zone props pass through untouched, so this is unverified rather than changed), and the empty *elevator list* state, which needs a store with no workspaces.
+- The dead starter surfaces (`example-canvas/`, `charts/`, `meeting-time-picker`, `declarative-generative-ui/`) use the primitives but were not refactored (see `CLAUDE.md`): they inherit the zinc palette, keep their literal `rounded-*` classes and so their corners, and their layout was not reviewed. `src/lib/a2ui-theme.css` is imported by nothing and was left alone.
+- `skeleton`, `label`, `checkbox`, `input` and `separator` are installed but unused by the configurator — vocabulary for the next surface, not dead weight to remove. (`alert` has since been taken up by the [chat-attachments](../chat-attachments/design.md) rejection message.)
+- CopilotKit's slash-command menu and its feather gradient are not reachable from the slots this composition uses; neither is configured, and the composer's opaque background does the feather's job. Virtualization is off, as decision 7 anticipated.

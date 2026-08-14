@@ -26,3 +26,11 @@ dev = [
     "pytest>=9.1.1",
 ]
 
+[tool.pytest.ini_options]
+# The scenario harness calls a real LLM: slow, costs money, needs a key.
+# `uv run pytest` stays offline and fast; `pytest -m scenario` opts in.
+addopts = '-m "not scenario"'
+markers = [
+    "scenario: end-to-end demo scenario against the live agent (docs/specs/demo-scenarios)",
+]
+

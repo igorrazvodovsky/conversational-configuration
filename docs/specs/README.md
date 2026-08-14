@@ -1,6 +1,6 @@
 # Specs
 
-This project uses lightweight spec-anchored development (see [constitution.md](constitution.md), process section). Each feature directory holds `requirements.md`, `design.md`, and `tasks.md`; specs persist and evolve with their features.
+This project uses lightweight spec-anchored development (see [constitution.md](constitution.md), process section). Each feature directory holds `requirements.md` and `design.md`, which persist and evolve with the feature, plus `tasks.md` while a change is in flight — the work plan is retired at reconciliation, its durable residue folded into `design.md`.
 
 Design framing and direction for the whole prototype: [docs/discovery/](../discovery/) — start with the [discovery brief](../discovery/brief.md). Specs execute against the direction set there; each new spec should cite the principle or assertion it serves.
 
@@ -17,11 +17,11 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [agent-tools](agent-tools/) | Configuration state + solver-backed agent tools | Implemented |
 | [configuration-canvas](configuration-canvas/) | Spec-sheet canvas + in-chat generated controls | Implemented |
 | [nonlinear-interaction](nonlinear-interaction/) | Revision with ripple, candidate frames, resumption | Implemented |
-| [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Draft — awaiting approval (to be recast to the service frame's job stories) |
+| [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Approved; harness and scenario 2 built. Remaining: scenarios 1, 3, 4, the presenter document, and — blocked on rfq-reconciliation — scenario 5. Still to be recast to the service frame's job stories |
 | [service-agreement](service-agreement/) | Elevator as a service: outcome terms, monthly price, derived hardware | Implemented |
 | [environmental-footprint](environmental-footprint/) | Environmental footprint as a decision dimension | Implemented |
 | [agreement-workspace](agreement-workspace/) | Durable workspace per installation; conversations decoupled from the agreement | Implemented |
-| [ui-component-library](ui-component-library/) | shadcn/ui as the component vocabulary; zinc palette, Lyra style | Implemented, chat pane included (the original `requirements.md` was written alongside the work rather than approved in advance; the chat-pane extension was approved first) |
+| [ui-component-library](ui-component-library/) | shadcn/ui as the component vocabulary; zinc palette, Lyra style | Implemented, chat pane included |
 | [chat-attachments](chat-attachments/) | A file attached in chat becomes text the agent can read; nothing attachable can break a conversation | Implemented |
 | [rfq-reconciliation](rfq-reconciliation/) | RFQ-seeded agreements: document ingestion, deviation register, reconciliation moves | Requirements approved; design drafted, not yet implemented |
 | [agreement-document](agreement-document/) | Canvas recast in the agreement's genre: recitals, operative terms, schedules; editable in place | Draft — awaiting approval |

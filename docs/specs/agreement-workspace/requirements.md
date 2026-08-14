@@ -1,6 +1,6 @@
 # Agreement workspace
 
-Status: requirements approved 2026-08-13; implemented 2026-08-13. The last acceptance criterion (placement of the two surfaces) was added afterwards, on the user's direct instruction, and implemented the same day.
+Status: requirements approved 2026-08-13; implemented 2026-08-13.
 
 The built system keys the configuration to the conversation: `AgentState.configuration` lives in the thread's LangGraph checkpoint, so starting a new conversation silently starts a new agreement, and the threads drawer stands in for choosing an agreement. This spec decouples them. A *workspace* is the durable home of one installation's service agreement — configuration, candidate, and frames; conversations are ephemeral views onto it, many per workspace. The journey starts at the workspace list, not at an empty chat.
 

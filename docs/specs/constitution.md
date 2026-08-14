@@ -15,15 +15,15 @@ Principles that hold across all features of this prototype. Specs and code must 
 ## Engineering principles
 
 8. Python agent code is managed with uv in `agent/`; frontend is Next.js/React/Tailwind at the repo root.
-9. Solver and model logic get automated checks (the model validator, unit tests for solver operations). UI is verified by running the app.
+9. Solver and model logic get automated checks (the model validator, unit tests for solver operations). Conversation behavior gets the scenario harness — end-to-end runs against the live agent, asserting on tool calls, payloads and state, never on the agent's prose; it costs money and a provider key, so it is excluded from the default suite and opted into. UI is verified by running the app.
 10. Simple over complex: this is a prototype and template; prefer the smallest mechanism that demonstrates the pattern.
 
 ## Process: spec-anchored development
 
-11. Feature specs live in `docs/specs/feature-name/` — named, never numbered, and cited by name — with three files:
-    - `requirements.md` — user stories plus GIVEN/WHEN/THEN acceptance criteria.
-    - `design.md` — key technical decisions and their rationale.
-    - `tasks.md` — implementation checklist, kept current.
-12. Workflow: write or update the spec *before* implementing; new features need user approval of `requirements.md` before code is written. After implementation, reconcile the spec with what was actually built — specs persist and stay truthful as features evolve.
+11. Feature specs live in `docs/specs/feature-name/` — named, never numbered, and cited by name:
+    - `requirements.md` — user stories plus GIVEN/WHEN/THEN acceptance criteria. Persists and evolves with the feature.
+    - `design.md` — key technical decisions, their rationale, and notes from implementation. Persists and evolves with the feature.
+    - `tasks.md` — the work plan of a change in flight. Exists only while that change is underway; a feature with no change in flight has no tasks file.
+12. Workflow: write or update the spec *before* implementing; new features need user approval of `requirements.md` before code is written. After implementation, reconcile: `requirements.md` and `design.md` are brought to match what was actually built and stay truthful as the feature evolves; `tasks.md` is deleted once its durable residue — verification record, known gaps, deviations from the plan — has moved into `design.md`. A plan's history belongs to git, not to the artifact.
 13. Right-sizing: bug fixes and mechanical changes need no spec. Anything that changes behavior, adds a capability, or makes an architectural choice does.
 14. Specs are concise. A spec that is tedious to review is a defect (see the review-burden critique in the SDD literature this method is based on).

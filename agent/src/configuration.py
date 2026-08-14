@@ -546,8 +546,7 @@ def revise_choices(
     repair the customer picked). If the revision conflicts with other recorded
     choices, nothing changes and you get solver-computed repair options —
     rendered to the customer as clickable cards, ordered by how many existing
-    choices they keep. Present them as choices, not verdicts, and mention they
-    can also keep things as they are.
+    choices they keep.
     """
     config = _get_config(runtime)
     try:
@@ -654,8 +653,7 @@ def save_frame_tool(name: str, runtime: ToolRuntime) -> Command:
 def compare_frames(a: str, runtime: ToolRuntime, b: str | None = None) -> str:
     """Compare two saved frames (or frame `a` against the current candidate if
     `b` is omitted). The customer sees a side-by-side card of only the
-    differing variables with the price delta — don't repeat the table in text,
-    just comment on the trade-off."""
+    differing variables with the price delta."""
     config = _get_config(runtime)
     try:
         return json.dumps(frame_comparison(config, a, b))
@@ -690,9 +688,9 @@ def adopt_frame_tool(name: str, runtime: ToolRuntime) -> Command:
 def name_workspace(name: str, runtime: ToolRuntime) -> Command:
     """Name (or rename) this elevator's entry — a short identifying name like
     "Riverside Tower — north lift", or a short description of the installation
-    when no explicit identity has emerged yet. Call it as soon as the
-    conversation reveals which installation this is; never ask the customer to
-    invent a name, and don't announce the naming."""
+    when no explicit identity has emerged yet. The entry starts unnamed; call
+    this as soon as the conversation reveals which installation this is, and
+    again whenever a better identity emerges."""
     workspace_id = runtime.state.get("workspace_id")
     if not workspace_id:
         return Command(update={"messages": [ToolMessage(
@@ -758,8 +756,7 @@ def ask_choices(variables: list[str], runtime: ToolRuntime, prompt: str = "") ->
     """Show the customer clickable controls in chat for the given variables
     (1-4 related ones at a time). The customer sees each variable's currently
     valid options as chips, a scale, or a detail list, and can pick directly.
-    Do not enumerate the options in your own text — the control shows them;
-    just ask the question. `prompt` is an optional short caption."""
+    `prompt` is an optional short caption."""
     config = _get_config(runtime)
     try:
         payload = build_ask_payload(config, variables)
@@ -773,9 +770,9 @@ def ask_choices(variables: list[str], runtime: ToolRuntime, prompt: str = "") ->
 def describe_product() -> str:
     """The service catalog: every variable, its option value codes, labels,
     monthly prices and modelled embodied CO2e deltas, the product rules, and
-    the footprint assessment assumptions. Call this before your first
-    set_choices. Quote footprint figures only from here or from tool results —
-    never estimate them yourself."""
+    the footprint assessment assumptions — the only source for a footprint
+    figure or an assumption behind one. Call this before your first
+    set_choices."""
     # All prices shown are EUR/month — the LLM never sees a capex figure it
     # could leak (docs/specs/service-agreement).
     default_months = MODEL.months_of(None)

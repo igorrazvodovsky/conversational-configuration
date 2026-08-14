@@ -1,6 +1,6 @@
 # Chat surface
 
-Status: draft — awaiting approval (2026-08-14).
+Status: implemented 2026-08-14; the transcript-behaviour half of the verification is outstanding (see [tasks.md](tasks.md)).
 
 The chat has one shape: a resizable column to the right of the canvas, the same width whether the agreement is empty or settled. That shape was chosen for one kind of work — negotiating over a document that exists — and the tool now imposes it on all the rest. Opening a brand-new elevator, the canvas holds nothing to read and the column crowds the only surface doing anything. Reading a settled agreement, the operator has one question to ask and no reason to surrender a third of the screen to a transcript. Those are examples, not a taxonomy: the problem is that the split is fixed at all.
 
@@ -12,26 +12,20 @@ Hidden is the limit of that, and it is already in the framing: [Surface architec
 
 Constrained by [any door is an entrance](../../discovery/principles/any-door-is-an-entrance.md): a mode is a view, never a stage. No mode may be a step in a sequence, none may lock a move that another mode allows, and the app may not move the user between them.
 
-## Discovery amendment this requires
+## Discovery amendment
 
-[Surface architecture](../../discovery/models/Surface%20architecture.md) §2 currently reads *"The agreement takes the primary area and the chat sits beside it in a pane the user sizes — a chat pane that can be pushed to the margin, and never a document that can be hidden."* Full screen hides the document, so the model has to change or this spec cannot be written.
-
-The proposed amendment holds the claim and narrows its subject to default weight:
-
-> *The document holds the centre.* The geometry names two surfaces but not their weight. By default the agreement takes the primary area and the chat sits beside it in a pane the user sizes. The user may temporarily give the chat the whole surface, or put it away entirely — the app never does either, and never on the user's behalf. Placement is the cheapest evidence for [the canvas is the durable state](../assertions/canvas-is-the-durable-state.md): a surface the layout treats as secondary by default will not be read as the record, whatever the state actually lives in. What a user chooses to look at for a minute is not what the layout treats as secondary; an app that opened them in a transcript would be.
-
-The guard in that paragraph — user-invoked, one click back, never the app's choice — is what keeps the principle intact, and it is an acceptance criterion below.
+[Surface architecture](../../discovery/models/Surface%20architecture.md) §2 previously ruled out a document that can be hidden, which full screen does; the model was amended with this spec. It now names the two surfaces but not their weight: the document holds the centre *by default*, and the user may temporarily give the chat the whole surface or put it away entirely — the app never does either, and never on the user's behalf. That guard — user-invoked, one click back, never the app's choice — is what keeps the principle intact, and it is an acceptance criterion below.
 
 ## What each mode gives up
 
-The modes are described by what they trade, not by the moment they belong to. Which mode suits which moment is the user's judgement and the boundaries are fuzzy — the point of the feature is the flexibility, so nothing here presumes a mapping, and no mode is recommended, defaulted into or nudged toward by the tool. The sketches below are illustration, not scope.
+The modes are described by what they trade, not by the moment they belong to. Which mode suits which moment is the user's judgement — nothing here presumes a mapping, and no mode is recommended, defaulted into or nudged toward by the tool.
 
-| Mode | The trade | Where it plausibly helps |
-|---|---|---|
-| Sidebar (default) | Both surfaces at once, neither at full width | Negotiating over a document you are reading at the same time |
-| Floating | Canvas at full width; the chat is small and sits over it | Working in the document with something to ask |
-| Full screen | The whole surface to the conversation; the canvas is out of view | An empty agreement, or a long passage — a comparison, a ripple explained |
-| Hidden | No chat at all; only a control to bring it back | Reading, checking or editing the agreement with nothing to say |
+| Mode | The trade |
+|---|---|
+| Sidebar (default) | Both surfaces at once, neither at full width |
+| Floating | Canvas at full width; the chat is small and sits over it |
+| Full screen | The whole surface to the conversation; the canvas is out of view |
+| Hidden | No chat at all; only a control to bring it back |
 
 ## Stories
 

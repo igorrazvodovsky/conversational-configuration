@@ -8,7 +8,7 @@ from src.configuration import apply_choices, empty_configuration
 
 @pytest.fixture(autouse=True)
 def data_dir(tmp_path, monkeypatch):
-    monkeypatch.setattr(workspace_store, "DATA_DIR", tmp_path)
+    monkeypatch.setenv("WORKSPACE_STORE_DIR", str(tmp_path))
     return tmp_path
 
 

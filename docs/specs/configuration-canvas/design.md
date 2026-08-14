@@ -28,7 +28,7 @@ Frontend: one `AskChoices` renderer registered in the tool-rendering path (`src/
 
 ## State streaming
 
-Revisits the [agent-tools decision](../agent-tools/design.md): still no streaming of configuration tool args; the canvas updates from validated Command state only. If the post-run refresh feels laggy in practice, note it and revisit in 005.
+Revisits the [agent-tools decision](../agent-tools/design.md): still no streaming of configuration tool args; the canvas updates from validated Command state only. If the post-run refresh feels laggy in practice, note it and revisit (the [nonlinear-interaction](../nonlinear-interaction/design.md) pass did not need to).
 
 ## Notes from implementation
 

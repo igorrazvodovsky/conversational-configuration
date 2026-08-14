@@ -9,11 +9,25 @@ decision).
 """
 
 import json
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parent.parent / "data" / "workspaces"
+_DEFAULT_DATA_DIR = Path(__file__).parent.parent / "data" / "workspaces"
+
+
+def data_dir() -> Path:
+    """Where workspaces live. The scenario harness points WORKSPACE_STORE_DIR
+    at a temp directory so a test run cannot write into the developer's own
+    agreements (docs/specs/demo-scenarios design).
+
+    Resolved per call, not at import: pytest imports every test module before
+    deselecting any, so this module is already loaded by the time a scenario
+    sets the variable.
+    """
+    override = os.environ.get("WORKSPACE_STORE_DIR")
+    return Path(override) if override else _DEFAULT_DATA_DIR
 
 
 def _now() -> str:
@@ -24,7 +38,7 @@ def _path(workspace_id: str) -> Path:
     # ids are uuid4 hex we minted ourselves; reject anything path-like anyway
     if not workspace_id.isalnum():
         raise KeyError(f"no workspace {workspace_id!r}")
-    return DATA_DIR / f"{workspace_id}.json"
+    return data_dir() / f"{workspace_id}.json"
 
 
 def _read(path: Path) -> dict:
@@ -32,7 +46,7 @@ def _read(path: Path) -> dict:
 
 
 def _write(record: dict) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    data_dir().mkdir(parents=True, exist_ok=True)
     _path(record["id"]).write_text(json.dumps(record, indent=2))
 
 
@@ -70,9 +84,9 @@ def get_workspace(workspace_id: str) -> dict:
 
 
 def list_workspaces() -> list[dict]:
-    if not DATA_DIR.exists():
+    if not data_dir().exists():
         return []
-    records = [_read(p) for p in DATA_DIR.glob("*.json")]
+    records = [_read(p) for p in data_dir().glob("*.json")]
     return sorted(records, key=lambda r: r["updatedAt"], reverse=True)
 
 
