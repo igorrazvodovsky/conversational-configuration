@@ -14,3 +14,4 @@ The agent may fill forced values, propose completions and flag dead ends without
 
 - [../direction.md](../direction.md) §2 — the principle index
 - [../models/Conversation moves.md](../models/Conversation%20moves.md) — the model that operationalizes this principle move by move
+- [a choice that carries its words can be revisited without re-litigation](../assertions/choices-carry-their-words.md) — sharpens the provenance half of the test from *who chose a value* to *on what words*

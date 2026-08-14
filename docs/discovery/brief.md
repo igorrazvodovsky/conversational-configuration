@@ -22,7 +22,7 @@ Three conditions make this problem what it is.
 
 *Revision is where the design problem actually lives.* Changing an early decision ripples through constraints the user never saw. A linear transcript has nowhere to show that ripple, so revision degrades into starting over. This is the point at which conversational configuration either earns its existence or does not, and it is the project's novelty claim.
 
-Nine assertions carry the design — one note each, indexed in [problem-framing.md](problem-framing.md) §4. Three are load-bearing: that showing a valid candidate beats interrogation ([a candidate beats a question sequence](assertions/candidate-beats-questions.md)), that ripple shown at the moment of revision makes nonlinear change tolerable ([ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md)), and that two objectives held as an explicit pair beat a collapsed score ([two objectives held as a pair](assertions/two-objectives-as-a-pair.md)). The second is the one whose failure would cost the project its claim; the third is the least supported by anything but reasoning.
+The assertions carrying the design are one note each, indexed in [problem-framing.md](problem-framing.md) §4. Three are load-bearing: that showing a valid candidate beats interrogation ([a candidate beats a question sequence](assertions/candidate-beats-questions.md)), that ripple shown at the moment of revision makes nonlinear change tolerable ([ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md)), and that two objectives held as an explicit pair beat a collapsed score ([two objectives held as a pair](assertions/two-objectives-as-a-pair.md)). The second is the one whose failure would cost the project its claim; the third is the least supported by anything but reasoning.
 
 ## 3. The direction, in short
 
@@ -39,7 +39,7 @@ Eight principles, each written to reject ideas — one note each in [principles/
 7. [Trade-offs are shown as a pair, never collapsed into a score](principles/trade-offs-shown-as-a-pair.md).
 8. [The agent proposes; the user disposes](principles/agent-proposes-user-disposes.md).
 
-The tension to watch is between the first and the last: showing a complete valid candidate means the agent chooses a lot, early. The resolution is visible provenance plus cheap reversal. If that fails in use, one of the two principles is wrong.
+The tension to watch is between the first and the last: showing a complete valid candidate means the agent chooses a lot, early. The resolution is visible provenance plus cheap reversal — and what provenance must show is itself under test: [a choice that carries its words can be revisited without re-litigation](assertions/choices-carry-their-words.md). If that fails in use, one of the two principles is wrong.
 
 Rejected concepts, kept on the record: the wizard with an assistant (preserves the imposed order), the expert you interview (hides the state), the spreadsheet that talks (gives up elicitation, but is closer than the others to how a returning operator will use the tool — so chat should be optional for them).
 
