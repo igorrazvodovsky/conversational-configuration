@@ -52,7 +52,7 @@ Reference car 1,100 × 1,400 × 2,100 mm (the model's `c1100x1400`): back wall 2
 
 This is the finding worth building the interaction design around: *the most expensive finish option is not the highest-carbon one.* Stainless steel across three walls carries roughly twice the embodied delta of a panoramic glass back wall at a quarter of the price.
 
-*Load-bearing caveat.* This entire comparison rests on the assumed stainless factor of ~5.5 kg CO₂e/kg from §1, which was not retrieved. High-recycled-content stainless EPDs run well below that; at ~2.5 the decorrelation shrinks substantially and could invert. Treat "stainless emits more than glass" as a *hypothesis the model encodes*, not an established fact, until the factor is sourced — it is the highest-value entry in [gaps.md](../gaps.md#e4) for exactly this reason. The travel-height finding in §5 does not share this dependency and should carry any argument that needs to be robust. Two further honest caveats: a panoramic car usually implies a glazed shaft and structural changes outside the car, which this per-panel derivation does not capture, and heavier laminated build-ups push glass toward the top of its range.
+*Important caveat.* This entire comparison rests on the assumed stainless factor of ~5.5 kg CO₂e/kg from §1, which was not retrieved. High-recycled-content stainless EPDs run well below that; at ~2.5 the decorrelation shrinks substantially and could invert. Treat "stainless emits more than glass" as a *hypothesis the model encodes*, not an established fact, until the factor is sourced; it is the highest-value entry in [gaps.md](../gaps.md#e4) for this reason. The travel-height finding in §5 does not share this dependency and should carry any argument that needs to be robust. Two further caveats: a panoramic car usually implies a glazed shaft and structural changes outside the car, which this per-panel derivation does not capture, and heavier laminated build-ups push glass toward the top of its range.
 
 Floor, car area 1.54 m² (*assumed* masses: rubber 4 kg/m², PVC 3 kg/m², granite composite 20 mm ≈ 54 kg/m²):
 
@@ -93,7 +93,7 @@ Two claims, kept separate because they have different strengths (*derived*, agai
 - Stepping *one* travel band adds ~1.3–2.1 t — roughly *1.5 to 2×* every finish option in the model combined.
 - Spanning the *full* travel range, `low_0_15` to `tower_75_100`, adds ~7 t — roughly *6×* that same total.
 
-Either way the direction is unambiguous, and it rests on the retrieved steel factor rather than on the assumed ones, so it survives the §1 uncertainties that §3 does not. If the prototype makes one honest didactic point about elevator footprint, this is the one: the building's geometry decides the embodied number, and the customer's taste barely moves it. It also supports 008's decision to make footprint a whole-configuration readout rather than a per-option badge.
+Either way the direction is unambiguous, and it rests on the retrieved steel factor rather than on the assumed ones, so it survives the §1 uncertainties that §3 does not. The clearest didactic point the prototype can make about elevator footprint is this: the building's geometry decides the embodied number, and the customer's taste barely moves it. It also supports the [footprint spec](../../specs/environmental-footprint/requirements.md)'s decision to make footprint a whole-configuration readout rather than a per-option badge.
 
 ## 6. Drive, counterweight and platform
 

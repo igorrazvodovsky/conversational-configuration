@@ -8,7 +8,7 @@ The architect. An influencer who specifies, not the job performer ([domain.md](d
 
 *Circumstances.* Early phase, incomplete information, iterates constantly.
 
-*Frustrations.* Speaks building language — beds, floors, lobbies — never part nomenclature. This persona is the articulation barrier made flesh ([../../research/interaction-literature.md](../../research/interaction-literature.md), thread D), and the reason for [speak the building's language](../principles/speak-the-buildings-language.md).
+*Frustrations.* Speaks building language — beds, floors, lobbies — never part nomenclature. This persona embodies the articulation barrier ([../../research/interaction-literature.md](../../research/interaction-literature.md), thread D), and the reason for [elicitation uses the building's vocabulary](../principles/elicit-in-the-buildings-vocabulary.md).
 
 ## Related
 

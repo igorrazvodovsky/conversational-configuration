@@ -1,6 +1,6 @@
-# Speak the building's language, not the catalogue's
+# Elicitation uses the building's vocabulary, not the catalogue's
 
-Elicitation starts from the situation — building type, floors, traffic, budget per month — and derives nomenclature. Technical terms appear as derived results the user can inspect, not as questions.
+Elicitation starts from the situation — building type, floors, traffic, budget per month — and derives nomenclature from it. Technical terms appear as derived results the user can inspect, rather than as questions.
 
 *Grounded in* the articulation barrier ([../../research/interaction-literature.md](../../research/interaction-literature.md), thread D) and in the [design specifier persona](../jtbd/persona-design-specifier.md), who speaks building language and never part nomenclature.
 

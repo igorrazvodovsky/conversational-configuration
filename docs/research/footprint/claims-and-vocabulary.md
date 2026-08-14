@@ -2,7 +2,7 @@
 
 Status: constraint memo, 2026-08. Split from the former `docs/environmental-footprint-research.md` §4. Binds the [environmental-footprint spec](../../specs/environmental-footprint/requirements.md) and any UI copy that shows a footprint figure.
 
-Verdict: *we can call our numbers an estimate, a model, or an illustration. We cannot call them an EPD, a declaration, a class, or a verified figure, and we cannot invite cross-manufacturer comparison. As of 27 September 2026 some of the tempting phrasings are not merely sloppy but unlawful in the EU.*
+Verdict: *we can call our numbers an estimate, a model, or an illustration. We cannot call them an EPD, a declaration, a class, or a verified figure, and we cannot invite cross-manufacturer comparison. As of 27 September 2026 some of the tempting phrasings are unlawful in the EU.*
 
 ## 1. The vocabulary, briefly
 
@@ -35,7 +35,7 @@ Concretely, from illustrative data we must not imply:
 5. *That a lower-carbon configuration is "green", "eco-friendly", or "sustainable".* Generic claims, now explicitly banned. "Lower modelled footprint than the alternative" is both accurate and legal.
 6. *That savings are absolute.* Every use-phase figure is conditional on a usage profile and a grid factor; a configuration is not lower-carbon in itself, only lower-carbon under stated assumptions.
 
-The design consequence: the assumptions panel the spec already requires is not a nicety, it is the thing that makes the feature honest. It should name service life, usage profile, grid factor, module scope, and the phrase "illustrative model, not a verified assessment" — and the agent should be able to surface it on request in chat, since chat is where an unhedged sentence is most likely to escape.
+The design consequence: the assumptions panel the spec already requires is not optional; it is what makes the feature honest. It should name service life, usage profile, grid factor, module scope, and the phrase "illustrative model, not a verified assessment" — and the agent should be able to surface it on request in chat, since chat is where an unhedged sentence is most likely to escape.
 
 ## Related
 

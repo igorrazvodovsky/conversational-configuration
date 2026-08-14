@@ -55,11 +55,11 @@ Installing also swapped the three individual `@radix-ui/react-*` dependencies fo
 
 Radix `Tooltip` does not fire on a disabled trigger, and every "ruled out by your other choices" / "outside the valid range" explanation in this app sits on a disabled control. Wrapping each in an enabled span to satisfy the tooltip would change focus order and hit targets for no gain, so those explanations stay on the native `title` attribute. `Tooltip` is installed and used only where the trigger is enabled — the frames strip, whose chips carry "click to compare with the current configuration" — which is what `TooltipProvider` in `layout.tsx` is for.
 
-There is a trap in keeping `title`: shadcn's `Button` and `Toggle` set `disabled:pointer-events-none`, and a control with no pointer events never gets the hover the browser needs to raise its native tooltip. So every disabled control that carries a reason also carries `disabled:pointer-events-auto`. It cannot be clicked either way; it can still be hovered. Verified in the running app on both merge paths — every disabled control whose `title` is a reason computes `pointer-events: auto`. Lyra did not change this default, so the workaround survives the style switch.
+There is a catch in keeping `title`: shadcn's `Button` and `Toggle` set `disabled:pointer-events-none`, and a control with no pointer events never gets the hover the browser needs to raise its native tooltip. So every disabled control that carries a reason also carries `disabled:pointer-events-auto`. It cannot be clicked either way; it can still be hovered. Verified in the running app on both merge paths — every disabled control whose `title` is a reason computes `pointer-events: auto`. Lyra did not change this default, so the workaround survives the style switch.
 
 The one place pointer events stay off is a control disabled only because its card has gone inert. Those carry a price hint, not a reason, and a spent card has nothing left to explain.
 
-This is the concession [every "no" carries its reason](../../discovery/principles/every-no-carries-its-reason.md) demands: a nicer tooltip — or a tidier disabled state — that silently stops the explanation from appearing would drop the reason from the interface.
+This is the concession [every refusal names the rules that caused it](../../discovery/principles/refusals-name-their-rules.md) demands: a nicer tooltip — or a tidier disabled state — that silently stops the explanation from appearing would drop the reason from the interface.
 
 ## Decision 6: dispatch copy is frozen
 
@@ -79,7 +79,7 @@ The chat pane carries behaviour as well as appearance and so has a check of its 
 
 ## Notes from implementation
 
-- The browser pass ran in both themes across every in-scope surface. Dispatch was confirmed verbatim on all three cards and a canvas edit; a used card goes inert exactly as before; and every disabled control whose `title` carries a reason computes `pointer-events: auto` — re-checked after the Lyra switch on both the `Button` and `ToggleGroupItem` paths, since Lyra keeps `disabled:pointer-events-none` and the workaround is still load-bearing.
+- The browser pass ran in both themes across every in-scope surface. Dispatch was confirmed verbatim on all three cards and a canvas edit; a used card goes inert exactly as before; and every disabled control whose `title` carries a reason computes `pointer-events: auto` — re-checked after the Lyra switch on both the `Button` and `ToggleGroupItem` paths, since Lyra keeps `disabled:pointer-events-none` and the workaround is still required.
 - One thing the pass did not reach: the empty *elevator list* state, which needs a store with no workspaces.
 - The dead starter surfaces (`example-canvas/`, `charts/`, `meeting-time-picker`, `declarative-generative-ui/`) use the primitives but were not refactored (see `CLAUDE.md`): they inherit the zinc palette, keep their literal `rounded-*` classes and so their corners, and their layout was not reviewed. `src/lib/a2ui-theme.css` is imported by nothing and was left alone.
 - `skeleton`, `label`, `checkbox`, `input` and `separator` are installed but unused by the configurator — vocabulary for the next surface, not dead weight to remove. (`alert` has since been taken up by the [chat-attachments](../chat-attachments/design.md) rejection message.)

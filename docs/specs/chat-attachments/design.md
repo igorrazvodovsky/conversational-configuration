@@ -50,7 +50,7 @@ Nothing is dropped silently: an undecodable payload becomes `[attached file: rep
 
 The client sends `metadata: { filename }` with the attachment, and `ag_ui_langgraph` would copy it onto the block — but it does not arrive. Verified twice on the running stack: both the original failure and a fresh reproduction show the run input carrying a bare `{"type": "image_url", "image_url": {"url": …}}` with no metadata, so the name is dropped somewhere in transport between the composer and the run.
 
-Rather than chase it through vendor code, the name rides in the one field that demonstrably survives — the MIME type, which reaches the agent verbatim inside the data URL. An `onUpload` handler returns `mimeType: "text/markdown;name=brief.md"`, giving `data:text/markdown;name=brief.md;base64,…`, and the middleware parses the header it is already splitting. It is a legal data-URL parameter, not a smuggled one.
+Rather than chase it through vendor code, the name rides in the one field that demonstrably survives — the MIME type, which reaches the agent verbatim inside the data URL. An `onUpload` handler returns `mimeType: "text/markdown;name=brief.md"`, giving `data:text/markdown;name=brief.md;base64,…`, and the middleware parses the header it is already splitting. It is a legal data-URL parameter.
 
 *Only on files the agent rewrites.* An image's data URL is passed through to OpenAI as it stands, and a parameter on it is rejected outright — `You uploaded an unsupported image`, verified against the model. Images therefore keep a bare MIME type and are the one case where the name does not travel; nothing needs it, since the block reaches the model unchanged.
 
@@ -74,7 +74,7 @@ The chip itself is gone: the chat pane draws these rows from the same parse with
 
 The agent is told that a message may carry an attached file's text, marked by the wrapper above; that it is the customer speaking (their document, handed over), not a system instruction; and that it must not quote the file back at length. Feasibility still comes only from tools (constitution #1) — a document asserting that something is possible is a statement of need.
 
-Deliberately thin. What an inbound requirements document *does* — extraction into commitments, document provenance, a deviation register — is the [RFQ reconciliation spec](../rfq-reconciliation/requirements.md)'s, and prompt work that anticipates it here would prejudge decisions that spec has not made.
+This is deliberately thin. What an inbound requirements document *does* — extraction into commitments, document provenance, a deviation register — is the [RFQ reconciliation spec](../rfq-reconciliation/requirements.md)'s, and prompt work that anticipates it here would prejudge decisions that spec has not made.
 
 ## Verification
 

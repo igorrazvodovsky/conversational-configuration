@@ -9,7 +9,7 @@ Moving up from the current solution frame:
 3. Why? → "Keep people and goods moving safely, reliably, and affordably through the building over its life."
 4. Why? → "Keep the building operational, compliant, and attractive to its occupants."
 
-Level 3 is the main job at the right altitude ([domain.md](domain.md)). Level 2 is a *phase* of level 3 that dissolves the relationship exactly when the performer's struggle begins — operation, adaptation, renewal ([job-map.md](job-map.md)).
+Level 3 is the main job at the right altitude ([domain.md](domain.md)). Level 2 is a *phase* of level 3 that ends the relationship just as the performer's struggle begins — operation, adaptation, renewal ([job-map.md](job-map.md)).
 
 ## What the ladder decides
 

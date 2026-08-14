@@ -13,7 +13,7 @@
 
 ## Known gap: D-rules
 
-Constitution #6 (as amended) specifies a second rule series the model does not yet carry: D-ids — named default heuristics beside the R-ids, grounding the agent's discretionary choices the way cores ground its refusals ([Conversation moves](../../discovery/models/Conversation%20moves.md) §5). The model holds R01–R40 only, and agent-chosen defaults currently carry free-composed reasons — strictly a standing #6 violation, not just an omission. To close when the delegation machinery gets specced; until then, treat any D-rule reference in the discovery models as target state.
+Constitution #6 (as amended) specifies a second rule series the model does not yet carry: D-ids — named default heuristics beside the R-ids, grounding the agent's discretionary choices the way cores ground its refusals ([Conversation moves](../../discovery/models/Conversation%20moves.md) §5). The model holds R01–R40 only, and agent-chosen defaults currently carry free-composed reasons, which is a standing violation of #6 rather than merely an omission. To close when the delegation machinery gets specced; until then, treat any D-rule reference in the discovery models as target state.
 
 ## Validator
 

@@ -37,3 +37,11 @@ Everything written lives under `docs/`, in two layers. Discovery (`docs/discover
 *Conversation checks.* `uv run --env-file ../.env pytest -m scenario` runs the demo scenarios against the live agent; `uv run --env-file ../.env python tests/compare_refs.py <ref>` runs them against two checkouts and reports which assertions moved — the only check that sees a system-prompt or docstring edit at all. Both cost money and are deselected from the default suite. Assertions read tool calls, payloads and state, never prose; that position is measured, not assumed, and the harness's traps (per-call `WORKSPACE_STORE_DIR`, sequential arms) are in `docs/specs/demo-scenarios/design.md`.
 
 *Model.* The agent runs OpenAI `gpt-5.4-mini` with `parallel_tool_calls` disabled (`agent/main.py`). No spec records why parallel calls are off — treat it as deliberate (the card-click flow assumes one atomic tool call per message) until someone verifies otherwise.
+
+## Writing style
+
+- Banned phrases: "load-bearing", "worth stating plainly", "full stop",
+  "carry the argument", "the trap", "isn't just X — it's Y".
+- No punchy fragments for drama. Write complete sentences.
+- Do not build to a turn of phrase. State the claim directly.
+- Technical documentation, not marketing copy.

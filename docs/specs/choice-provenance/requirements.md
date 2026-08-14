@@ -2,13 +2,13 @@
 
 Status: draft — awaiting approval.
 
-Provenance today is a three-way source badge (`user` / `agent` / `document`), and only the document source carries evidence: an RFQ-seeded choice cites its clause and quote, while a choice extracted from the customer's own prose keeps nothing of the words it came from — translation from utterance to `(variable, value)` discards the utterance. This feature extends the RFQ's quote discipline to the conversational channel: when the agent records choices from prose, it freezes the words it acted on into the choice record, and the canvas answers "why is this value here?" with those words. Serves discovery principles [the agent proposes; the user disposes](../../discovery/principles/agent-proposes-user-disposes.md) — whose test asks whether the user can always tell who chose a value; this sharpens *who* to *on what words* — and [the canvas remembers; the chat explains](../../discovery/principles/canvas-remembers-chat-explains.md) — the words are something the customer needs to *check*, so they belong on the canvas; the argument stays narrated in chat. Tests the assertion [a choice that carries its words can be revisited without re-litigation](../../discovery/assertions/choices-carry-their-words.md).
+Provenance today is a three-way source badge (`user` / `agent` / `document`), and only the document source carries evidence: an RFQ-seeded choice cites its clause and quote, while a choice extracted from the customer's own prose keeps nothing of the words it came from — translation from utterance to `(variable, value)` discards the utterance. This feature extends the RFQ's quote discipline to the conversational channel: when the agent records choices from prose, it freezes the words it acted on into the choice record, and the canvas answers "why is this value here?" with those words. Serves discovery principles [the agent proposes and the user decides](../../discovery/principles/agent-proposes-user-decides.md) — whose test asks whether the user can always tell who chose a value; this sharpens *who* to *on what words* — and [the canvas holds the state and the chat explains it](../../discovery/principles/canvas-holds-state-chat-explains.md) — the words are something the customer needs to *check*, so they belong on the canvas; the argument stays narrated in chat. Tests the assertion [a choice that quotes its source can be revisited without re-arguing attribution](../../discovery/assertions/choices-that-quote-their-source.md).
 
 ## Stories
 
 - As a customer, when I look at a value the sheet attributes to me, I can see the words that put it there — "you said: 'the building has eight floors'" — the same way a document-sourced value shows its clause.
 - As a returning operator, weeks later in a different conversation — or with every conversation deleted — the words survive: they live on the agreement, not in a transcript.
-- As a customer about to revise, the grounds tell me what kind of move I am making: changing a quoted value is going back on something I said; changing a document value reopens our tender; changing an agent value is just steering. Three different conversations, distinguishable before I start one.
+- As a customer about to revise, the grounds tell me what kind of move I am making: changing a quoted value is going back on something I said; changing a document value reopens our tender; changing an agent value is just steering. These are three different conversations, and I can tell which one I am starting.
 
 ## Acceptance criteria
 
@@ -26,7 +26,7 @@ Fidelity:
 Rendering:
 
 - GIVEN a user-sourced choice with a quote, WHEN the canvas renders provenance, THEN the badge popover shows the words, symmetric with the document badge's "your document, clause 4.2 — '…'". Rows without quotes render exactly as today.
-- GIVEN any provenance popover, THEN it carries reference, not reasoning: words and clauses, yes; rules, trade-offs and justifications, no — those stay narrated in chat from solver cores ([the canvas remembers; the chat explains](../../discovery/principles/canvas-remembers-chat-explains.md), constitution #6).
+- GIVEN any provenance popover, THEN it carries reference, not reasoning: words and clauses, yes; rules, trade-offs and justifications, no — those stay narrated in chat from solver cores ([the canvas holds the state and the chat explains it](../../discovery/principles/canvas-holds-state-chat-explains.md), constitution #6).
 
 Durability:
 

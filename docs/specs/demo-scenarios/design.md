@@ -20,9 +20,9 @@ This position is now measured rather than assumed. A scripted A/B over the [agen
 
 *One thing that looks like a prose assertion and is not.* The canvas-edit rule specifies silence: on a clean apply the agent's text must be empty. Asserting `text == ""` tests presence against absence, not wording, so it survives every rewording the spec's own rule survives. Assertions of that shape are allowed; assertions about what the text *says* are not.
 
-## Keeping scripts honest against the model
+## Keeping scripts aligned with the model
 
-Scenario expectations reference the product model through `load_model` (labels, prices, cheapest completions computed live), not literal copies. The one deliberate exception: scenario 2 pins the modernization/3.0 m/s rule chain (R03/R04/R27/R28) because that scenario *is about* those rules; if the model drops them, the scenario should fail loudly. Scenario 4 similarly pins the shaft option behind "1800 by 1700" (`t1_1800x1700`) — the unusual-door turn is about that mapping existing.
+Scenario expectations reference the product model through `load_model` (labels, prices, cheapest completions computed live), not literal copies. The one deliberate exception: scenario 2 pins the modernization/3.0 m/s rule chain (R03/R04/R27/R28) because that scenario *is about* those rules; if the model drops them, the scenario should fail loudly. Scenario 4 similarly pins the shaft option behind "1800 by 1700" (`t1_1800x1700`) — the unusual-entry turn is about that mapping existing.
 
 The footprint-delta assertion in scenario 3 is deferred, not dropped: the [environmental-footprint spec](../environmental-footprint/requirements.md) is a draft, so the harness asserts the price half of the pair now and gains the footprint half in the change that implements it. Landing footprint without extending scenario 3 is a spec bug.
 
@@ -40,7 +40,7 @@ Both commands assume `agent/` as the working directory, matching the rest of the
 
 The same scenarios, two trees, one report. A ref is materialized with `git worktree add` into a temp directory and driven in a subprocess with that tree first on `sys.path`, because both trees define `main` and `src.configuration` and a single process cannot import both. Each subprocess emits its per-assertion outcomes as JSON; the parent joins them by scenario and assertion name. Everything the arms do not share is a confound, so the arms run *sequentially* — a parallel first attempt at this put both arms over the account's tokens-per-minute ceiling and lost ten conversations from one arm and eight from the other, leaving two columns scored over different surviving subsets.
 
-Rate limits are therefore a first-class failure, not weather: retry with exponential backoff, and if a conversation still cannot complete, fail the run naming the scenario. The turn cost makes this unavoidable rather than unlucky — `describe_product` puts the whole catalog in the transcript, so a single conversational turn costs ~16k prompt tokens and a six-scenario sweep runs to roughly half a million.
+Rate limits are therefore treated as a first-class failure: retry with exponential backoff, and if a conversation still cannot complete, fail the run naming the scenario. The turn cost makes this a routine risk rather than bad luck: `describe_product` puts the whole catalog in the transcript, so a single conversational turn costs ~16k prompt tokens and a six-scenario sweep runs to roughly half a million.
 
 ## Isolation
 
@@ -64,4 +64,4 @@ Known gap: nothing here covers a whole conversation's arc. Every assertion is ab
 
 Scenario 4 cannot reload a browser; it simulates resumption the way the stack actually provides it: run scenario-3-like turns, capture the final `configuration`, then start a fresh invoke whose state carries only messages + that configuration (what LangGraph's checkpoint restores) and assert the what's-left answer used get_configuration and re-elicited nothing (no ask_choices for already-settled variables). The browser-side restore path stays covered by the [nonlinear-interaction](../nonlinear-interaction/design.md) verification and the presenter document.
 
-The renewal turn that follows is the deliberate exercise of [any door is an entrance](../../discovery/principles/any-door-is-an-entrance.md): the harness sends the free-form sentence "the shaft is 1800 by 1700" — not a structured message, because the entry point being unmediated is the point — then asserts a user-sourced choice landed on `shaft` (`t1_1800x1700`) and that no settled variable was re-asked. If the statement conflicts with the restored state, the repairs path is asserted exactly as in scenario 2; either way the turn is a revision, never a restart.
+The renewal turn that follows is the deliberate exercise of [configuration can start from any variable, in any order](../../discovery/principles/start-from-any-variable.md): the harness sends the free-form sentence "the shaft is 1800 by 1700" — not a structured message, because an unmediated entry point is what the scenario tests — then asserts a user-sourced choice landed on `shaft` (`t1_1800x1700`) and that no settled variable was re-asked. If the statement conflicts with the restored state, the repairs path is asserted exactly as in scenario 2; either way the turn is a revision, never a restart.

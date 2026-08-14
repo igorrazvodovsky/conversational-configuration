@@ -6,7 +6,7 @@ Status: working assertions, revised 2026-08-13. Answers the problem framed in [p
 
 *A negotiation over a living document.*
 
-The durable object is the agreement, not the conversation. It sits on the canvas: outcome terms above, derived hardware beneath, price and footprint attached. It is always complete, always valid, and always editable from any point. The chat is a channel onto that document — a place to say what you want in your own words, to hear what a change would cost, and to be told why something cannot be done. A third party sits at the table: the solver, which checks every draft and never bluffs.
+The durable object is the agreement, not the conversation. It sits on the canvas: outcome terms above, derived hardware beneath, price and footprint attached. It is always complete, always valid, and always editable from any point. The chat is a channel onto that document — a place to say what you want in your own words, to hear what a change would cost, and to be told why something cannot be done. The solver is the third party: it checks every draft and reports only what it can prove.
 
 What the concept changes:
 
@@ -15,34 +15,34 @@ What the concept changes:
 - Both parties act on the same object. The agent's moves and the user's edits are the same kind of event, and both are undoable.
 - Disagreement is normal and productive. "You can't have that" is a legitimate move as long as it comes with a reason.
 
-Experientially: negotiating with a well-prepared counterpart who knows the rules cold, states them plainly, and never pretends. Not filling in a form. Not interviewing an expert. Not querying a database.
+Experientially, this should read as negotiating with a well-prepared counterpart who knows the rules, states them plainly, and does not overstate what it can do — rather than as filling in a form, interviewing an expert, or querying a database.
 
 ### Concepts explored and set aside
 
 | Concept | Why it was attractive | Why rejected | What we kept from it |
 |---|---|---|---|
 | *The wizard with an assistant* — chat helps you through an ordered flow | It is what the industry ships, and it guarantees a complete spec at the end | It preserves the imposed decision order, the framing's second failure mode, and makes revision a matter of going back | Nothing structural. The completeness guarantee reappears as [always show a valid whole](principles/always-show-a-valid-whole.md), obtained by solver completion rather than by ordering |
-| *The expert you interview* — the agent holds all state, you extract it by asking | Pure conversation, no second surface to design, and it reads as the natural LLM shape | It makes state invisible, defeats comparison, and puts the whole articulation burden on the user's questions | The elicitation voice: the agent still translates situation into terms ([speak the building's language](principles/speak-the-buildings-language.md)) |
+| *The expert you interview* — the agent holds all state, you extract it by asking | Pure conversation, no second surface to design, and it reads as the natural LLM shape | It makes state invisible, prevents comparison, and puts the whole articulation burden on the user's questions | The elicitation voice: the agent still translates situation into terms ([elicitation uses the building's vocabulary](principles/elicit-in-the-buildings-vocabulary.md)) |
 | *The spreadsheet that talks* — the canvas is primary, chat a command line onto it | Close to how a returning operator will actually work, and the operator is the primary persona | As a whole concept it gives up the elicitation that makes the tool usable to a first-timer | Its useful half: for a returning user, chat should be optional |
 
 ## 2. Principles
 
-Rules for design decisions. Sharp enough to reject an idea, specific enough to be about this product. Constitution #5, #6 and #7 are the engineering statements of *always show a valid whole*, *every "no" carries its reason* and *changing your mind is not a restart*; these are the interaction-side formulations.
+Rules for design decisions, each specific enough to reject an idea and to be about this product in particular. Constitution #5, #6 and #7 are the engineering statements of *always show a valid whole*, *every refusal names the rules that caused it* and *revision is an ordinary move*; these are the interaction-side formulations.
 
 One note per principle, in [principles/](principles/). Each holds its grounding, what it rules out, and its test. Cite the note, not this section.
 
 | Principle | Its test |
 |---|---|
 | [Always show a valid whole](principles/always-show-a-valid-whole.md) | Can the user, at any moment, say yes and get something real? |
-| [Speak the building's language, not the catalogue's](principles/speak-the-buildings-language.md) | Can someone who has never bought an elevator answer every question we ask? |
-| [The canvas remembers; the chat explains](principles/canvas-remembers-chat-explains.md) | Could you delete the transcript and lose nothing but the argument? |
-| [Every "no" carries its reason](principles/every-no-carries-its-reason.md) | Does the reason survive being checked against the model file? |
-| [Any door is an entrance](principles/any-door-is-an-entrance.md) | Can a session that starts with "the shaft is 1800 by 1700" go as well as one that starts with the building type? |
-| [Changing your mind is a normal move, not a restart](principles/revision-is-not-a-restart.md) | Is revising a two-week-old agreement as smooth as making a new one? |
-| [Trade-offs are shown as a pair, never collapsed into a score](principles/trade-offs-shown-as-a-pair.md) | After seeing the comparison, can the user say *which options* differ and what each costs? |
-| [The agent proposes; the user disposes](principles/agent-proposes-user-disposes.md) | Can the user always tell who chose a value — and undo it in one move? |
+| [Elicitation uses the building's vocabulary, not the catalogue's](principles/elicit-in-the-buildings-vocabulary.md) | Can someone who has never bought an elevator answer every question we ask? |
+| [The canvas holds the state and the chat explains it](principles/canvas-holds-state-chat-explains.md) | Could you delete the transcript and still have everything the user needs to check? |
+| [Every refusal names the rules that caused it](principles/refusals-name-their-rules.md) | Does the reason survive being checked against the model file? |
+| [Configuration can start from any variable, in any order](principles/start-from-any-variable.md) | Can a session that starts with "the shaft is 1800 by 1700" go as well as one that starts with the building type? |
+| [Revision is an ordinary move, not a restart](principles/revision-is-an-ordinary-move.md) | Is revising a two-week-old agreement as smooth as making a new one? |
+| [Trade-offs are shown as a pair, not collapsed into a score](principles/trade-offs-shown-as-a-pair.md) | After seeing the comparison, can the user say *which options* differ and what each costs? |
+| [The agent proposes and the user decides](principles/agent-proposes-user-decides.md) | Can the user always tell who chose a value, and undo it in one move? |
 
-One standing tension, stated in full on both notes: [always show a valid whole](principles/always-show-a-valid-whole.md) pulls toward the agent choosing a lot early, [the agent proposes, the user disposes](principles/agent-proposes-user-disposes.md) pulls against silent choice, and provenance is the resolution.
+One standing tension, stated in full on both notes: [always show a valid whole](principles/always-show-a-valid-whole.md) pulls toward the agent choosing a lot early, [the agent proposes and the user decides](principles/agent-proposes-user-decides.md) pulls against silent choice, and provenance is the resolution.
 
 ## 3. Models to make
 
@@ -66,11 +66,11 @@ The scripted scenarios in the [demo-scenarios spec](../specs/demo-scenarios/requ
 
 | Scenario ([jtbd/job-stories.md](jtbd/job-stories.md)) | Principles it demonstrates | Assertions it exercises |
 |---|---|---|
-| Needs, not nomenclature | [speak the building's language](principles/speak-the-buildings-language.md), [always show a valid whole](principles/always-show-a-valid-whole.md), [the agent proposes, the user disposes](principles/agent-proposes-user-disposes.md) | [a candidate beats a question sequence](assertions/candidate-beats-questions.md), [generated controls beat free text](assertions/generated-controls-beat-free-text.md), [outcome-level elicitation works](assertions/outcome-level-elicitation.md) |
-| Mid-contract revision | [changing your mind is not a restart](principles/revision-is-not-a-restart.md), [every "no" carries its reason](principles/every-no-carries-its-reason.md), [the canvas remembers, the chat explains](principles/canvas-remembers-chat-explains.md) | [ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md), [cores are enough for trust](assertions/cores-are-enough-for-trust.md) |
-| Comparing agreements | [trade-offs shown as a pair](principles/trade-offs-shown-as-a-pair.md), [always show a valid whole](principles/always-show-a-valid-whole.md) | [a candidate beats a question sequence](assertions/candidate-beats-questions.md), [two objectives held as a pair](assertions/two-objectives-as-a-pair.md) |
-| Renewal as revision | [any door is an entrance](principles/any-door-is-an-entrance.md), [changing your mind is not a restart](principles/revision-is-not-a-restart.md), [the canvas remembers, the chat explains](principles/canvas-remembers-chat-explains.md) | [the canvas is the durable state](assertions/canvas-is-the-durable-state.md), [ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md) |
-| Tender as entrance | [any door is an entrance](principles/any-door-is-an-entrance.md), [every "no" carries its reason](principles/every-no-carries-its-reason.md), [always show a valid whole](principles/always-show-a-valid-whole.md) | [a seeded candidate with named deviations beats compliance-checking by hand](assertions/deviations-beat-compliance-checking.md), [cores are enough for trust](assertions/cores-are-enough-for-trust.md) |
+| Needs, not nomenclature | [elicitation uses the building's vocabulary](principles/elicit-in-the-buildings-vocabulary.md), [always show a valid whole](principles/always-show-a-valid-whole.md), [the agent proposes and the user decides](principles/agent-proposes-user-decides.md) | [showing a candidate works better than asking a sequence of questions](assertions/candidate-works-better-than-questions.md), [generated in-chat controls work better than free text](assertions/generated-controls-work-better-than-free-text.md), [outcome-level elicitation works](assertions/outcome-level-elicitation.md) |
+| Mid-contract revision | [revision is an ordinary move, not a restart](principles/revision-is-an-ordinary-move.md), [every refusal names the rules that caused it](principles/refusals-name-their-rules.md), [the canvas holds the state and the chat explains it](principles/canvas-holds-state-chat-explains.md) | [ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md), [unsat cores are sufficient for trust](assertions/cores-are-sufficient-for-trust.md) |
+| Comparing agreements | [trade-offs shown as a pair](principles/trade-offs-shown-as-a-pair.md), [always show a valid whole](principles/always-show-a-valid-whole.md) | [showing a candidate works better than asking a sequence of questions](assertions/candidate-works-better-than-questions.md), [two objectives held as a pair](assertions/two-objectives-as-a-pair.md) |
+| Renewal as revision | [configuration can start from any variable, in any order](principles/start-from-any-variable.md), [revision is an ordinary move, not a restart](principles/revision-is-an-ordinary-move.md), [the canvas holds the state and the chat explains it](principles/canvas-holds-state-chat-explains.md) | [the canvas is the durable locus of state](assertions/canvas-is-the-durable-state.md), [ripple at the moment of revision](assertions/ripple-at-the-moment-of-revision.md) |
+| Tender as entrance | [configuration can start from any variable, in any order](principles/start-from-any-variable.md), [every refusal names the rules that caused it](principles/refusals-name-their-rules.md), [always show a valid whole](principles/always-show-a-valid-whole.md) | [a document-seeded candidate with named deviations is better than manual compliance checking](assertions/seeded-candidate-with-named-deviations.md), [unsat cores are sufficient for trust](assertions/cores-are-sufficient-for-trust.md) |
 
 ## Related
 

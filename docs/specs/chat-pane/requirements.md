@@ -4,7 +4,7 @@ This spec covers what the chat pane is *made of*: the transcript scroller, the m
 
 The pane arrived as the CopilotKit starter's and looked it: rounded bubbles, a 16px prose size, a button vocabulary and a palette that were the library's rather than the app's, on the other side of a divider from a canvas that was none of those things.
 
-Serves discovery principle [the canvas remembers; the chat explains](../../discovery/principles/canvas-remembers-chat-explains.md). That principle divides the work between two panes of a single tool; two visual identities across the divider argue instead that chat is a widget the tool embeds, and invite the user to read the transcript as the product rather than as its explanation.
+Serves discovery principle [the canvas holds the state and the chat explains it](../../discovery/principles/canvas-holds-state-chat-explains.md). That principle divides the work between two panes of a single tool; two visual identities across the divider argue instead that chat is a widget the tool embeds, and invite the user to read the transcript as the product rather than as its explanation.
 
 ## Scope
 

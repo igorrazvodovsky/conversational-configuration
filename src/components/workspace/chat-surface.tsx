@@ -86,8 +86,8 @@ export function useChatSurface() {
 
 /**
  * A hidden pane may not open itself and may not swallow a reason
- * (docs/discovery/principles/every-no-carries-its-reason.md), so what is left
- * is a mark. Counting assistant turns is the whole contract — no parsing, no
+ * (docs/discovery/principles/refusals-name-their-rules.md), so what is left
+ * is a mark. Counting assistant turns is all it does — no parsing, no
  * notion of which reply mattered.
  *
  * This lives in the header rather than in `useChatSurface`, and the reason is

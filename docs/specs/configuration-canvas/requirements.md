@@ -4,7 +4,7 @@ Status: implemented.
 
 Replaces the todo canvas with a configuration spec sheet synced to `agent.state.configuration`, and gives the agent a way to ask questions as clickable, solver-valid option controls in chat. After this feature the prototype is the full chat+canvas hybrid the research argues for ([docs/research/interaction-literature.md](../../research/interaction-literature.md), thread D).
 
-Serves discovery principle [the canvas remembers; the chat explains](../../discovery/principles/canvas-remembers-chat-explains.md), and puts two assertions under test: [the canvas is the durable state](../../discovery/assertions/canvas-is-the-durable-state.md) (the sheet half) and [generated controls beat free text](../../discovery/assertions/generated-controls-beat-free-text.md) (the `ask_choices` half). (Cited back-in: the spec predates the discovery layer.)
+Serves discovery principle [the canvas holds the state and the chat explains it](../../discovery/principles/canvas-holds-state-chat-explains.md), and puts two assertions under test: [the canvas is the durable locus of state](../../discovery/assertions/canvas-is-the-durable-state.md) (the sheet half) and [generated in-chat controls work better than free text](../../discovery/assertions/generated-controls-work-better-than-free-text.md) (the `ask_choices` half). (Cited back-in: the spec predates the discovery layer.)
 
 ## Stories
 

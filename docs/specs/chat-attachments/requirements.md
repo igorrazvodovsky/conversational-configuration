@@ -4,11 +4,11 @@ Status: implemented 2026-08-14.
 
 The chat composer offers a paperclip, and the file it takes goes nowhere: every non-image attachment is delivered to the model as an image and the run fails with `invalid_image_format`. Worse, the rejected content persists in the thread, so the conversation stays broken for every message after it. This spec makes an attached file arrive as something the agent can read, and makes every file it cannot read fail in the composer rather than in the run.
 
-This is transport, deliberately: it decides how a file becomes text in the conversation, not what a document *means*. What the agent does with an inbound requirements document — extraction, document provenance, a deviation register — belongs to the [RFQ reconciliation spec](../rfq-reconciliation/requirements.md), which scopes its own ingestion to pasted text. This spec adds the file door to the same room; that spec decides what walks through it.
+This is transport, deliberately: it decides how a file becomes text in the conversation, not what a document *means*. What the agent does with an inbound requirements document — extraction, document provenance, a deviation register — belongs to the [RFQ reconciliation spec](../rfq-reconciliation/requirements.md), which scopes its own ingestion to pasted text. This spec makes a file readable; that spec decides what to do with what it says.
 
-Serves discovery principle [any door is an entrance](../../discovery/principles/any-door-is-an-entrance.md), whose largest door is a document. A door that throws an error when opened is not an entrance, and the paperclip currently advertises one that is not there.
+Serves discovery principle [configuration can start from any variable, in any order](../../discovery/principles/start-from-any-variable.md), whose limiting case is an inbound document. An entry point that errors when used is not an entry point, and the paperclip currently advertises one that does not work.
 
-Scope decision: text-extractable files only — plain text, markdown, csv, json. PDF and Office formats need an extraction dependency and a chunking story that constitution #10 rules out for a prototype, and images already reach the model unchanged. An attachment is conversation, never agreement: nothing about the file is durable and no attachment is stored or re-served ([the canvas remembers; the chat explains](../../discovery/principles/canvas-remembers-chat-explains.md)).
+Scope decision: text-extractable files only — plain text, markdown, csv, json. PDF and Office formats need an extraction dependency and a chunking story that constitution #10 rules out for a prototype, and images already reach the model unchanged. An attachment is conversation, never agreement: nothing about the file is durable and no attachment is stored or re-served ([the canvas holds the state and the chat explains it](../../discovery/principles/canvas-holds-state-chat-explains.md)).
 
 ## Stories
 

@@ -15,7 +15,7 @@ Runners-up: OR-Tools CP-SAT (best optimizer, but stateless per solve — valid-d
 
 Reference: Programming Z3 §4.6 (consequences, cores) — https://z3prover.github.io/papers/programmingz3.html
 
-Interaction consequence: the three operations above are what the interface may lean on and the ceiling on what it may claim ([../discovery/problem-framing.md](../discovery/problem-framing.md) §3, *Technology*; [every "no" carries its reason](../discovery/principles/every-no-carries-its-reason.md)).
+Interaction consequence: the three operations above are what the interface may lean on and the ceiling on what it may claim ([../discovery/problem-framing.md](../discovery/problem-framing.md) §3, *Technology*; [every refusal names the rules that caused it](../discovery/principles/refusals-name-their-rules.md)).
 
 ## Related
 

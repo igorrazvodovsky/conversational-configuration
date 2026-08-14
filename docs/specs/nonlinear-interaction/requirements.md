@@ -4,11 +4,11 @@ Status: implemented (approved 2026-08-13; browser-verified same day).
 
 The prototype's actual research contribution ([docs/research/interaction-literature.md](../../research/interaction-literature.md), thread E): revising constrained choices with ripple explanation and repair, comparing parallel candidate configurations, and resuming mid-configuration. Everything before this made revision *safe* (atomic rejection); this feature makes it *productive*.
 
-Serves discovery principle [changing your mind is a normal move, not a restart](../../discovery/principles/revision-is-not-a-restart.md), and is the named design bet of the load-bearing assertion [ripple at the moment of revision](../../discovery/assertions/ripple-at-the-moment-of-revision.md); resumption also enacts [the canvas is the durable state](../../discovery/assertions/canvas-is-the-durable-state.md). (Cited back-in: the spec predates the discovery layer.)
+Serves discovery principle [revision is an ordinary move, not a restart](../../discovery/principles/revision-is-an-ordinary-move.md), and is the named design bet of the central assertion [showing the ripple at the moment of revision makes nonlinear change workable](../../discovery/assertions/ripple-at-the-moment-of-revision.md); resumption also enacts [the canvas is the durable locus of state](../../discovery/assertions/canvas-is-the-durable-state.md). (Cited back-in: the spec predates the discovery layer.)
 
 ## Stories
 
-- As a customer, when I change an earlier decision and it collides with later ones, I'm not just told no — I see what the change would cost: which of my other choices would have to give, and concrete repair options I can pick with one tap (constitution #7).
+- As a customer, when I change an earlier decision and it collides with later ones, I see what the change would cost rather than simply being told no: which of my other choices would have to give, and concrete repair options I can pick with one tap (constitution #7).
 - As a customer, I can keep two candidate configurations alive — "the practical one" and "the premium one" — see them side by side with their differences and price delta, and adopt one to continue from.
 - As a customer, when I reopen yesterday's thread, the spec sheet is exactly as I left it and I can ask "where were we?" and get a faithful summary of what's decided, what's forced, and what's still open.
 

@@ -1,6 +1,6 @@
 # The canvas is the durable locus of state
 
-The canvas, not the transcript, is the durable locus of state; the chat is for negotiation and explanation.
+The canvas, rather than the transcript, is the durable locus of state; the chat is for negotiation and explanation.
 
 *Evidence today.* Research threads D and E ([../../research/interaction-literature.md](../../research/interaction-literature.md)), implemented by the [configuration canvas](../../specs/configuration-canvas/requirements.md) and [nonlinear interaction](../../specs/nonlinear-interaction/requirements.md).
 
@@ -11,4 +11,4 @@ The canvas, not the transcript, is the durable locus of state; the chat is for n
 ## Related
 
 - [../problem-framing.md](../problem-framing.md) §4 — the assertion index
-- [the canvas remembers, the chat explains](../principles/canvas-remembers-chat-explains.md) — the principle that enacts it
+- [the canvas holds the state and the chat explains it](../principles/canvas-holds-state-chat-explains.md) — the principle that enacts it

@@ -49,8 +49,8 @@ The completion objective is "cheapest", meaning cheapest-monthly. Per the requir
 
 The tool surface carries no service-specific shape, per the requirements. Semantics in `agent/src/configuration.py`:
 
-- `Candidate.price` and `Frame.price` mean EUR/month. The key names predate the service frame and are deliberately kept: renaming would break threads persisted by [thread resumption](../nonlinear-interaction/design.md). A thread saved under the earlier capex frame shows its stale figure until its next completion — accepted, prototype-honest.
-- `frame_comparison`: per-side option deltas are monthly deltas computed at *each side's own term* (two agreements may differ precisely in term); `priceDelta` is a monthly delta. This keeps the requirements' comparison criterion correct when the term itself is a difference.
+- `Candidate.price` and `Frame.price` mean EUR/month. The key names predate the service frame and are deliberately kept: renaming would break threads persisted by [thread resumption](../nonlinear-interaction/design.md). A thread saved under the earlier capex frame shows its stale figure until its next completion, which is accepted as appropriate for a prototype.
+- `frame_comparison`: per-side option deltas are monthly deltas computed at *each side's own term* (two agreements may differ in term); `priceDelta` is a monthly delta. This keeps the requirements' comparison criterion correct when the term itself is a difference.
 - `build_ask_payload` option prices are monthly deltas at the term in effect (chosen, else the candidate's, else `default_term`).
 - `describe_product` prints agreement options with their /month prices and hardware options as monthly deltas at `default_term`, marked as such — the LLM never sees a capex figure it could leak.
 

@@ -1,6 +1,6 @@
 # Interaction literature — five threads and the gap at their intersection
 
-Status: literature review, unchanged since it was written (2026-08). Split from the former `docs/research-and-outline.md` §1. Grounds the prototype's novelty claim and five of the seven [assertions](../discovery/assertions/) — all but [outcome-level elicitation](../discovery/assertions/outcome-level-elicitation.md) and [two objectives held as a pair](../discovery/assertions/two-objectives-as-a-pair.md).
+Status: literature review, unchanged since it was written (2026-08). Split from the former `docs/research-and-outline.md` §1. Grounds the prototype's novelty claim and most of the [assertions](../discovery/assertions/); the exceptions are [outcome-level elicitation works](../discovery/assertions/outcome-level-elicitation.md) and [two objectives held as a pair make the trade-off legible](../discovery/assertions/two-objectives-as-a-pair.md).
 
 Working question: can a chat interface support configuration of a complex industrial product (an elevator) with thousands of parts, variants, and context-specific requirements — i.e. a complex, *nonlinear* workflow embedded in chat?
 
@@ -37,7 +37,7 @@ Thin but active. The consensus architecture is already settled in this literatur
 - *Generative and Malleable User Interfaces* ("Jelly"), CHI 2025 — https://dl.acm.org/doi/10.1145/3706598.3713285
 - Chen et al., *Generative Interfaces for Language Models*, arXiv:2508.19227 — https://arxiv.org/abs/2508.19227
 
-Two named failures of pure chat: unclear affordances and the *articulation barrier* (users lack the vocabulary — acute for industrial products, where customers don't know part nomenclature). Chen et al. show LLM-generated task-specific UIs beat plain chat by large margins precisely on information-dense, multi-turn, comparison-heavy tasks — exactly configuration. Strong evidence for chat+canvas, not chat-only: persistent configuration state as a manipulable surface, chat as the negotiation/explanation channel, bidirectional sync between them. This is the CopilotKit shared-agent-state pattern this repo already implements.
+Two named failures of pure chat: unclear affordances and the *articulation barrier* (users lack the vocabulary — acute for industrial products, where customers don't know part nomenclature). Chen et al. show LLM-generated task-specific UIs beat plain chat by large margins on information-dense, multi-turn, comparison-heavy tasks, which is what configuration is. Strong evidence for chat+canvas rather than chat-only: persistent configuration state as a manipulable surface, chat as the negotiation/explanation channel, bidirectional sync between them. This is the CopilotKit shared-agent-state pattern this repo already implements.
 
 ## Thread E — Nonlinearity: revision, branching, repair
 

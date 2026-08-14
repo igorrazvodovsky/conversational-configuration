@@ -8,7 +8,7 @@ Developer's or general contractor's project manager on a new build. The job perf
 
 *Circumstances.* Elevator decisions lock in early — shaft dimensions get poured in concrete; late changes are expensive. Needs early certainty more than optimal choice. Enters through a tender: their organization issues the RFQ, so their first contact with the agreement is a seeded candidate plus its deviation register — reconciliation under schedule pressure, not configuration from scratch (the [rfq-reconciliation spec](../../specs/rfq-reconciliation/requirements.md)).
 
-*Frustrations.* Quote latency; spec churn between architect and supplier — which is what the deviation register makes visible and negotiable instead of latent.
+*Frustrations.* Quote latency; spec churn between architect and supplier, which the deviation register makes visible and negotiable rather than leaving it latent.
 
 ## Related
 
