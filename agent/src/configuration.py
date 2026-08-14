@@ -1,5 +1,5 @@
 """Configuration state and solver-backed agent tools (docs/specs/agent-tools,
-ask_choices from docs/specs/configuration-canvas, revision/frames from
+ask_choices from docs/specs/agreement-document, revision/frames from
 docs/specs/nonlinear-interaction)."""
 
 import json
@@ -560,10 +560,10 @@ def reconcile(
     raise ValueError(f"unknown reconciliation move {move!r}; use accept, revise or open")
 
 
-# -- ask_choices payload (docs/specs/configuration-canvas) --------------------------------------
+# -- ask_choices payload (docs/specs/agreement-document) ----------------------------------------
 
 # Control selection is a UI heuristic and deliberately not part of the
-# product model (docs/specs/configuration-canvas design). Ordered groups render as scales;
+# product model (docs/specs/agreement-document design). Ordered groups render as scales;
 # consequence-heavy variables always render as detail lists.
 _ORDERED_GROUPS = {"performance", "dimensions"}
 _FORCE_LIST = {"car_size", "wall_finish", "floor"}

@@ -114,7 +114,7 @@ def test_withdraw_unknown_variable(empty):
         withdraw_choices(empty, ["colour"])
 
 
-# -- ask_choices payload (docs/specs/configuration-canvas) --------------------------------------
+# -- ask_choices payload (docs/specs/agreement-document) ----------------------------------------
 
 def test_payload_control_heuristic(empty):
     from src.configuration import build_ask_payload

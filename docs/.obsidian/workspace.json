@@ -190,6 +190,7 @@
   },
   "active": "37f3c7ab25b8ece4",
   "lastOpenFiles": [
+    "specs/shared-attention/tasks.md",
     "research/copilotkit-surface.md",
     "specs/suggested-moves/design.md",
     "specs/suggested-moves/requirements.md",
@@ -223,7 +224,6 @@
     "specs/chat-surface/design.md",
     "specs/chat-surface/requirements.md",
     "specs/chat-surface",
-    "specs/agreement-document/tasks.md",
     "specs/agreement-document",
     "specs/rfq-reconciliation"
   ]
