@@ -4,9 +4,15 @@
  * Workspace attachment (docs/specs/agreement-workspace) — the evolution of
  * the thread-resumption hook from docs/specs/nonlinear-interaction.
  *
- * The workspace, not the thread, is the durable locus of the agreement. On
- * every active-thread change (and on the agent-instance change the initial
- * connect causes) this hook:
+ * The workspace, not the thread, is the durable locus of the agreement.
+ *
+ * Entering a workspace first *resolves* which conversation to be in — the one
+ * that last moved the agreement, or a fresh one when it has none — and
+ * everything below waits for that, because until then the active thread is
+ * whatever was globally active, quite possibly another workspace's.
+ *
+ * Then, on every active-thread change (and on the agent-instance change the
+ * initial connect causes) this hook:
  *   1. clears the agent state synchronously (so nothing from the previous
  *      thread leaks into the next run),
  *   2. seeds `{workspace_id, configuration}` from the workspace store and
@@ -36,6 +42,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   WorkspaceRecord,
   fetchWorkspace,
+  latestThread,
   registerThread,
 } from "@/lib/workspaces";
 
@@ -96,6 +103,16 @@ export function useWorkspaceAttachment(workspaceId: string) {
   const [staleThread, setStaleThread] = useState(false);
   const clearedFor = useRef<string | undefined>(undefined);
   const enteredFor = useRef<string | undefined>(undefined);
+  // Workspace whose entry has resolved to a thread. Everything below waits for
+  // it: until entry lands, the active thread is still whatever was globally
+  // active — quite possibly another workspace's conversation.
+  const [entryResolvedFor, setEntryResolvedFor] = useState<string | undefined>(
+    undefined,
+  );
+  // The configuration object is captured per render; entry acts on it after an
+  // await, so it reads the current one rather than the one it started with.
+  const configurationRef = useRef(configuration);
+  configurationRef.current = configuration;
   // Thread whose seed has landed — only it may register conversations. Right
   // after a switch the new threadId renders while the previous conversation's
   // messages are still in the agent, and without this gate that stale render
@@ -103,15 +120,44 @@ export function useWorkspaceAttachment(workspaceId: string) {
   const attachedFor = useRef<string | undefined>(undefined);
   const registering = useRef<Set<string>>(new Set());
 
-  // Opening a workspace always mounts a fresh, unregistered conversation.
-  // The active thread is global to the CopilotKit core and survives
-  // client-side navigation, so without this a workspace opened after another
-  // one would attach to — and register — the previous workspace's active
-  // conversation.
+  // Opening a workspace resumes its latest conversation, or mounts a fresh
+  // unregistered one when it has none. Entry has to resolve the thread rather
+  // than assume it: the active thread is global to the CopilotKit core and
+  // survives client-side navigation, so a workspace opened after another one
+  // would otherwise attach to — and register — the previous workspace's active
+  // conversation. The two refs below are workspace-agnostic and must not carry
+  // that thread's clearance across the boundary.
   useEffect(() => {
     if (!configuration || enteredFor.current === workspaceId) return;
     enteredFor.current = workspaceId;
-    configuration.startNewThread();
+    clearedFor.current = undefined;
+    attachedFor.current = undefined;
+    setEntryResolvedFor(undefined);
+
+    (async () => {
+      let record: WorkspaceRecord;
+      try {
+        record = await fetchWorkspace(workspaceId);
+      } catch {
+        // Every exit sets notFound or resolves entry — an exit that does
+        // neither would leave the rest of the hook gated forever.
+        if (enteredFor.current === workspaceId) setNotFound(true);
+        return;
+      }
+      if (enteredFor.current !== workspaceId) return; // navigated on
+      // Where the operator left off: the conversation that last moved the
+      // agreement (`latestThread`), not the one started most recently — those
+      // differ as soon as someone returns to an older conversation to make a
+      // change. The record is deliberately not written to `workspace` state
+      // here — the attach effect owns it, so it can never be observed against
+      // another workspace's thread in the render before the switch lands.
+      const latest = latestThread(record.threads);
+      const config = configurationRef.current;
+      if (!latest) config?.startNewThread();
+      else if (latest.id !== config?.threadId)
+        config?.setActiveThreadId(latest.id);
+      setEntryResolvedFor(workspaceId);
+    })();
   }, [configuration, workspaceId]);
 
   // Attach on active-thread change. Deliberately NOT guarded to run once per
@@ -119,7 +165,7 @@ export function useWorkspaceAttachment(workspaceId: string) {
   // subscriber applied to the stale instance is invisible to the UI — the
   // effect must re-attach on the fresh one.
   useEffect(() => {
-    if (!threadId) return;
+    if (!threadId || entryResolvedFor !== workspaceId) return;
 
     // Clear synchronously on the switch itself, before anything can be sent —
     // otherwise a new conversation would start from the previous thread's
@@ -208,14 +254,21 @@ export function useWorkspaceAttachment(workspaceId: string) {
       // The checkpoint is the record of what this conversation saw; when the
       // agreement has moved on (another conversation changed it), the
       // transcript's cards must not act on it.
-      if (
-        state?.configuration &&
-        stableStringify(state.configuration) !== want
-      ) {
-        if (!cancelled) setStaleThread(true);
+      //
+      // An ABSENT checkpoint means unverifiable, not unchanged. The runtime
+      // answers 200 with `{state: null}` — never a 404 — when its thread store
+      // holds no state snapshot for this thread, and that store is a map in the
+      // Next.js process, so it is empty after a restart. Only a transcript we
+      // could check against the workspace may keep live cards.
+      const hasMessages = Array.isArray(messages) && messages.length > 0;
+      if (hasMessages) {
+        const checkpoint = state?.configuration;
+        if (!checkpoint || stableStringify(checkpoint) !== want) {
+          if (!cancelled) setStaleThread(true);
+        }
       }
 
-      if (!Array.isArray(messages) || messages.length === 0) return;
+      if (!hasMessages) return;
       const restored = (messages as RuntimeMessage[]).map(toAgUiMessage);
       restored.forEach((m) => restoredIds.add(m.id));
       const hydrate = () => {
@@ -242,13 +295,14 @@ export function useWorkspaceAttachment(workspaceId: string) {
       cancelled = true;
       subscription?.unsubscribe();
     };
-  }, [agent, threadId, workspaceId]);
+  }, [agent, threadId, workspaceId, entryResolvedFor]);
 
   // A conversation joins the workspace's list on its first message — this is
   // also how a canvas edit with no active conversation "starts" one.
   const messageCount = agent.messages.length;
   useEffect(() => {
     if (!threadId || !workspace || messageCount === 0) return;
+    if (entryResolvedFor !== workspaceId) return; // entry still choosing
     if (attachedFor.current !== threadId) return; // not this thread's messages
     if (workspace.threads.some((t) => t.id === threadId)) return;
     if (registering.current.has(threadId)) return;
@@ -256,7 +310,7 @@ export function useWorkspaceAttachment(workspaceId: string) {
     registerThread(workspace.id, threadId)
       .then((record) => setWorkspace(record))
       .catch(() => registering.current.delete(threadId));
-  }, [messageCount, threadId, workspace]);
+  }, [messageCount, threadId, workspace, entryResolvedFor, workspaceId]);
 
   // Live display name: the name_workspace tool mirrors the store's name into
   // agent state, so a rename shows up mid-conversation without a refetch.

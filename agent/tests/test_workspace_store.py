@@ -48,6 +48,34 @@ def test_save_configuration_persists_and_touches():
     assert got["updatedAt"] >= ws["updatedAt"]
 
 
+def test_save_configuration_stamps_the_writing_thread():
+    """A workspace opens on the conversation that last changed the agreement,
+    so the write-through records which one that was."""
+    ws = workspace_store.create_workspace(empty_configuration())
+    workspace_store.register_thread(ws["id"], "older")
+    workspace_store.register_thread(ws["id"], "newer")
+    workspace_store.save_configuration(ws["id"], empty_configuration(), "older")
+    threads = {t["id"]: t for t in workspace_store.get_workspace(ws["id"])["threads"]}
+    assert threads["older"]["updatedAt"] > threads["newer"]["updatedAt"]
+
+
+def test_save_configuration_without_a_thread_touches_none():
+    """Canvas-only and legacy paths still persist; they just do not claim to be
+    a conversation."""
+    ws = workspace_store.create_workspace(empty_configuration())
+    workspace_store.register_thread(ws["id"], "thread-1")
+    before = workspace_store.get_workspace(ws["id"])["threads"][0]["updatedAt"]
+    workspace_store.save_configuration(ws["id"], empty_configuration())
+    after = workspace_store.get_workspace(ws["id"])["threads"][0]["updatedAt"]
+    assert after == before
+
+
+def test_save_configuration_ignores_an_unregistered_thread():
+    ws = workspace_store.create_workspace(empty_configuration())
+    workspace_store.save_configuration(ws["id"], empty_configuration(), "not-yet")
+    assert workspace_store.get_workspace(ws["id"])["threads"] == []
+
+
 def test_register_thread_idempotent():
     ws = workspace_store.create_workspace(empty_configuration())
     workspace_store.register_thread(ws["id"], "thread-1")

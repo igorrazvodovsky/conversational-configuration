@@ -729,6 +729,17 @@ def _get_config(runtime: ToolRuntime) -> Configuration:
     return runtime.state.get("configuration") or empty_configuration()
 
 
+def _current_thread_id() -> str | None:
+    """The running conversation's id, so the write-through can stamp which
+    conversation moved the agreement. Returns None outside a run (unit tests)."""
+    try:
+        from langgraph.config import get_config
+
+        return ((get_config() or {}).get("configurable") or {}).get("thread_id")
+    except Exception:  # no active runnable context
+        return None
+
+
 def _commit(runtime: ToolRuntime, config: Configuration) -> None:
     """Write-through to the durable workspace (docs/specs/agreement-workspace):
     the thread checkpoint keeps its own copy as the historical record of what
@@ -737,7 +748,7 @@ def _commit(runtime: ToolRuntime, config: Configuration) -> None:
     if not workspace_id:
         return  # legacy thread — nothing durable to update
     try:
-        workspace_store.save_configuration(workspace_id, config)
+        workspace_store.save_configuration(workspace_id, config, _current_thread_id())
     except KeyError:
         print(f"workspace {workspace_id!r} not found — configuration not persisted")
 

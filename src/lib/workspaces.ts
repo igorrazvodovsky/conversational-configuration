@@ -12,6 +12,23 @@ import type { Configuration } from "./configurator";
 export interface WorkspaceThread {
   id: string;
   createdAt: string;
+  /** Last time this conversation moved the agreement — what "where I left
+   *  off" means when a workspace opens. Absent on conversations registered
+   *  before the store began stamping it; `createdAt` stands in then. */
+  updatedAt?: string;
+}
+
+/** The conversation a workspace opens on: the one that last changed the
+ * agreement, falling back to the one started last. Ties go to the later
+ * entry, since the store appends in creation order. */
+export function latestThread(
+  threads: WorkspaceThread[],
+): WorkspaceThread | undefined {
+  const activity = (t: WorkspaceThread) => t.updatedAt ?? t.createdAt;
+  return threads.reduce<WorkspaceThread | undefined>(
+    (best, t) => (!best || activity(t) >= activity(best) ? t : best),
+    undefined,
+  );
 }
 
 export interface WorkspaceRecord {

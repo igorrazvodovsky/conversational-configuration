@@ -23,6 +23,7 @@ Scope decisions:
 - GIVEN the app root, WHEN it loads, THEN it shows the elevator list — name (or placeholder), monthly price when a candidate exists, last activity — with a one-click create action that asks for nothing, and no chat surface before a workspace is opened.
 - GIVEN a conversation that reveals the installation's identity, WHEN the agent records it, THEN the workspace gets its name without the customer being asked to name anything, and the name updates live in the open workspace and on the list.
 - GIVEN a workspace with recorded state, WHEN it is opened, THEN the canvas renders the current agreement from the workspace's stored state before and without any conversation being active.
+- GIVEN a workspace with conversations, WHEN it is opened, THEN the chat lands on the one the operator left off in — the conversation that last changed the agreement, not merely the one started last — with its transcript restored, and starting a new conversation stays a deliberate act. A workspace with no conversations yet opens on a fresh, unregistered one.
 - GIVEN an open workspace with no active conversation, WHEN the user edits the canvas, THEN a new conversation starts and carries that edit as its first structured message through the normal validated path.
 - GIVEN an existing workspace, WHEN a new conversation starts, THEN the agent's state begins from the workspace's current configuration (choices with provenance, candidate, frames), and choices recorded in the conversation are persisted to the workspace.
 - GIVEN two conversations of one workspace, WHEN a change is applied in one and the other is reopened, THEN the canvas shows the workspace's current state — not the reopened thread's checkpoint — and all cards in the reopened transcript are inert whenever its checkpoint no longer matches the workspace state.
@@ -34,7 +35,7 @@ Scope decisions:
 
 - [nonlinear-interaction](../nonlinear-interaction/requirements.md): thread resumption evolves — messages still hydrate from the thread, configuration now hydrates from the workspace; reconcile that spec's design when this lands. Frames move from thread-scoped to workspace-scoped by riding in the workspace's configuration.
 - [service-agreement](../service-agreement/requirements.md): the agreement this spec makes durable; no change to its terms or pricing.
-- [configuration-canvas](../configuration-canvas/requirements.md): the canvas itself is unchanged; it gains the no-conversation display state and the edit-starts-a-conversation behavior.
+- [agreement-document](../agreement-document/requirements.md): the canvas needs no change for this spec — it renders whatever configuration is in agent state and dispatches an edit the same way in every case. That it shows the agreement with no conversation attached, and that an edit made on it starts one, are properties of the attachment hook.
 
 ## Out of scope
 

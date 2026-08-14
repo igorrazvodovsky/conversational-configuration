@@ -90,10 +90,24 @@ def list_workspaces() -> list[dict]:
     return sorted(records, key=lambda r: r["updatedAt"], reverse=True)
 
 
-def save_configuration(workspace_id: str, configuration: dict) -> dict:
+def save_configuration(
+    workspace_id: str, configuration: dict, thread_id: str | None = None
+) -> dict:
+    """Persist the agreement, and stamp the conversation that moved it.
+
+    `thread_id` is how the frontend knows which conversation to open a
+    workspace on: the last one to change the agreement is where the operator
+    left off (docs/specs/agreement-workspace). A thread the workspace has not
+    registered yet is ignored — registration happens on the conversation's
+    first message and stamps it then.
+    """
     record = get_workspace(workspace_id)
     record["configuration"] = configuration
-    record["updatedAt"] = _now()
+    now = _now()
+    record["updatedAt"] = now
+    for thread in record["threads"]:
+        if thread["id"] == thread_id:
+            thread["updatedAt"] = now
     _write(record)
     return record
 
@@ -114,7 +128,11 @@ def register_thread(workspace_id: str, thread_id: str) -> dict:
     """Attach a conversation to the workspace (idempotent)."""
     record = get_workspace(workspace_id)
     if not any(t["id"] == thread_id for t in record["threads"]):
-        record["threads"].append({"id": thread_id, "createdAt": _now()})
-        record["updatedAt"] = _now()
+        now = _now()
+        # createdAt orders the conversation list; updatedAt is the last time
+        # this conversation moved the agreement, and decides which one a
+        # workspace opens on.
+        record["threads"].append({"id": thread_id, "createdAt": now, "updatedAt": now})
+        record["updatedAt"] = now
         _write(record)
     return record
