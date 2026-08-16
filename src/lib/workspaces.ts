@@ -36,9 +36,23 @@ export interface WorkspaceRecord {
   // null until the agent names the workspace from conversation
   name: string | null;
   configuration: Configuration;
+  /** Undo/redo snapshots of the agreement (docs/specs/undo). Only the depths
+   * are read here — the snapshots themselves are the agent's business, and
+   * workspaces written before that spec carry no history at all. */
+  history?: { past: unknown[]; future: unknown[] };
   threads: WorkspaceThread[];
   createdAt: string;
   updatedAt: string;
+}
+
+/** What the canvas needs to know about history: whether either end has
+ * anything in it. Mirrored into agent state, seeded from the record on
+ * attach. */
+export function historyDepths(record: WorkspaceRecord | null) {
+  return {
+    undo: record?.history?.past.length ?? 0,
+    redo: record?.history?.future.length ?? 0,
+  };
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

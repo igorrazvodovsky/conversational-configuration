@@ -98,6 +98,24 @@ class Configuration(TypedDict):
     rfq: NotRequired[RFQ]  # only on document-seeded agreements
 
 
+# A configuration as the undo history keeps it (docs/specs/undo): everything
+# except `statuses`, which the solver re-derives on restore. Its own type
+# rather than a reuse of Configuration, because it deliberately lacks a
+# required key.
+class Snapshot(TypedDict):
+    choices: dict[str, Choice]
+    candidate: Candidate | None
+    frames: list[Frame]
+    rfq: NotRequired[RFQ]
+
+
+# How far each way the workspace's history reaches, mirrored into agent state
+# so the canvas can offer the controls without polling the store.
+class HistoryDepths(TypedDict):
+    undo: int
+    redo: int
+
+
 class AgentState(BaseAgentState):
     configuration: Configuration
     # The workspace this conversation belongs to (docs/specs/agreement-workspace).
@@ -107,6 +125,11 @@ class AgentState(BaseAgentState):
     # workspace's UI re-renders with the name immediately. The store is the
     # durable copy; this field is display plumbing.
     workspace_name: NotRequired[str]
+    # Mirror of the workspace's undo/redo depths (docs/specs/undo), on the same
+    # terms: the store holds the history, this is what the canvas renders its
+    # controls from. Absent until the first batch of a conversation commits,
+    # and seeded by the frontend on attach.
+    history: NotRequired[HistoryDepths]
 
 
 def empty_configuration() -> Configuration:
@@ -561,6 +584,90 @@ def reconcile(
     raise ValueError(f"unknown reconciliation move {move!r}; use accept, revise or open")
 
 
+# -- undo (docs/specs/undo) -----------------------------------------------
+
+
+def snapshot(config: Configuration) -> Snapshot:
+    """What history keeps of a configuration. Delegates to the store, which is
+    what actually writes the snapshots — two copies of the filter could
+    diverge, and the tests here would not see it."""
+    return workspace_store.snapshot(config)  # type: ignore[return-value]
+
+
+def restore(snap: Snapshot) -> Configuration:
+    """Rebuild a configuration from a history snapshot.
+
+    A restore is a move, not a bypass: the snapshot's choices are re-validated
+    against the product model and their statuses re-derived from the solver,
+    so a state the current model no longer admits raises rather than landing.
+    Raises ValueError on a value the model no longer has — the reachable
+    failure once `elevator.json` is edited (constitution #2) — and
+    ConflictError on a choice set the rules no longer allow together.
+    """
+    values = {var: c["value"] for var, c in snap["choices"].items()}
+    _validate_known(values)
+    statuses = SOLVER.valid_options(values)
+    config: Configuration = {
+        "choices": dict(snap["choices"]),
+        "statuses": statuses,
+        # The candidate cannot be recomputed faithfully (see `ingest`), so it
+        # is restored as it was — but only if it still extends these choices.
+        "candidate": _keep_candidate(snap.get("candidate"), values),
+        "frames": list(snap.get("frames") or []),
+    }
+    rfq = snap.get("rfq")
+    if rfq is not None:
+        # From the snapshot, never carried from the live configuration:
+        # reconciliation marks move with a batch, so restoring them is most of
+        # what undoing a reconciliation means.
+        config["rfq"] = rfq
+    return config
+
+
+def describe_restoration(before: Configuration, after: Configuration) -> str:
+    """What a restore changed, in the customer's terms — the tool message the
+    agent says back in one sentence.
+
+    Derived by diffing the two configurations rather than labelling each batch
+    at its call site: a diff cannot describe a batch it does not know about,
+    and it stays truthful when a tool changes. The cost is that it names the
+    effect ("Rated speed: 3.0 m/s → 1.6 m/s") rather than the move that caused
+    it.
+    """
+    parts = []
+    for var in MODEL.variables:
+        was, now = live_value(before, var), live_value(after, var)
+        if was != now:
+            parts.append(
+                f"{MODEL.variables[var].label}: "
+                f"{_label(var, was) if was else 'not decided'} → "
+                f"{_label(var, now) if now else 'not decided'}"
+            )
+    before_price = (before["candidate"] or {}).get("price")
+    after_price = (after["candidate"] or {}).get("price")
+    if before_price != after_price:
+        parts.append(
+            f"{after_price} EUR/month" if after_price is not None
+            else "no priced candidate — propose a completion to price it again"
+        )
+    was_frames = {f["name"] for f in _frames(before)}
+    now_frames = {f["name"] for f in _frames(after)}
+    for name in sorted(now_frames - was_frames):
+        parts.append(f"frame {name!r} back")
+    for name in sorted(was_frames - now_frames):
+        parts.append(f"frame {name!r} gone")
+    # Requirements are immutable after ingestion and only their mark moves, so
+    # the two lists line up by position wherever both agreements have one.
+    before_reqs = (before.get("rfq") or {}).get("requirements", [])
+    after_reqs = (after.get("rfq") or {}).get("requirements", [])
+    for was_req, now_req in zip(before_reqs, after_reqs):
+        if was_req["reconciliation"] != now_req["reconciliation"]:
+            parts.append(f"clause {now_req['clause']} {now_req['reconciliation']}")
+    if before_reqs and not after_reqs:
+        parts.append("the document's requirements are no longer seeded into this agreement")
+    return "; ".join(parts) or "nothing the sheet shows"
+
+
 # -- ask_choices payload (docs/specs/agreement-document) ----------------------------------------
 
 # Control selection is a UI heuristic and deliberately not part of the
@@ -755,17 +862,24 @@ def _current_thread_id() -> str | None:
         return None
 
 
-def _commit(runtime: ToolRuntime, config: Configuration) -> None:
+def _commit(runtime: ToolRuntime, config: Configuration) -> HistoryDepths | None:
     """Write-through to the durable workspace (docs/specs/agreement-workspace):
     the thread checkpoint keeps its own copy as the historical record of what
-    this conversation saw. A missing workspace must not break the conversation."""
+    this conversation saw. A missing workspace must not break the conversation.
+
+    Returns the workspace's undo/redo depths after the write, for the state
+    mirror the canvas renders its controls from — None when there is no
+    workspace and so no history."""
     workspace_id = runtime.state.get("workspace_id")
     if not workspace_id:
-        return  # legacy thread — nothing durable to update
+        return None  # legacy thread — nothing durable to update
     try:
-        workspace_store.save_configuration(workspace_id, config, _current_thread_id())
+        record = workspace_store.save_configuration(
+            workspace_id, config, _current_thread_id())
     except KeyError:
         print(f"workspace {workspace_id!r} not found — configuration not persisted")
+        return None
+    return workspace_store.history_depths(record)
 
 
 def _undecided(config: Configuration) -> list[str]:
@@ -805,8 +919,11 @@ def _committed(runtime: ToolRuntime, config: Configuration, lines: list[str]) ->
     """A tool that moved the agreement: write through to the workspace, then
     report. The write-through precedes the reply everywhere, so a message the
     agent has read always describes a durable agreement."""
-    _commit(runtime, config)
-    return _reply(runtime, "\n".join(lines), configuration=config)
+    depths = _commit(runtime, config)
+    update = {"configuration": config}
+    if depths is not None:
+        update["history"] = depths
+    return _reply(runtime, "\n".join(lines), **update)
 
 
 def _repair_options(
@@ -971,6 +1088,74 @@ def adopt_frame_tool(name: str, runtime: ToolRuntime) -> Command:
     return _committed(runtime, new_config, [
         f"Adopted frame {name!r} — agreement replaced, {price} EUR/month."
     ])
+
+
+# -- undo tools (docs/specs/undo) -----------------------------------------
+
+
+def _restore_step(runtime: ToolRuntime, direction: str) -> Command:
+    """One step through the workspace's history, in either direction.
+
+    The history belongs to the agreement, not to this transcript: the store is
+    read fresh, so the batch reversed is the last one applied whoever applied
+    it and from whichever conversation. Nothing is written until the solver
+    has re-validated the restored state.
+    """
+    workspace_id = runtime.state.get("workspace_id")
+    if not workspace_id:
+        return _reply(runtime, "This conversation is not attached to an elevator, "
+                               "so there is no history to move through.")
+    try:
+        record = workspace_store.get_workspace(workspace_id)
+    except KeyError:
+        return _reply(runtime, f"ERROR: workspace {workspace_id!r} not found — "
+                               "nothing to restore.")
+    snap = workspace_store.history_head(record, direction)
+    if snap is None:
+        return _reply(runtime, (
+            "Nothing to undo — this agreement is at its earliest recorded state."
+            if direction == "undo" else
+            "Nothing to redo — nothing has been undone since the last change."
+        ))
+    before = record["configuration"]
+    try:
+        restored = restore(snap)
+    except ValueError as e:
+        return _error(runtime, e)
+    except ConflictError as e:
+        return _rejected(runtime, e)
+
+    record = workspace_store.commit_restore(
+        workspace_id, direction, restored, _current_thread_id())
+    depths = workspace_store.history_depths(record)
+    verb = ("Reversed the last change applied to this agreement"
+            if direction == "undo" else
+            "Reapplied the change that had been undone")
+    lines = [
+        f"{verb}. What moved, old value to new: "
+        f"{describe_restoration(before, restored)}.",
+        "The sheet already shows this. Say in one sentence what the agreement "
+        "now reads, and stop; do not list it back to the customer.",
+    ]
+    return _reply(runtime, "\n".join(lines), configuration=restored, history=depths)
+
+
+@tool
+def undo_change(runtime: ToolRuntime) -> Command:
+    """Reverse the last change applied to this agreement — whoever made it,
+    you or the customer, and whether it came from this conversation or another
+    one. The whole batch goes back together: the change, whatever it forced,
+    and any fill that came with it. Call this whenever the customer takes
+    something back ("undo that", "put it back", "never mind") instead of
+    reconstructing older values from the transcript."""
+    return _restore_step(runtime, "undo")
+
+
+@tool
+def redo_change(runtime: ToolRuntime) -> Command:
+    """Put back the change undo_change reversed. Use when the customer changes
+    their mind about an undo ("actually keep it", "redo that")."""
+    return _restore_step(runtime, "redo")
 
 
 # -- RFQ tools (docs/specs/rfq-reconciliation) ----------------------------
@@ -1321,6 +1506,8 @@ configuration_tools = [
     save_frame_tool,
     compare_frames,
     adopt_frame_tool,
+    undo_change,
+    redo_change,
     get_configuration,
     describe_product,
     ask_choices,

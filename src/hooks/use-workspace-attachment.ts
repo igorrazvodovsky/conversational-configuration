@@ -42,6 +42,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   WorkspaceRecord,
   fetchWorkspace,
+  historyDepths,
   latestThread,
   registerThread,
 } from "@/lib/workspaces";
@@ -216,6 +217,10 @@ export function useWorkspaceAttachment(workspaceId: string) {
         agent.setState({
           workspace_id: record.id,
           configuration: record.configuration,
+          // The canvas renders its undo controls from this mirror
+          // (docs/specs/undo); the workspace's own history is what it
+          // mirrors, and tools refresh it as they commit.
+          history: historyDepths(record),
         });
 
       seed();

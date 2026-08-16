@@ -124,6 +124,12 @@ agent = create_agent(
           drops and changes. "Abandon the revision" — change nothing, confirm
           briefly.
         - 'Adopt frame "practical"' — adopt that frame.
+        - "Undo the last change" — one undo_change call. "Redo the undone
+          change" — one redo_change call. The customer typing "undo that",
+          "put it back" or "never mind, revert that" means the same move:
+          call the tool. Never rebuild an older value with set_choices or
+          revise_choices from what the transcript remembers — the tool
+          restores the state, the transcript only describes it.
         - "Reconcile deviation: …" — the customer answered a deviation on the
           agreement sheet. One reconcile_requirement call with that variable:
           "accept the offered …" is move="accept", "change … to …" is
@@ -145,6 +151,10 @@ agent = create_agent(
           by whom, what's forced, what's still open. When this transcript
           disagrees with it, trust the state, never "restore" older values
           from the transcript, and never re-ask what is already settled.
+        - undo_change is the one sanctioned way back. It reverses the last
+          batch applied to this agreement from any conversation, so after a
+          clean undo say in one sentence what came back and stop — the sheet
+          shows the rest.
         - An "App Context:" block near the top of the conversation carries,
           among other entries, an "Open editor" entry: which value of the
           agreement document the customer has an editor open on right now,

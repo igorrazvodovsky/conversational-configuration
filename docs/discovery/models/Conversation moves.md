@@ -31,7 +31,7 @@ All user moves are legal at all times ([configuration can start from any variabl
 | Ask why | "Why can't I have the glass cab?" | No document change; explanation from the named core |
 | Revise by intent | "Make it cheaper" · "lower the carbon" | Agent proposes candidate changes as a ripple; nothing applies until accepted ([revision is an ordinary move, not a restart](../principles/revision-is-an-ordinary-move.md)) |
 | Fork and compare | "Show me both" | Second candidate held beside the first, differing variables named ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md)) |
-| Undo | — | Reverses any move, the agent's included — unbuilt; seeded as the [undo spec](../../specs/undo/requirements.md) |
+| Undo | "Undo that" · the control on the document | Reverses any move, the agent's included, one applied batch at a time, and reverses itself through redo ([undo spec](../../specs/undo/requirements.md)). The history belongs to the agreement, so a move made in another conversation reverses from this one |
 | Delegate a scope | "You handle the interior" | Grants a mandate — see §5 |
 | Review the agent's work | Filters canvas to *agent-chosen* | No change; a review pass — see §5 |
 | Accept | "Yes" | The current candidate becomes the agreement — unbuilt: nothing in state distinguishes a candidate from one the customer has taken, so acceptance is conversational only. Always possible in principle, because what is shown is always valid ([always show a valid whole](../principles/always-show-a-valid-whole.md)) |
@@ -87,7 +87,7 @@ So *everything beneath the outcome terms is delegable; the trade-off between the
 
 *Review.* Reviewing delegated work reuses the ripple machinery: the agent's fills are a diff on the document, presented as a set with consequences, which is what [showing the ripple at the moment of revision makes nonlinear change workable](../assertions/ripple-at-the-moment-of-revision.md) builds for the user's own revisions. Reviewed on the canvas via the *agent-chosen* filter, rather than by reading the transcript ([the canvas is the durable locus of state](../assertions/canvas-is-the-durable-state.md)). Per-action confirmation dialogs are rejected: they reintroduce the wizard one confirmation at a time.
 
-*Revoke.* The user withdraws a mandate or takes back a single decision. Values already filled stay on the document — the draft must remain a valid whole ([always show a valid whole](../principles/always-show-a-valid-whole.md)) — but revocation converts them from settled defaults into standing proposals the user is invited to react to.
+*Revoke.* The user withdraws a mandate or takes back a single decision. Values already filled stay on the document — the draft must remain a valid whole ([always show a valid whole](../principles/always-show-a-valid-whole.md)) — but revocation converts them from settled defaults into standing proposals the user is invited to react to. Unbuilt, and deliberately not what undo does: undo restores a prior state of the whole agreement, where revoking changes the standing of one value and leaves it in place. The [undo spec](../../specs/undo/requirements.md) puts it out of scope as a delegation move rather than a history one; nothing else has claimed it.
 
 ## 6. The initiative default — decided
 

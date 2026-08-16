@@ -211,6 +211,7 @@ def scenario_revision_with_repair(ctx) -> Checks:
                   "no repairs payload on the second request"):
         return c
     top = repairs["repairs"][0]
+    before_repair = chosen(turn)
     turn = convo.say(grammar.repair_message(
         MODEL,
         drop=[(d["variable"], d["value"]) for d in top["drop"]],
@@ -224,6 +225,29 @@ def scenario_revision_with_repair(ctx) -> Checks:
     c.that("agreement_still_completable",
            _completable(after),
            "solver could not complete the repaired choices")
+
+    # Undo (docs/specs/undo). This is the storyboard's F7 case, so the
+    # reversal is asserted here rather than in a scenario of its own: the
+    # customer's change, what it dropped and what it rippled go back together.
+    # Both assertions assume the repair turn committed exactly one batch. If
+    # the agent also proposed a completion in that turn — which the prompt
+    # encourages once the essentials are known — the undo reverses that
+    # instead, the choices do not move, and the failure detail below says so
+    # rather than reading as a broken undo.
+    turn = convo.say(grammar.UNDO_MESSAGE)
+    names = [call["name"] for call in turn["calls"]]
+    c.that("undo_uses_undo_change", "undo_change" in names, f"calls: {names}")
+    undone = chosen(turn)
+    c.that("undo_reverses_the_whole_batch", undone == before_repair,
+           f"{before_repair} -> {undone}"
+           + ("" if undone != after
+              else " (choices unmoved: the repair turn committed more than one batch)"))
+
+    turn = convo.say(grammar.REDO_MESSAGE)
+    names = [call["name"] for call in turn["calls"]]
+    c.that("redo_uses_redo_change", "redo_change" in names, f"calls: {names}")
+    c.that("redo_returns_the_repaired_state", chosen(turn) == after,
+           f"{undone} -> {chosen(turn)}, repaired was {after}")
     return c
 
 

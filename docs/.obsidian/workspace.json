@@ -190,6 +190,10 @@
   },
   "active": "37f3c7ab25b8ece4",
   "lastOpenFiles": [
+    "specs/undo/tasks.md",
+    "specs/undo/design.md",
+    "research/living-document-undo.md",
+    "specs/suggested-moves/tasks.md",
     "specs/shared-attention/tasks.md",
     "research/copilotkit-surface.md",
     "specs/suggested-moves/design.md",
@@ -217,12 +221,8 @@
     "specs/undo/requirements.md",
     "specs/undo",
     "specs/chat-pane/design.md",
-    "specs/chat-pane/requirements.md",
     "specs/chat-pane",
-    "specs/chat-surface/tasks.md",
     "specs/chat-surface/tasks.md.tmp.89498.f728d2fca4eb",
-    "specs/chat-surface/design.md",
-    "specs/chat-surface/requirements.md",
     "specs/chat-surface",
     "specs/agreement-document",
     "specs/rfq-reconciliation"

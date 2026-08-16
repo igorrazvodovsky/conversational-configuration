@@ -9,14 +9,17 @@ from src.configuration import (
     adopt_frame,
     apply_choices,
     build_repair_payload,
+    describe_restoration,
     empty_configuration,
     frame_comparison,
     ingest,
     make_candidate,
     reconcile,
     register,
+    restore,
     revise,
     save_frame,
+    snapshot,
     withdraw_choices,
 )
 from src.solver import ConflictError
@@ -620,3 +623,74 @@ def test_reconciling_an_unseeded_agreement_is_rejected(empty):
 def test_reconciling_a_variable_the_document_is_silent_on(seeded):
     with pytest.raises(ValueError, match="states no requirement"):
         reconcile(seeded, "wall_finish", "open")
+
+
+# -- undo (docs/specs/undo) -----------------------------------------------
+
+
+def test_restore_returns_the_exact_prior_state(with_candidate):
+    """Choices with their sources, the candidate and the frames all come back
+    — not an approximation of them."""
+    before = save_frame(with_candidate, "as offered")
+    snap = snapshot(before)
+    moved, _ = revise(before, {"building_type": "office"}, [], "agent")
+    moved = make_candidate(moved)
+    assert moved["choices"]["building_type"] == {"value": "office", "source": "agent"}
+
+    back = restore(snap)
+    assert back["choices"] == before["choices"]
+    assert back["candidate"] == before["candidate"]
+    assert back["frames"] == before["frames"]
+
+
+def test_restore_re_derives_statuses_rather_than_keeping_them(with_candidate):
+    """A snapshot has no statuses to copy — the solver recomputes them, which
+    is what makes a restore a move and not a bypass."""
+    snap = snapshot(with_candidate)
+    assert "statuses" not in snap
+    assert restore(snap)["statuses"] == with_candidate["statuses"]
+
+
+def test_restore_refuses_a_value_the_model_no_longer_has(with_candidate):
+    """The reachable failure once elevator.json is edited (constitution #2):
+    the agreement stays as it was and the conflict is named."""
+    snap = snapshot(with_candidate)
+    snap["choices"]["building_type"] = {"value": "spaceport", "source": "user"}
+    with pytest.raises(ValueError, match="unknown value"):
+        restore(snap)
+
+
+def test_restore_carries_the_reconciliation_marks_of_its_own_batch(seeded):
+    """Marks move with a batch, so restoring them is most of what undoing a
+    reconciliation means."""
+    snap = snapshot(seeded)
+    waived, _, _ = reconcile(seeded, "rated_speed", "accept")
+    assert next(e for e in register(waived)
+                if e["variable"] == "rated_speed")["status"] == "waived"
+
+    back = restore(snap)
+    assert next(e for e in register(back)
+                if e["variable"] == "rated_speed")["status"] == "deviation"
+
+
+def test_restore_drops_a_candidate_that_no_longer_extends_the_choices(with_candidate):
+    """Only reachable through a hand-built snapshot, but the guard is the same
+    one every other transition applies."""
+    snap = snapshot(with_candidate)
+    snap["choices"]["building_type"] = {"value": "office", "source": "user"}
+    assert restore(snap)["candidate"] is None
+
+
+def test_the_restoration_is_described_in_the_customer_s_terms(with_candidate):
+    moved, _ = revise(with_candidate, {"building_type": "office"}, [], "agent")
+    described = describe_restoration(moved, restore(snapshot(with_candidate)))
+    assert "Office" in described and "Hotel" in described
+
+
+def test_a_restored_frame_and_a_restored_fee_are_named(with_candidate):
+    framed = save_frame(with_candidate, "as offered")
+    described = describe_restoration(framed, restore(snapshot(with_candidate)))
+    assert "'as offered' gone" in described
+
+    described = describe_restoration(with_candidate, restore(snapshot(framed)))
+    assert "'as offered' back" in described

@@ -101,6 +101,118 @@ def test_unknown_workspace_raises():
         workspace_store.get_workspace("../escape")
 
 
+# -- undo history (docs/specs/undo) ---------------------------------------
+
+
+def _with(choices: dict) -> dict:
+    config, _ = apply_choices(empty_configuration(), choices, "user")
+    return config
+
+
+def test_history_records_the_state_each_batch_replaced():
+    ws = workspace_store.create_workspace(empty_configuration())
+    first = _with({"building_type": "hotel"})
+    workspace_store.save_configuration(ws["id"], first)
+    second = _with({"building_type": "office"})
+    record = workspace_store.save_configuration(ws["id"], second)
+
+    assert workspace_store.history_depths(record) == {"undo": 2, "redo": 0}
+    # newest last, and the derived statuses are not kept — a restore re-derives
+    # them, so there is nothing to copy blind
+    head = workspace_store.history_head(record, "undo")
+    assert head["choices"]["building_type"]["value"] == "hotel"
+    assert "statuses" not in head
+
+
+def test_a_batch_that_changes_nothing_keeps_no_history():
+    """Otherwise the agent re-recording a value it already recorded would burn
+    a slot, and the customer's undo would visibly do nothing."""
+    ws = workspace_store.create_workspace(empty_configuration())
+    config = _with({"building_type": "hotel"})
+    workspace_store.save_configuration(ws["id"], config)
+    record = workspace_store.save_configuration(ws["id"], dict(config))
+    assert workspace_store.history_depths(record) == {"undo": 1, "redo": 0}
+
+
+def test_restore_moves_between_the_stacks_both_ways():
+    ws = workspace_store.create_workspace(empty_configuration())
+    first = _with({"building_type": "hotel"})
+    workspace_store.save_configuration(ws["id"], first)
+    second = _with({"building_type": "office"})
+    workspace_store.save_configuration(ws["id"], second)
+
+    record = workspace_store.commit_restore(ws["id"], "undo", first)
+    assert record["configuration"]["choices"]["building_type"]["value"] == "hotel"
+    assert workspace_store.history_depths(record) == {"undo": 1, "redo": 1}
+    # undo is itself undoable: what it walked away from is on the redo stack
+    assert (workspace_store.history_head(record, "redo")["choices"]
+            ["building_type"]["value"] == "office")
+
+    record = workspace_store.commit_restore(ws["id"], "redo", second)
+    assert record["configuration"]["choices"]["building_type"]["value"] == "office"
+    assert workspace_store.history_depths(record) == {"undo": 2, "redo": 0}
+
+
+def test_a_new_batch_discards_the_redo_tail():
+    ws = workspace_store.create_workspace(empty_configuration())
+    workspace_store.save_configuration(ws["id"], _with({"building_type": "hotel"}))
+    workspace_store.save_configuration(ws["id"], _with({"building_type": "office"}))
+    workspace_store.commit_restore(ws["id"], "undo", _with({"building_type": "hotel"}))
+    record = workspace_store.save_configuration(
+        ws["id"], _with({"building_type": "hospital"}))
+    assert workspace_store.history_depths(record) == {"undo": 2, "redo": 0}
+
+
+def test_restore_at_the_end_of_the_history_raises():
+    ws = workspace_store.create_workspace(empty_configuration())
+    with pytest.raises(ValueError):
+        workspace_store.commit_restore(ws["id"], "undo", empty_configuration())
+    with pytest.raises(ValueError):
+        workspace_store.commit_restore(ws["id"], "redo", empty_configuration())
+
+
+def test_history_is_bounded():
+    ws = workspace_store.create_workspace(empty_configuration())
+    for load in ["kg630", "kg1000", "kg1250", "kg1600", "kg2000"] * 3:
+        workspace_store.save_configuration(ws["id"], _with({"rated_load": load}))
+    record = workspace_store.get_workspace(ws["id"])
+    assert workspace_store.history_depths(record)["undo"] == workspace_store.HISTORY_DEPTH
+
+
+def test_history_crosses_conversations_and_survives_a_round_trip():
+    """The last applied batch is the last applied batch whoever applied it."""
+    ws = workspace_store.create_workspace(empty_configuration())
+    workspace_store.register_thread(ws["id"], "conversation-a")
+    workspace_store.register_thread(ws["id"], "conversation-b")
+    workspace_store.save_configuration(
+        ws["id"], _with({"building_type": "hotel"}), "conversation-a")
+    workspace_store.save_configuration(
+        ws["id"], _with({"building_type": "office"}), "conversation-b")
+
+    reread = workspace_store.get_workspace(ws["id"])
+    assert workspace_store.history_depths(reread) == {"undo": 2, "redo": 0}
+    record = workspace_store.commit_restore(
+        ws["id"], "undo", _with({"building_type": "hotel"}), "conversation-a")
+    # the undo is a move by the conversation that made it, wherever the batch
+    # it reversed came from
+    threads = {t["id"]: t for t in record["threads"]}
+    assert threads["conversation-a"]["updatedAt"] > threads["conversation-b"]["updatedAt"]
+
+
+def test_workspaces_written_before_undo_have_no_history():
+    """Records on disk predate the feature; every read path defaults it."""
+    ws = workspace_store.create_workspace(empty_configuration())
+    record = workspace_store.get_workspace(ws["id"])
+    del record["history"]
+    workspace_store._write(record)
+
+    legacy = workspace_store.get_workspace(ws["id"])
+    assert workspace_store.history_depths(legacy) == {"undo": 0, "redo": 0}
+    assert workspace_store.history_head(legacy, "undo") is None
+    after = workspace_store.save_configuration(ws["id"], _with({"building_type": "hotel"}))
+    assert workspace_store.history_depths(after) == {"undo": 1, "redo": 0}
+
+
 def test_attach_rfq_freezes_the_document_text():
     record = workspace_store.create_workspace({"choices": {}})
     workspace_store.attach_rfq(record["id"], "RFQ 2026/HV-114 ...")

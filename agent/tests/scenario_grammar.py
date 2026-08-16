@@ -45,3 +45,7 @@ def repair_message(model, drop: list[tuple[str, str]],
 
 def adopt_message(frame_name: str) -> str:
     return f'Adopt frame "{frame_name}"'
+
+
+UNDO_MESSAGE = "Undo the last change"
+REDO_MESSAGE = "Redo the undone change"

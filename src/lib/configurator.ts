@@ -386,3 +386,12 @@ export function leaveOpenMessage(variable: string): string {
 export function adoptMessage(frameName: string): string {
   return `Adopt frame "${frameName}"`;
 }
+
+/**
+ * Undo and redo (docs/specs/undo). Visible, like the reconciliation moves and
+ * unlike a canvas edit: after a restore the document shows only the restored
+ * state, so the chat is the only place what was reversed can be said. Each
+ * maps onto one atomic tool call — undo_change and redo_change.
+ */
+export const undoMessage = "Undo the last change";
+export const redoMessage = "Redo the undone change";

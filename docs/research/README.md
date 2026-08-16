@@ -16,6 +16,7 @@ The point of the decomposition is [gaps.md](gaps.md): with each verdict in its o
 | [solver-choice.md](solver-choice.md) | Why Z3, and what its three operations license the interface to claim | The [solver service](../specs/solver-service/requirements.md); [every refusal names the rules that caused it](../discovery/principles/refusals-name-their-rules.md) | Evaluated, then verified by implementation |
 | [architecture-consensus.md](architecture-consensus.md) | The layer diagram the research and the repo agree on | Every implemented spec, as built | Synthesis of the notes above |
 | [copilotkit-surface.md](copilotkit-surface.md) | What the platform offers at this tier, what the repo uses, and what each unused piece was rejected for | [shared attention](../specs/shared-attention/requirements.md), [suggested moves](../specs/suggested-moves/requirements.md), and the removal of the starter's MCP configuration | Read out of the installed packages, not the docs. Solid, with the unrun questions listed in its §5 |
+| [living-document-undo.md](living-document-undo.md) | How the shipped living-document tools reverse accepted AI proposals | The [undo spec](../specs/undo/requirements.md); the undo half of [E6](gaps.md#e6) | Vendor docs and help pages read remotely; inferences marked. No hands-on use |
 | [gaps.md](gaps.md) | The register: literature gaps, retrievable gaps, gaps reading cannot close | Deciding what is worth reading next | — |
 
 ### [footprint/](footprint/README.md) — the sustainability thread

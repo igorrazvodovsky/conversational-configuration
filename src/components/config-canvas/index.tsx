@@ -27,7 +27,7 @@ import {
 } from "@copilotkit/react-core/v2";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bookmark } from "lucide-react";
+import { ArrowLeft, Bookmark, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription } from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -45,9 +45,11 @@ import {
   layerOf,
   liveValue,
   productModel,
+  redoMessage,
   registerEntries,
   reviseRequirementMessage,
   termMonthsInEffect,
+  undoMessage,
   variablesByName,
 } from "@/lib/configurator";
 import { PLACEHOLDER_NAME } from "@/lib/workspaces";
@@ -83,6 +85,13 @@ export function ConfigCanvas({
   const config: Configuration = agent.state?.configuration ?? EMPTY;
   const isRunning = agent.isRunning;
   const frames = config.frames ?? [];
+  // How far the workspace's history reaches (docs/specs/undo). A mirror of the
+  // store, seeded on attach and refreshed by every committing tool; empty
+  // before state arrives, and possibly a batch behind when another
+  // conversation moved the agreement, which costs the control's presence and
+  // never the reversal itself.
+  const history = (agent.state as { history?: { undo: number; redo: number } })
+    ?.history ?? { undo: 0, redo: 0 };
   const hasAnything =
     Object.keys(config.choices).length > 0 || config.candidate !== null;
 
@@ -276,7 +285,46 @@ export function ConfigCanvas({
               </span>
             )}
           </div>
-          <h1 className="text-xl font-semibold">Service agreement</h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-xl font-semibold">Service agreement</h1>
+            {/* Undo lives on the record's own chrome (docs/specs/undo): the
+                history belongs to the agreement, not to the transcript. Each
+                control is absent rather than disabled at its end of the
+                history, and each dispatches a visible message — after a
+                restore the sheet shows only the restored state, so the chat
+                is where what was reversed can be said. A `title` rather than
+                a tooltip: nothing here may mint a React id. */}
+            {(history.undo > 0 || history.redo > 0) && (
+              <div className="flex shrink-0 items-center gap-1">
+                {history.undo > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    disabled={isRunning}
+                    onClick={() => dispatch(undoMessage)}
+                    title="Reverse the last change to this agreement"
+                    className="font-normal text-muted-foreground"
+                  >
+                    <Undo2 />
+                    Undo
+                  </Button>
+                )}
+                {history.redo > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    disabled={isRunning}
+                    onClick={() => dispatch(redoMessage)}
+                    title="Put back the change that was undone"
+                    className="font-normal text-muted-foreground"
+                  >
+                    <Redo2 />
+                    Redo
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">{productModel.name}</p>
           {/* The monthly figure is stated as a term, in the consideration
               clause — but it is also the number the operator consults most, and
