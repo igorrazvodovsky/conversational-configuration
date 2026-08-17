@@ -50,6 +50,7 @@ Nonlinearity in configuration means: revising an early choice (rated load) that 
 
 ## Related
 
+- [branching-in-ai-uis.md](branching-in-ai-uis.md) — thread E's branching half carried forward: what the AI-era pattern forks, and the pre-LLM work it restates
 - [configuration-field.md](configuration-field.md) — the symbolic half of thread C, and industry practice
 - [sustainability-prior-art.md](footprint/sustainability-prior-art.md) — the same intersection question for the footprint dimension
 - [../discovery/direction.md](../discovery/direction.md) §2 — the principles this thread set produced

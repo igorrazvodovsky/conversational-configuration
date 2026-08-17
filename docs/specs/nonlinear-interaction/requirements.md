@@ -1,6 +1,6 @@
 # Nonlinear interaction: revision, candidates, resumption
 
-Status: implemented (approved 2026-08-13; browser-verified same day).
+Status: implemented (approved 2026-08-13; browser-verified same day). The candidate-frames half is superseded by [parallel-drafts](../parallel-drafts/requirements.md), approved 2026-08-16 and not yet built: frames become drafts — full configurations with their own provenance and history — and the three frame tools are replaced. What is recorded below is what is built; reconcile it when that spec lands. Revision with repair and resumption are unaffected.
 
 The prototype's actual research contribution ([docs/research/interaction-literature.md](../../research/interaction-literature.md), thread E): revising constrained choices with ripple explanation and repair, comparing parallel candidate configurations, and resuming mid-configuration. Everything before this made revision *safe* (atomic rejection); this feature makes it *productive*.
 

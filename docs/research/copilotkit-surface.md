@@ -2,7 +2,7 @@
 
 *Evidence: solid.* Every claim below was read out of the installed packages — `@copilotkit/react-core` and `@copilotkit/runtime` at 1.65.0, `copilotkit` (Python) 0.1.94 — rather than from the documentation. That distinction did work: several docs pages describe a v1 API or an Enterprise-only path, and one of them contradicts what this repo demonstrably does. Where a claim rests on reading rather than on running, it says so.
 
-Read 2026-08-14. It grounds the [shared attention](../specs/shared-attention/requirements.md) and [suggested moves](../specs/suggested-moves/requirements.md) specs, and the removal of the starter's MCP configuration from the runtime route.
+Read 2026-08-14, and §4 added 2026-08-16 against the same package versions. It grounds the [shared attention](../specs/shared-attention/requirements.md) and [suggested moves](../specs/suggested-moves/requirements.md) specs, the removal of the starter's MCP configuration from the runtime route, and the state-transport reasoning in [parallel drafts](../specs/parallel-drafts/design.md).
 
 ## 1. The tier
 
@@ -41,17 +41,30 @@ It uses them along two paths that are not equivalent, and the difference is invi
 | A2UI | Partly | Dead as configured: the provider registers a catalog while the runtime sets `injectA2UITool: false`, so the agent can never call it |
 | `useAttachments` | Yes | Not needed; the composer's queue already arrives through `CopilotChatView`'s props |
 | `useRenderCustomMessages`, `useRenderActivityMessage` | Yes | The supported seam if hidden `Canvas edit:` messages should ever leave a mark in the transcript instead of being filtered out. The current design hides them deliberately |
+| `AGUISendStateSnapshot`, `AGUISendStateDelta` | No — `BuiltInAgent` only | Model-authored state writes, and not on this repo's path at all (§4) |
 
-## 4. MCP apps were not inert
+## 4. State reaches the canvas as snapshots, never as deltas
+
+The protocol defines both. `STATE_SNAPSHOT` carries a whole state object; `STATE_DELTA` carries an RFC 6902 JSON Patch array, and `@ag-ui/client` applies it with `fast-json-patch`. Nothing on this repo's path emits the second one.
+
+`@ag-ui/langgraph`'s adapter dispatches `STATE_SNAPSHOT` in three situations and `STATE_DELTA` in none: when the accumulated graph values differ from the last dispatched ones at a node boundary, on subgraph change and at run end (`getStateAndMessagesSnapshots`, which re-reads the thread state), and when a `ManuallyEmitState` custom event arrives. That last one is what the Python `copilotkit_emit_state` produces, so state streaming — were it ever wanted (§6) — would also arrive as a whole snapshot. What it offers is a choice of how often, not of how much.
+
+The delta path is reachable only through `BuiltInAgent` in Simple Mode, which auto-injects two tools, `AGUISendStateSnapshot` and `AGUISendStateDelta`, for the model to call. This repo runs `LangGraphAgent`, so neither tool exists here; and a model emitting JSON Patch operations against the agreement is the provenance defect [choice provenance](../specs/choice-provenance/requirements.md) exists to prevent. The failure mode argues the same way: `defaultApplyEvents` applies a delta inside a `try`/`catch` whose `catch` is a `console.warn`, so a patch that does not apply leaves the canvas rendering the previous state with nothing to say it is stale.
+
+What a snapshot carries is filtered, and this is the part that can bite silently. `getStateSnapshot` narrows the graph values to the keys of the assistant's `output_schema` plus a few constants, falling back to the constants alone if the schema request fails. `agent/main.py` passes a single `state_schema=AgentState`, so the output schema is `AgentState` and every key declared on that TypedDict arrives — `workspace_name` and the undo depth mirror are the live proof. A key a tool writes through `Command(update=…)` but the TypedDict does not declare is dropped on the way to the browser, with no error on either side. Anything added to state has to be declared, not merely written.
+
+Compaction works on the same terms and bears on hydration. `compactEvents` folds every state event of a run into one trailing `STATE_SNAPSHOT`, starting from an empty object and applying snapshots as replacements and deltas as patches. That is the snapshot §1 describes `connect()` replaying, and what it carries is whatever the last run of that thread put in `AgentState`. So a field newly added to state is missing from every snapshot replayed for a thread that last ran before the field existed, and a thread that has never run replays no snapshot at all. The frontend's own seed — `use-workspace-attachment.ts` writing the workspace record into state on attach — is the only path for such a field on either kind of thread, which is why the hook's seed list has to grow whenever `AgentState` does.
+
+## 5. MCP apps were not inert
 
 The starter's `mcpApps` block named `https://mcp.excalidraw.com` in the runtime route. A non-empty server list is not passive configuration: `configureAgentForRequest` attaches `MCPAppsMiddleware` to the per-request agent clone, and the middleware's `run()` calls `fetchUITools()` — `client.connect(transport)` then `listTools()` against every listed server — on every agent run, with no cache, appending whatever UI-capable tools come back to the tool list for that run. Failures are swallowed into a `console.error`.
 
 So every message sent in the prototype opened an outbound connection to a third-party host and offered the elevator agent that host's tools. The block was removed on the day this note was written.
 
-## 5. What this note does not establish
+## 6. What this note does not establish
 
 - Whether `connect()`'s replay makes the manual hydration in `use-workspace-attachment.ts` partly redundant. Read from source, not run.
-- Whether any solver round trip is slow enough to want `copilotkit_emit_state` state streaming. Unmeasured, and constitution #10 argues against adding the mechanism to find out.
+- Whether any solver round trip is slow enough to want `copilotkit_emit_state` state streaming. Unmeasured, and constitution #10 argues against adding the mechanism to find out. What such streaming would look like is settled by §4 — more frequent whole snapshots — so only the question of worth is open.
 - Whether a thread can hold messages while holding no state snapshot, which is the case where §1's third consequence has teeth. The defensive treatment in the hook does not depend on the answer.
 
 ## Related

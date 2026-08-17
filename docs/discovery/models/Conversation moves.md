@@ -30,7 +30,7 @@ All user moves are legal at all times ([configuration can start from any variabl
 | Constrain without choosing | "Shaft can't exceed 1800 mm" · "under €2k/month" | Domain narrowed; solver may force or grey out values downstream |
 | Ask why | "Why can't I have the glass cab?" | No document change; explanation from the named core |
 | Revise by intent | "Make it cheaper" · "lower the carbon" | Agent proposes candidate changes as a ripple; nothing applies until accepted ([revision is an ordinary move, not a restart](../principles/revision-is-an-ordinary-move.md)) |
-| Fork and compare | "Show me both" | Second candidate held beside the first, differing variables named ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md)) |
+| Fork and compare | "Show me both" | A second *draft* of the agreement held beside the first — a whole document with its own provenance and history, not a snapshot — with the differing variables named ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md), [parallel-drafts](../../specs/parallel-drafts/requirements.md)). One draft is current at a time; switching between them re-attributes nothing |
 | Undo | "Undo that" · the control on the document | Reverses any move, the agent's included, one applied batch at a time, and reverses itself through redo ([undo spec](../../specs/undo/requirements.md)). The history belongs to the agreement, so a move made in another conversation reverses from this one |
 | Delegate a scope | "You handle the interior" | Grants a mandate — see §5 |
 | Review the agent's work | Filters canvas to *agent-chosen* | No change; a review pass — see §5 |

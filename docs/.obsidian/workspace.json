@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "discovery/jtbd/persona-building-operator.md",
+                "file": "research/branching-in-ai-uis.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "persona-building-operator"
+              "title": "branching-in-ai-uis"
             }
           }
         ]
@@ -55,7 +55,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "P7",
+                "query": "gaps",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "discovery/jtbd/persona-building-operator.md",
+                "file": "research/branching-in-ai-uis.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "discovery/jtbd/persona-building-operator.md",
+                "file": "research/branching-in-ai-uis.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "discovery/jtbd/persona-building-operator.md",
+                "file": "research/branching-in-ai-uis.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -188,8 +188,19 @@
       "bases:Create new base": false
     }
   },
-  "active": "37f3c7ab25b8ece4",
+  "active": "a89680baa27c5dca",
   "lastOpenFiles": [
+    "discovery/phase-plan.md",
+    "research/branching-in-ai-uis.md",
+    "discovery/problem-framing.md",
+    "discovery/direction.md",
+    "research/gaps.md",
+    "specs/parallel-drafts/design.md",
+    "specs/parallel-drafts/requirements.md",
+    "specs/parallel-drafts/requirements.md.tmp.35961.ad7be9d6697f",
+    "specs/parallel-drafts",
+    "specs/rfq-reconciliation/design.md",
+    "discovery/jtbd/persona-building-operator.md",
     "specs/undo/tasks.md",
     "specs/undo/design.md",
     "research/living-document-undo.md",
@@ -210,21 +221,10 @@
     "discovery/assertions/candidate-works-better-than-questions.md",
     "discovery/principles/elicit-in-the-buildings-vocabulary.md",
     "discovery/principles/revision-is-an-ordinary-move.md",
-    "discovery/principles/refusals-name-their-rules.md",
-    "discovery/principles/canvas-holds-state-chat-explains.md",
-    "discovery/principles/start-from-any-variable.md",
-    "discovery/principles/agent-proposes-user-decides.md",
-    "specs/choice-provenance/requirements.md",
     "specs/choice-provenance",
-    "discovery/assertions/choices-carry-their-words.md",
-    "discovery/jtbd/job-stories.md",
-    "specs/undo/requirements.md",
     "specs/undo",
-    "specs/chat-pane/design.md",
     "specs/chat-pane",
     "specs/chat-surface/tasks.md.tmp.89498.f728d2fca4eb",
-    "specs/chat-surface",
-    "specs/agreement-document",
-    "specs/rfq-reconciliation"
+    "specs/chat-surface"
   ]
 }

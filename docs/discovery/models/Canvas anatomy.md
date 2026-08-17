@@ -61,7 +61,7 @@ Document genre connotes finality, and the direction has no start and no finish. 
 - Spec work: the [agreement-document spec](../../specs/agreement-document/requirements.md) built the layered document with editable islands; typed edits are its named follow-on, specified separately now that there is a document to type into.
 - The pending amendment moving repair sets document-side ([surface-architecture.md](Surface%20architecture.md) §2) has its target surface: the terms layer, now built.
 - The session map (the missing model, [direction.md](../direction.md) §3) inherits a likely answer: re-entry as a narrative "state of the agreement since you left", hosted by the recitals.
-- The comparison view inherits the layering as hypothesis: two documents differ at the terms level first, schedule diff one move down — the same shape the [ripple storyboard](Ripple%20storyboard.md) §3 chose.
+- The comparison view inherits the layering as hypothesis: two documents differ at the terms level first, schedule diff one move down — the same shape the [ripple storyboard](Ripple%20storyboard.md) §3 chose. Since [parallel-drafts](../../specs/parallel-drafts/requirements.md) the two sides are literally documents of this anatomy, so the hypothesis is that a comparison is read in the same three layers as the thing compared, and the layering is testable rather than analogical.
 
 ## Related
 

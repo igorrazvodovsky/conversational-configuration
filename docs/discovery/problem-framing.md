@@ -78,11 +78,7 @@ Three carry the most weight: [showing a candidate works better than asking a seq
 
 ## 5. Open questions the framing does not settle
 
-- Where does initiative sit — does the agent wait to be asked, propose unasked, or condition on confidence? *Decided 2026-08-13: propose first, once anchored — [models/Conversation moves.md](models/Conversation%20moves.md) §6.*
 - What is the unit of revision: a single variable, a named frame, or an intent expressed in outcome terms?
-- How much of the ripple to show — the full consequence set, the minimal core, or a narrated summary? *Decided 2026-08-13: minimal core plus repair deltas by default, full set one move away, narration never carrying the explanation — [models/Ripple storyboard.md](models/Ripple%20storyboard.md) §3.*
-- Does the canvas represent one configuration with history, or several live candidates at once? (the [nonlinear-interaction spec](../specs/nonlinear-interaction/requirements.md) says frames; the visual model is unresolved.)
-- When a document is over-constrained, which maximal subset of its requirements should the first candidate satisfy — fewest deviations, cheapest result, or weighted requirements? *Decided 2026-08-14: fewest deviations first, cheapest monthly completion as tie-break, weights deferred to the prescriptive stage — the [rfq-reconciliation design](../specs/rfq-reconciliation/design.md).*
 - When the customer's own past statement and the live agreement disagree, what is that statement — a deviation to reconcile, as a document clause is, or history superseded by the later move? The RFQ register's frozen-reference trick assumes an immutable counterparty position; conversational intent is mutable, so a cross-channel stated-needs register needs supersession semantics before it can exist (named out of scope in the [choice-provenance spec](../specs/choice-provenance/requirements.md)).
 
 ## Related
