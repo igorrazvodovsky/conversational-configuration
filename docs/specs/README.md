@@ -15,7 +15,7 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [product-model](product-model/) | Mock elevator product model + validator | Implemented |
 | [solver-service](solver-service/) | Interactive Z3 solver service | Implemented |
 | [agent-tools](agent-tools/) | Configuration state + solver-backed agent tools | Implemented |
-| [nonlinear-interaction](nonlinear-interaction/) | Revision with ripple, candidate frames, resumption | Implemented |
+| [nonlinear-interaction](nonlinear-interaction/) | Revision with ripple, parallel candidates, resumption | Implemented; the parallel-candidates half now lives in [parallel-drafts](parallel-drafts/) |
 | [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Approved; harness and scenario 2 built. Remaining: scenarios 1, 3, 4, the presenter document, and scenario 5 (now unblocked — rfq-reconciliation is built). Still to be recast to the service frame's job stories |
 | [service-agreement](service-agreement/) | Elevator as a service: outcome terms, monthly price, derived hardware | Implemented |
 | [environmental-footprint](environmental-footprint/) | Environmental footprint as a decision dimension | Implemented |
@@ -30,4 +30,4 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [shared-attention](shared-attention/) | The agent reads what the operator has open; the document reveals what the agent just changed. One transient channel each way, no configuration and nothing durable | Implemented; the conversation move inventory amendment is applied. One measured gap: a stale transcript containing the agent's own contradicting answer can still anchor it (see design) |
 | [suggested-moves](suggested-moves/) | What the suggestion pills say: entry prompts on an empty agreement, moves available on this one thereafter | Implemented, with four families of the move inventory offered. *Accept* and *fork and compare* wait for a mechanism and a surface respectively (see design) |
 | [undo](undo/) | One-move reversal of any applied batch, the agent's included | Implemented and run in the app. The scenario turns are written but not yet billed; one inherited gap, a dispatch lost in the seconds after a conversation switch (see design) |
-| [parallel-drafts](parallel-drafts/) | The workspace holds several drafts of its agreement, one current — each a full configuration with its own provenance and history, replacing the lossy frames | Approved 2026-08-16; not yet built |
+| [parallel-drafts](parallel-drafts/) | The workspace holds several drafts of its agreement, one current — each a full configuration with its own provenance and history, replacing the lossy frames | Implemented 2026-08-17 and run in the app. One known gap: a fork taken from the canvas in a conversation with nothing in it gets a name with nothing behind it (see design) |

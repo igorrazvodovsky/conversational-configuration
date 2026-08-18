@@ -11,12 +11,14 @@ import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { createContext, useContext, useMemo, useState } from "react";
 
 /**
- * True when the whole reopened conversation refers to an agreement state the
+ * Why the whole reopened conversation refers to an agreement state the
  * workspace has moved past (docs/specs/agreement-workspace) — every card in it
- * is inert then. Provided by the workspace page; defaults to false so cards
- * work unchanged outside a workspace.
+ * is inert then, and shows this line. The reason itself is formatted where
+ * staleness is decided, in `use-workspace-attachment`, so nothing here needs to
+ * know what supersedes a conversation. Null for a conversation that is current;
+ * the default keeps cards outside a workspace unaffected.
  */
-export const StaleThreadContext = createContext(false);
+export const StaleThreadContext = createContext<string | null>(null);
 
 export function useCardDispatch(toolCallId: string) {
   const { agent } = useAgent();
@@ -61,5 +63,12 @@ export function useCardDispatch(toolCallId: string) {
     });
   };
 
-  return { inert: stale || submitted || staleThread, dispatch };
+  // The reason rides beside `inert` and only for the third condition: the two
+  // the transcript accounts for — the card just clicked, the card a later
+  // message overtook — explain themselves where it does not.
+  return {
+    inert: stale || submitted || staleThread !== null,
+    reason: staleThread,
+    dispatch,
+  };
 }

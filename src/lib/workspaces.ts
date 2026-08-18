@@ -31,28 +31,65 @@ export function latestThread(
   );
 }
 
+/** One draft of the workspace's agreement (docs/specs/parallel-drafts): a whole
+ * configuration with its own undo history, not a snapshot of one. */
+export interface DraftRecord {
+  id: string;
+  name: string;
+  /** The draft this one was forked from, null on the one a workspace opens
+   * with. Recorded for lineage; an id that no longer resolves reads as no
+   * lineage rather than being repaired. */
+  forkedFrom: string | null;
+  configuration: Configuration;
+  /** Undo/redo snapshots of this draft (docs/specs/undo). Only the depths are
+   * read here — the snapshots themselves are the agent's business, and drafts
+   * adapted from workspaces written before that spec carry no history at
+   * all. */
+  history?: { past: unknown[]; future: unknown[] };
+}
+
 export interface WorkspaceRecord {
   id: string;
   // null until the agent names the workspace from conversation
   name: string | null;
-  configuration: Configuration;
-  /** Undo/redo snapshots of the agreement (docs/specs/undo). Only the depths
-   * are read here — the snapshots themselves are the agent's business, and
-   * workspaces written before that spec carry no history at all. */
-  history?: { past: unknown[]; future: unknown[] };
+  /** Always at least one, and always with one of them current. Records written
+   * before drafts are adapted store-side, so this shape is what every read
+   * sees. */
+  drafts: DraftRecord[];
+  currentDraftId: string;
   threads: WorkspaceThread[];
   createdAt: string;
   updatedAt: string;
 }
 
-/** What the canvas needs to know about history: whether either end has
- * anything in it. Mirrored into agent state, seeded from the record on
- * attach. */
+/** The draft the agent acts on and the canvas renders. Falls back to the first
+ * draft if the pointer is ever dangling — no read path may be the one that
+ * throws. */
+export function currentDraft(record: WorkspaceRecord): DraftRecord {
+  return (
+    record.drafts.find((d) => d.id === record.currentDraftId) ?? record.drafts[0]
+  );
+}
+
+/** What the canvas needs to know about the current draft's history: whether
+ * either end has anything in it. Mirrored into agent state, seeded from the
+ * record on attach. */
 export function historyDepths(record: WorkspaceRecord | null) {
+  const history = record ? currentDraft(record).history : undefined;
   return {
-    undo: record?.history?.past.length ?? 0,
-    redo: record?.history?.future.length ?? 0,
+    undo: history?.past.length ?? 0,
+    redo: history?.future.length ?? 0,
   };
+}
+
+/** The draft mirror agent state carries, built from the record for the seed —
+ * the same shape the agent's committing tools write. */
+export function draftSummaries(record: WorkspaceRecord) {
+  return record.drafts.map((d) => ({
+    id: d.id,
+    name: d.name,
+    price: d.configuration?.candidate?.price ?? null,
+  }));
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

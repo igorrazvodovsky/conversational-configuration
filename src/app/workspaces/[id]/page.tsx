@@ -67,7 +67,7 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
     description:
       "Conversation staleness: whether the transcript above predates the current agreement.",
     value: staleThread
-      ? "stale — the agreement was changed in another conversation after this transcript's last turn; treat the transcript above as historical and rely on the configuration state"
+      ? `stale — ${staleThread} Treat the transcript above as historical and rely on the configuration state.`
       : "current",
   });
   const configuration = useCopilotChatConfiguration();

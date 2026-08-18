@@ -26,6 +26,7 @@ import {
   PLACEHOLDER_NAME,
   WorkspaceRecord,
   createWorkspace,
+  currentDraft,
   listWorkspaces,
 } from "@/lib/workspaces";
 
@@ -118,9 +119,14 @@ export default function HomePage() {
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  {workspace.configuration.candidate ? (
+                  {/* The current draft's figure: an elevator with two drafts is
+                      still one entry here, quoted at the one being worked on
+                      (docs/specs/parallel-drafts). */}
+                  {currentDraft(workspace).configuration.candidate ? (
                     <span className="text-sm font-semibold tabular-nums">
-                      {formatMonthly(workspace.configuration.candidate.price)}
+                      {formatMonthly(
+                        currentDraft(workspace).configuration.candidate!.price,
+                      )}
                     </span>
                   ) : (
                     <span className="text-xs text-muted-foreground">

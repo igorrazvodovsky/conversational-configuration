@@ -6,19 +6,17 @@ import pytest
 
 from src.configuration import (
     SOLVER,
-    adopt_frame,
     apply_choices,
     build_repair_payload,
     describe_restoration,
+    draft_comparison,
     empty_configuration,
-    frame_comparison,
     ingest,
     make_candidate,
     reconcile,
     register,
     restore,
     revise,
-    save_frame,
     snapshot,
     withdraw_choices,
 )
@@ -208,7 +206,7 @@ def test_repair_payload_modernization(empty):
     assert top["rules"]
 
 
-# -- frames (docs/specs/nonlinear-interaction) ----------------------------------------------------
+# -- comparing drafts (docs/specs/parallel-drafts) ------------------------
 
 @pytest.fixture()
 def with_candidate(empty):
@@ -216,57 +214,44 @@ def with_candidate(empty):
     return make_candidate(config)
 
 
-def test_save_frame_requires_candidate(empty):
-    with pytest.raises(ValueError, match="no candidate"):
-        save_frame(empty, "practical")
-
-
-def test_save_frame_survives_changes(with_candidate):
-    config = save_frame(with_candidate, "practical")
-    config, _ = apply_choices(config, {"cop": "touch_premium"}, "user")
-    assert [f["name"] for f in config["frames"]] == ["practical"]
-    assert config["frames"][0]["assignment"] == with_candidate["candidate"]["assignment"]
-
-
-def test_save_frame_same_name_replaces(with_candidate):
-    config = save_frame(with_candidate, "practical")
-    config = make_candidate(
-        apply_choices(config, {"cop": "touch_premium"}, "user")[0]
+def test_compare_two_drafts(with_candidate):
+    """Both sides are whole documents, and only what differs is listed."""
+    other = make_candidate(
+        apply_choices(with_candidate, {"cop": "touch_premium"}, "user")[0]
     )
-    config = save_frame(config, "practical")
-    assert len(config["frames"]) == 1
-    assert config["frames"][0]["assignment"]["cop"] == "touch_premium"
-
-
-def test_compare_against_current_candidate(with_candidate):
-    config = save_frame(with_candidate, "practical")
-    config = make_candidate(
-        apply_choices(config, {"cop": "touch_premium"}, "user")[0]
-    )
-    payload = frame_comparison(config, "practical")
-    assert payload["a"]["name"] == "practical"
+    payload = draft_comparison("Original", with_candidate, "Premium", other, True)
+    assert payload["kind"] == "draft_comparison"
+    assert payload["a"]["name"] == "Original"
+    assert payload["b"]["name"] == "Premium"
     assert payload["b"]["isCurrent"] is True
-    diff_vars = [d["variable"] for d in payload["differences"]]
-    assert "cop" in diff_vars
+    assert "cop" in [d["variable"] for d in payload["differences"]]
     assert payload["priceDelta"] == payload["b"]["price"] - payload["a"]["price"]
-    # only differing variables appear
     for d in payload["differences"]:
         assert d["a"]["value"] != d["b"]["value"]
 
 
+def test_compare_needs_a_priced_candidate_on_each_side(with_candidate, empty):
+    """A draft edited since its last completion has no price to compare with,
+    and the tool says what to do about it rather than solving for it."""
+    edited, _ = apply_choices(with_candidate, {"cop": "touch_premium"}, "user")
+    assert edited["candidate"] is None
+    with pytest.raises(ValueError, match="propose a completion"):
+        draft_comparison("Premium", edited, "Original", with_candidate)
+
+
 def test_compare_across_terms_uses_each_sides_own_term(empty):
-    """Two agreements differing in term (and a hardware option): per-side
-    hardware deltas are amortized at each side's own term, and the price
-    delta is the monthly difference."""
+    """Two drafts differing in term (and a hardware option): per-side hardware
+    deltas are amortized at each side's own term, and the price delta is the
+    monthly difference."""
     from src.configuration import MODEL
     config, _ = apply_choices(
         empty, {"building_type": "hotel", "contract_term": "y5", "cop": "standard"}, "user"
     )
-    config = save_frame(make_candidate(config), "short")
-    config, _ = revise(config, {"contract_term": "y15", "cop": "touch_premium"}, [], "user")
-    config = make_candidate(config)
+    short = make_candidate(config)
+    long_config, _ = revise(short, {"contract_term": "y15", "cop": "touch_premium"}, [], "user")
+    long_term = make_candidate(long_config)
 
-    payload = frame_comparison(config, "short")
+    payload = draft_comparison("Short term", short, "Long term", long_term)
     diffs = {d["variable"]: d for d in payload["differences"]}
     assert set(diffs) >= {"contract_term", "cop"}
     factor = MODEL.pricing.financing_factor
@@ -274,11 +259,6 @@ def test_compare_across_terms_uses_each_sides_own_term(empty):
     assert diffs["cop"]["a"]["price"] == 0  # standard, no cost basis
     assert diffs["cop"]["b"]["price"] == int(cop_price * factor / 180 + 0.5)
     assert payload["priceDelta"] == payload["b"]["price"] - payload["a"]["price"]
-
-
-def test_compare_unknown_frame(with_candidate):
-    with pytest.raises(ValueError, match="no frame named"):
-        frame_comparison(with_candidate, "premium")
 
 
 # -- footprint (docs/specs/environmental-footprint) -----------------------
@@ -301,22 +281,24 @@ def test_candidate_with_co2_objective(empty):
 
 
 def test_comparison_footprint_delta(empty):
+    """The cheapest-versus-greenest pair, as two drafts."""
     config, _ = apply_choices(empty, {"building_type": "office", "usage_profile": "medium"}, "user")
-    config = save_frame(make_candidate(config, "price"), "Cheapest")
-    config = make_candidate(config, "co2")
-    payload = frame_comparison(config, "Cheapest")
+    cheapest = make_candidate(config, "price")
+    greenest = make_candidate(config, "co2")
+    payload = draft_comparison("Cheapest", cheapest, "Lowest footprint", greenest)
     a, b = payload["a"]["footprint"], payload["b"]["footprint"]
     assert a and b
     assert payload["footprintDelta"] == b["total"] - a["total"]
 
 
-def test_comparison_pre_footprint_frame_fallback(empty):
-    """A frame persisted before the footprint feature has no footprint key:
-    the payload carries None for that side and a delta of 0."""
+def test_comparison_pre_footprint_draft_fallback(empty):
+    """A draft adapted from a workspace written before the footprint feature
+    has no footprint key: the payload carries None for that side and a delta
+    of 0."""
     config, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
-    config = save_frame(make_candidate(config), "old")
-    del config["frames"][0]["footprint"]
-    payload = frame_comparison(config, "old")
+    old = make_candidate(config)
+    del old["candidate"]["footprint"]
+    payload = draft_comparison("Original", old, "Premium", make_candidate(config))
     assert payload["a"]["footprint"] is None
     assert payload["b"]["footprint"] is not None
     assert payload["footprintDelta"] == 0
@@ -364,20 +346,6 @@ def test_completion_message_no_teaser_when_objectives_agree(empty):
     other_assignment, other_price = SOLVER.complete(_chosen_values(config), "co2")
     message = completion_message(config["candidate"], "price", other_assignment, other_price)
     assert "offer to show the pair" not in message
-
-
-def test_adopt_frame_replaces_atomically(with_candidate):
-    config = save_frame(with_candidate, "practical")
-    config, _ = apply_choices(config, {"building_type": "office"}, "user")
-    adopted = adopt_frame(config, "practical")
-    frame = config["frames"][0]
-    assert {v: c["value"] for v, c in adopted["choices"].items()} == frame["assignment"]
-    assert all(c["source"] == "user" for c in adopted["choices"].values())
-    assert adopted["candidate"] == {"assignment": frame["assignment"], "price": frame["price"],
-                                    "footprint": frame["footprint"],
-                                    "objective": frame["objective"]}
-    # the frame remains stored after adoption
-    assert [f["name"] for f in adopted["frames"]] == ["practical"]
 
 
 # -- RFQ reconciliation (docs/specs/rfq-reconciliation) -------------------
@@ -602,8 +570,6 @@ def test_the_frozen_reference_survives_every_later_transition(seeded):
     config, _, _ = reconcile(seeded, "rated_speed", "accept")
     config, _ = apply_choices(config, {"wall_finish": "laminate"}, "user")
     config = make_candidate(config)
-    config = save_frame(config, "as offered")
-    config = adopt_frame(config, "as offered")
     config = withdraw_choices(config, ["stops"])
     config = make_candidate(config)
 
@@ -629,9 +595,9 @@ def test_reconciling_a_variable_the_document_is_silent_on(seeded):
 
 
 def test_restore_returns_the_exact_prior_state(with_candidate):
-    """Choices with their sources, the candidate and the frames all come back
-    — not an approximation of them."""
-    before = save_frame(with_candidate, "as offered")
+    """Choices with their sources and the candidate all come back — not an
+    approximation of them."""
+    before = with_candidate
     snap = snapshot(before)
     moved, _ = revise(before, {"building_type": "office"}, [], "agent")
     moved = make_candidate(moved)
@@ -640,7 +606,6 @@ def test_restore_returns_the_exact_prior_state(with_candidate):
     back = restore(snap)
     assert back["choices"] == before["choices"]
     assert back["candidate"] == before["candidate"]
-    assert back["frames"] == before["frames"]
 
 
 def test_restore_re_derives_statuses_rather_than_keeping_them(with_candidate):
@@ -687,10 +652,12 @@ def test_the_restoration_is_described_in_the_customer_s_terms(with_candidate):
     assert "Office" in described and "Hotel" in described
 
 
-def test_a_restored_frame_and_a_restored_fee_are_named(with_candidate):
-    framed = save_frame(with_candidate, "as offered")
-    described = describe_restoration(framed, restore(snapshot(with_candidate)))
-    assert "'as offered' gone" in described
+def test_a_restored_fee_is_named(with_candidate):
+    """The monthly figure moves with the batch, so the description says so."""
+    moved, _ = revise(with_candidate, {"cop": "touch_premium"}, [], "user")
+    assert moved["candidate"] is None
+    described = describe_restoration(moved, restore(snapshot(with_candidate)))
+    assert f"{with_candidate['candidate']['price']} EUR/month" in described
 
-    described = describe_restoration(with_candidate, restore(snapshot(framed)))
-    assert "'as offered' back" in described
+    described = describe_restoration(with_candidate, restore(snapshot(moved)))
+    assert "no priced candidate" in described

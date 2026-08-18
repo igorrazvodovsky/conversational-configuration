@@ -1,28 +1,34 @@
 "use client";
 
 /**
- * Side-by-side agreement comparison for the agent's compare_frames tool
- * (docs/specs/nonlinear-interaction; monthly semantics from docs/specs/service-agreement):
+ * Side-by-side agreement comparison for the agent's compare_drafts tool
+ * (docs/specs/parallel-drafts; monthly semantics from docs/specs/service-agreement):
  * only the differing variables, both values with monthly deltas at each side's
  * own term, and the monthly-price delta — computed backend-side, valid by
- * construction. Adopting a side dispatches a structured message the agent maps
- * onto adopt_frame.
+ * construction. Both sides are whole drafts, so taking one is a *switch*: the
+ * other survives the choice, and the button dispatches the structured message
+ * the agent maps onto switch_draft.
  */
 
 import { Button } from "@/components/ui/button";
-import { Footprint, adoptMessage, formatCO2, formatMonthly } from "@/lib/configurator";
+import {
+  Footprint,
+  formatCO2,
+  formatMonthly,
+  switchDraftMessage,
+} from "@/lib/configurator";
 import { useCardDispatch } from "./card-dispatch";
 import { CardPending, CardProps, CardShell, parsePayload } from "./card-shell";
 
 interface SideValue {
-  value: string | null; // null when a frame persisted before the service frame lacks an agreement variable
+  value: string | null; // null when a draft adapted from a pre-service-frame workspace lacks an agreement variable
   label: string;
   price: number;
 }
 
 interface Payload {
-  kind: "frame_comparison";
-  // footprint is null on frames persisted before docs/specs/environmental-footprint
+  kind: "draft_comparison";
+  // footprint is null on candidates stored before docs/specs/environmental-footprint
   a: { name: string; price: number; footprint: Footprint | null };
   b: { name: string; price: number; isCurrent: boolean; footprint: Footprint | null };
   differences: { variable: string; label: string; a: SideValue; b: SideValue }[];
@@ -30,8 +36,8 @@ interface Payload {
   footprintDelta: number; // 0 when either side lacks a footprint
 }
 
-export function FrameComparison({ toolCallId, status, result }: CardProps) {
-  const { inert, dispatch } = useCardDispatch(toolCallId);
+export function DraftComparison({ toolCallId, status, result }: CardProps) {
+  const { inert, reason, dispatch } = useCardDispatch(toolCallId);
 
   if (status !== "complete" || !result) {
     return <CardPending>comparing…</CardPending>;
@@ -39,7 +45,7 @@ export function FrameComparison({ toolCallId, status, result }: CardProps) {
 
   const payload = parsePayload<Payload>(
     result,
-    (p) => p.kind === "frame_comparison",
+    (p) => p.kind === "draft_comparison",
   );
   if (!payload) return null; // ERROR results are relayed by the agent in text
 
@@ -62,7 +68,7 @@ export function FrameComparison({ toolCallId, status, result }: CardProps) {
   const footprintDelta = payload.footprintDelta ?? 0;
 
   return (
-    <CardShell inert={inert}>
+    <CardShell inert={inert} reason={reason}>
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left">
@@ -70,9 +76,16 @@ export function FrameComparison({ toolCallId, status, result }: CardProps) {
               {payload.differences.length} difference
               {payload.differences.length === 1 ? "" : "s"}
             </th>
+            {/* Each side is named by its draft — one of them may be the one
+                being worked on, which is a fact about it and not its name. */}
             {sides.map((s) => (
               <th key={s.key} className="pb-2 font-medium">
-                {s.isCurrent ? "current" : s.name}
+                {s.name}
+                {s.isCurrent && (
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    working on this
+                  </span>
+                )}
               </th>
             ))}
           </tr>
@@ -121,7 +134,7 @@ export function FrameComparison({ toolCallId, status, result }: CardProps) {
         <span className="flex-1 self-center text-xs text-muted-foreground">
           {payload.priceDelta === 0
             ? "same monthly price"
-            : `${payload.b.isCurrent ? "current" : payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
+            : `${payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
           {footprintDelta !== 0 &&
             ` · ${formatCO2(Math.abs(footprintDelta))} ${footprintDelta > 0 ? "more" : "less"}`}
         </span>
@@ -132,9 +145,9 @@ export function FrameComparison({ toolCallId, status, result }: CardProps) {
               key={s.key}
               size="sm"
               disabled={inert}
-              onClick={() => dispatch(adoptMessage(s.name))}
+              onClick={() => dispatch(switchDraftMessage(s.name))}
             >
-              Adopt {s.name}
+              Work on {s.name}
             </Button>
           ))}
       </div>

@@ -24,7 +24,7 @@ Scope decision: the service frame is the prototype's single offering (constituti
 - GIVEN a fresh conversation, WHEN the user states needs in building and outcome terms, THEN elicitation targets outcome-level variables, every proposed candidate is solver-valid, and its price is a recurring monthly fee derived from the model (hardware amortization over term + service level + usage), never a one-off capex figure.
 - GIVEN the canvas, WHEN a configuration is displayed, THEN outcome terms (performance, service level, term, monthly price) are grouped above the derived hardware spec, every value carries its provenance so the user can tell who chose it ([the agent proposes and the user decides](../../discovery/principles/agent-proposes-user-decides.md)), and hardware values remain directly editable with invalid options greyed out.
 - GIVEN an active agreement, WHEN the user requests a different outcome mid-contract, THEN repair options are computed by the solver with ripple spanning both service terms and hardware, each grounded in named rules, and applying one updates the agreement atomically.
-- GIVEN two candidate frames, WHEN they are compared, THEN the comparison lists only differing variables — service and hardware alike — with a correct monthly-price delta.
+- GIVEN two parallel candidates, WHEN they are compared, THEN the comparison lists only differing variables — service and hardware alike — with a correct monthly-price delta.
 
 ## Relationship to other specs
 

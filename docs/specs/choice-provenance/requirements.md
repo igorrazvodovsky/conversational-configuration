@@ -15,7 +15,7 @@ Provenance today is a three-way source badge (`user` / `agent` / `document`), an
 Recording:
 
 - GIVEN the agent records choices because of the customer's prose (source `user`), WHEN the tool call is made, THEN each choice carries the customer's words it acts on — a short verbatim excerpt of the utterance — frozen into the choice record and written through to the workspace store with everything else.
-- GIVEN a choice recorded through a structured dispatch (a canvas edit, an applied repair, an adopted frame, a reconciliation move), WHEN it lands, THEN no quote is required — the gesture is its own ground — and rendering falls back to today's badge. Whether the structured message's own phrasing is worth carrying is a design decision, not a requirement.
+- GIVEN a choice recorded through a structured dispatch (a canvas edit, an applied repair, a reconciliation move), WHEN it lands, THEN no quote is required — the gesture is its own ground — and rendering falls back to today's badge. Whether the structured message's own phrasing is worth carrying is a design decision, not a requirement.
 - GIVEN the customer restates a decided variable in new words, WHEN the choice is re-recorded, THEN the new words replace the old: a choice carries its *current* grounds. Superseded words are history, and history belongs to the transcript and git, not the artifact. (The cross-channel register that would track supersession is out of scope below.)
 
 Fidelity:
@@ -31,7 +31,7 @@ Rendering:
 Durability:
 
 - GIVEN quotes are recorded, WHEN conversations are switched or deleted, THEN every quote survives and re-renders — write-through and hydration via the existing configuration path (the [agreement-workspace spec](../agreement-workspace/requirements.md)), no new plumbing. Deleting every conversation loses the argument, not the words.
-- GIVEN transitions that rebuild the configuration (revise, withdraw, adopt frame, reconcile), THEN quotes on untouched choices survive. What a wholesale re-sourcing transition (`adopt_frame` rewriting every choice to `user`) does with them is design's to decide and record.
+- GIVEN transitions that rebuild the configuration (revise, withdraw, fork, reconcile), THEN quotes on untouched choices survive. What a wholesale re-sourcing transition (`adopt_frame` rewriting every choice to `user`) does with them is design's to decide and record.
 
 ## Out of scope
 

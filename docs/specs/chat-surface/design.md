@@ -39,7 +39,7 @@ That selector is coupled to the panel's `id="chat"`: renaming the id leaves the 
 
 Floating is a plain positioned `div`. `Dialog` and `Sheet` were both rejected: they trap focus and mark the rest of the page inert, which would make the canvas unreachable underneath the floating chat — the exact opposite of the mode's purpose, and a violation of [configuration can start from any variable, in any order](../../discovery/principles/start-from-any-variable.md), which the requirements carry as a constraint. Nothing dims, nothing closes on outside click, and Escape does not dismiss it.
 
-Its width is `400px`, above the 360px floor the sidebar measured (below that the frame-comparison card overflows and the composer wraps) with room to spare; height is `min(70vh, …)` capped so it never touches the top of the canvas.
+Its width is `400px`, above the 360px floor the sidebar measured (below that the comparison card overflows and the composer wraps) with room to spare; height is `min(70vh, …)` capped so it never touches the top of the canvas.
 
 ## Decision 4: the mode control is chrome around the chat, not inside it
 

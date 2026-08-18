@@ -19,7 +19,7 @@ Tool level (unit-testable):
 - GIVEN a choice set that conflicts with existing choices, WHEN `set_choices` runs, THEN state is left unchanged and the tool returns the structured explanation (conflicting choices + rule ids/labels + human-readable sentence). No partial application.
 - GIVEN current choices, WHEN `propose_completion` runs, THEN a full valid assignment plus total price is stored in state as the candidate and returned to the agent.
 - GIVEN a choice to withdraw, WHEN `clear_choices` runs, THEN the choices are removed, statuses recomputed, and any stored candidate invalidated if it no longer extends the remaining choices.
-- Initial state schema: `configuration = {choices: {var: {value, source}}, statuses: {var: {value: chosen|forced|invalid|open}}, candidate: {assignment, price} | null}` — since extended by later specs (frames, footprint, the candidate's objective); the current shape is defined in `agent/src/configuration.py`.
+- Initial state schema: `configuration = {choices: {var: {value, source}}, statuses: {var: {value: chosen|forced|invalid|open}}, candidate: {assignment, price} | null}` — since extended by later specs (footprint, the candidate's objective, the RFQ block) and split across drafts; the current shape is defined in `agent/src/configuration.py`.
 
 Agent behavior (verified by scripted chat smoke test, not unit-asserted):
 

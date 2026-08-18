@@ -9,7 +9,7 @@ import {
 
 import { AskChoices } from "@/components/generative-ui/ask-choices";
 import type { CardProps } from "@/components/generative-ui/card-shell";
-import { FrameComparison } from "@/components/generative-ui/frame-comparison";
+import { DraftComparison } from "@/components/generative-ui/draft-comparison";
 import { RepairOptions } from "@/components/generative-ui/repair-options";
 import { ToolReasoning } from "@/components/tool-rendering";
 
@@ -50,14 +50,14 @@ export const useConfiguratorUI = () => {
     render: (props: CardProps) => <RepairOptions {...props} />,
   });
 
-  // Frame comparisons render as a two-column diff card (docs/specs/nonlinear-interaction).
+  // Draft comparisons render as a two-column diff card (docs/specs/parallel-drafts).
   useRenderTool({
-    name: "compare_frames",
+    name: "compare_drafts",
     parameters: z.object({
       a: z.string(),
       b: z.string().optional(),
     }),
-    render: (props: CardProps) => <FrameComparison {...props} />,
+    render: (props: CardProps) => <DraftComparison {...props} />,
   });
 
   // Every other backend tool renders as a compact reasoning row.

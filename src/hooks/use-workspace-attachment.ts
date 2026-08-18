@@ -15,7 +15,8 @@
  * initial connect causes) this hook:
  *   1. clears the agent state synchronously (so nothing from the previous
  *      thread leaks into the next run),
- *   2. seeds `{workspace_id, configuration}` from the workspace store and
+ *   2. seeds `{workspace_id, configuration}` — the *current draft's*
+ *      configuration — plus the draft mirrors, from the workspace store, and
  *      KEEPS it seeded via an agent subscriber: the connect that follows a
  *      page load or thread switch delivers the thread checkpoint's state
  *      after the seed, and the workspace configuration must win over that
@@ -24,8 +25,9 @@
  *      belongs to the live run,
  *   3. for a thread with server history, hydrates the transcript from the
  *      runtime (CopilotKit v2 switches threads but never fetches messages),
- *   4. flags the thread stale when its checkpoint configuration no longer
- *      matches the workspace — its cards must not act on a superseded state,
+ *   4. flags the thread stale, with the reason, when its checkpoint no longer
+ *      matches the workspace's current draft — its cards must not act on a
+ *      superseded state, nor on another draft,
  *   5. registers a conversation with the workspace on its first message.
  *
  * Two inherited traps (see docs/specs/nonlinear-interaction/design.md): the
@@ -41,6 +43,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import {
   WorkspaceRecord,
+  currentDraft,
+  draftSummaries,
   fetchWorkspace,
   historyDepths,
   latestThread,
@@ -94,6 +98,33 @@ function stableStringify(value: unknown): string {
   return `{${entries.join(",")}}`;
 }
 
+/**
+ * Why a reopened conversation's cards may not act, in the operator's terms —
+ * the line the card itself shows (docs/specs/agreement-workspace design).
+ *
+ * Under drafts it can usually be specific, naming the draft this conversation
+ * was working on and the one that is current, which tells the operator what to
+ * do about it where "the agreement moved on" only says that something happened.
+ * It falls back to the workspace-level wording when the conversation's own
+ * draft cannot be resolved — it ran before drafts existed, or that draft has
+ * since been discarded — which is still true.
+ *
+ * The singular ("was working on") holds because a card that predates a switch
+ * made inside its own conversation is already inert under the any-user-message
+ * rule `useCardDispatch` applies; only tail cards reach this path, and a tail
+ * card's draft is the checkpoint's draft.
+ */
+function staleReason(
+  record: WorkspaceRecord,
+  checkpointDraftId: string | undefined,
+): string {
+  const current = currentDraft(record);
+  const its = record.drafts.find((d) => d.id === checkpointDraftId);
+  if (its && its.id !== current.id)
+    return `This conversation was working on the draft “${its.name}”; the current draft is “${current.name}”.`;
+  return "The agreement changed after this conversation's last turn, so these controls no longer apply to it.";
+}
+
 export function useWorkspaceAttachment(workspaceId: string) {
   const { agent } = useAgent();
   const configuration = useCopilotChatConfiguration();
@@ -101,7 +132,11 @@ export function useWorkspaceAttachment(workspaceId: string) {
 
   const [workspace, setWorkspace] = useState<WorkspaceRecord | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [staleThread, setStaleThread] = useState(false);
+  // The reason this conversation's cards may not act, or null when they may.
+  // A string rather than a flag because the three inert conditions are not
+  // equally self-explanatory: this is the one whose cause is outside the
+  // conversation entirely (docs/specs/agreement-workspace design).
+  const [staleThread, setStaleThread] = useState<string | null>(null);
   const clearedFor = useRef<string | undefined>(undefined);
   const enteredFor = useRef<string | undefined>(undefined);
   // Workspace whose entry has resolved to a thread. Everything below waits for
@@ -176,7 +211,7 @@ export function useWorkspaceAttachment(workspaceId: string) {
     // workspace's transcript and trip message-count-based registration.
     if (clearedFor.current !== threadId) {
       clearedFor.current = threadId;
-      setStaleThread(false);
+      setStaleThread(null);
       agent.setState({});
       agent.setMessages([]);
     }
@@ -203,7 +238,8 @@ export function useWorkspaceAttachment(workspaceId: string) {
       if (cancelled) return;
       setWorkspace(record);
 
-      const want = stableStringify(record.configuration);
+      const draft = currentDraft(record);
+      const want = stableStringify(draft.configuration);
       const restoredIds = new Set<string>();
       // A user message that was not hydrated from the server is the user (or
       // a card) acting live in this conversation.
@@ -216,11 +252,19 @@ export function useWorkspaceAttachment(workspaceId: string) {
       const seed = () =>
         agent.setState({
           workspace_id: record.id,
-          configuration: record.configuration,
+          configuration: draft.configuration,
           // The canvas renders its undo controls from this mirror
-          // (docs/specs/undo); the workspace's own history is what it
+          // (docs/specs/undo); the current draft's own history is what it
           // mirrors, and tools refresh it as they commit.
           history: historyDepths(record),
+          // Which draft this is and what else exists beside it
+          // (docs/specs/parallel-drafts). This seed is the only path for the
+          // two: a thread that has never run replays no snapshot, and one
+          // that ran before drafts replays a snapshot with neither key in it,
+          // either of which would leave the document unnamed and the switcher
+          // empty until the customer's first message.
+          current_draft_id: draft.id,
+          drafts: draftSummaries(record),
         });
 
       seed();
@@ -236,9 +280,17 @@ export function useWorkspaceAttachment(workspaceId: string) {
             subscription = undefined;
             return;
           }
-          const state = agent.state as { configuration?: unknown } | undefined;
+          const state = agent.state as
+            | { configuration?: unknown; current_draft_id?: string }
+            | undefined;
+          // The pair again, for the same reason as the staleness check below:
+          // a checkpoint delivered by the connect can carry the configuration
+          // of a draft this workspace has since forked from, byte-identical to
+          // the current one, and comparing content alone would leave the canvas
+          // naming the wrong document.
           if (
             !state?.configuration ||
+            state.current_draft_id !== draft.id ||
             stableStringify(state.configuration) !== want
           )
             seed();
@@ -257,20 +309,35 @@ export function useWorkspaceAttachment(workspaceId: string) {
       const { state } = await stateRes.json();
 
       // The checkpoint is the record of what this conversation saw; when the
-      // agreement has moved on (another conversation changed it), the
-      // transcript's cards must not act on it.
+      // agreement has moved on — another conversation changed it, or forked or
+      // switched the draft under it — the transcript's cards must not act on
+      // it.
+      //
+      // The comparison is over the PAIR (draft, configuration), not the
+      // configuration alone: a fork is byte-identical to the draft it came
+      // from until one of them is edited, which is exactly the window in which
+      // the operator is most likely to reopen the conversation the fork came
+      // out of, and content equality would let its cards apply to the fork
+      // (docs/specs/parallel-drafts).
       //
       // An ABSENT checkpoint means unverifiable, not unchanged. The runtime
       // answers 200 with `{state: null}` — never a 404 — when its thread store
       // holds no state snapshot for this thread, and that store is a map in the
-      // Next.js process, so it is empty after a restart. Only a transcript we
-      // could check against the workspace may keep live cards.
+      // Next.js process, so it is empty after a restart. A conversation that
+      // ran before drafts has no `current_draft_id` in its checkpoint either,
+      // and is unverifiable on the same terms. Only a transcript we could check
+      // against the workspace may keep live cards.
       const hasMessages = Array.isArray(messages) && messages.length > 0;
       if (hasMessages) {
-        const checkpoint = state?.configuration;
-        if (!checkpoint || stableStringify(checkpoint) !== want) {
-          if (!cancelled) setStaleThread(true);
-        }
+        const checkpoint = state as
+          | { configuration?: unknown; current_draft_id?: string }
+          | undefined;
+        const same =
+          checkpoint?.configuration &&
+          checkpoint.current_draft_id === draft.id &&
+          stableStringify(checkpoint.configuration) === want;
+        if (!same && !cancelled)
+          setStaleThread(staleReason(record, checkpoint?.current_draft_id));
       }
 
       if (!hasMessages) return;

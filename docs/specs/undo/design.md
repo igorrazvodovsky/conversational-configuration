@@ -2,9 +2,9 @@
 
 Status: implemented and verified by running the app. One known gap, in *Verification* below: a click in the first seconds of a freshly switched conversation can be swallowed by the attachment hook.
 
-## Decision 1: history is a stack pair on the workspace record, written at the store's single write point
+## Decision 1: history is a stack pair beside the configuration it belongs to, written at the store's single write point
 
-The store record gains one field beside `configuration`:
+The store gains one field beside `configuration` — on the record when this shipped, and on each draft since [parallel-drafts](../parallel-drafts/design.md):
 
 ```json
 "history": { "past": [snapshot, …], "future": [snapshot, …] }
@@ -14,13 +14,13 @@ The store record gains one field beside `configuration`:
 
 The push is guarded on the configuration actually differing, by plain `==`: Python dict equality is key-order independent, so the store needs no equivalent of the frontend hook's `stableStringify`. Without the guard a no-op `set_choices` — the agent re-recording a value already recorded — would burn a history slot and the customer's undo would visibly do nothing.
 
-Depth is ten batches, dropped oldest-first, and `save_configuration` is the only function that applies the bound. A restore moves an entry from one stack to the other and so cannot grow the pair; `future` needs no bound of its own, because it cannot receive more than `past` gave it. Ten covers the storyboard's revision runs with room to spare and keeps the record readable by hand; anything a customer wants to hold past that is what a named frame is for.
+Depth is ten batches, dropped oldest-first, and `save_configuration` is the only function that applies the bound. A restore moves an entry from one stack to the other and so cannot grow the pair; `future` needs no bound of its own, because it cannot receive more than `past` gave it. Ten covers the storyboard's revision runs with room to spare and keeps the record readable by hand; anything a customer wants to hold past that is what a second draft is for ([parallel-drafts](../parallel-drafts/design.md), which also made the bound per draft).
 
-Records written before this spec carry no `history` key; every read path defaults it, the way the codebase already defaults `frames` and `footprint`.
+Records written before this spec carry no `history` key; every read path defaults it, the way the codebase already defaults `footprint`.
 
 ## Decision 2: a snapshot is what cannot be recomputed — never `statuses`
 
-A snapshot is `choices`, `candidate`, `frames` and `rfq`: a `Configuration` minus its `statuses`, with its own `Snapshot` TypedDict rather than a reuse of `Configuration`, since it deliberately lacks a required key. The filter itself lives in the store, which is what writes the snapshots; `configuration.snapshot` delegates to it, so a change to the shape cannot pass the tests while the store writes something else.
+A snapshot is `choices`, `candidate` and `rfq`: a `Configuration` minus its `statuses`, with its own `Snapshot` TypedDict rather than a reuse of `Configuration`, since it deliberately lacks a required key. The filter itself lives in the store, which is what writes the snapshots; `configuration.snapshot` delegates to it, so a change to the shape cannot pass the tests while the store writes something else.
 
 `statuses` is the only purely derived field, and the bulkiest by far — one entry per value of every variable, rewritten into a JSON file people read by hand on every tool call. Leaving it out makes the requirement that a restore re-derives statuses rather than copying them blind a structural property instead of a discipline: there is nothing to copy.
 
@@ -28,7 +28,7 @@ Everything else is kept because it cannot be rebuilt faithfully. `candidate` is 
 
 ## Decision 3: restore is a validated transition, not an assignment
 
-`restore(snapshot) -> Configuration` sits beside `apply_choices` and `revise` as a pure, unit-tested transition: it re-validates the snapshot's choices against the product model, re-derives statuses from the solver, keeps the candidate only if it still extends those choices, and carries frames and the RFQ block from the snapshot. The tool commits nothing until it returns, so a refused restore leaves the agreement exactly as it was.
+`restore(snapshot) -> Configuration` sits beside `apply_choices` and `revise` as a pure, unit-tested transition: it re-validates the snapshot's choices against the product model, re-derives statuses from the solver, keeps the candidate only if it still extends those choices, and carries the RFQ block from the snapshot. The tool commits nothing until it returns, so a refused restore leaves the agreement exactly as it was.
 
 Two failure modes, and they are not equally likely. A snapshot that was feasible stays feasible while `elevator.json` is unchanged, so the `ConflictError` branch the requirements call for is unreachable in a static model — it exists for the case constitution #2 makes ordinary, an edited product model. The reachable failure under a model edit is the plainer one: a snapshot naming a value the model no longer has raises `ValueError` out of `_validate_known`. Both are caught; only the second is exercised by a test.
 
@@ -36,7 +36,7 @@ Two failure modes, and they are not equally likely. A snapshot that was feasible
 
 `undo_change` and `redo_change`, each taking no arguments. A single tool with a direction parameter would give the model something to get wrong for no gain, and the two dispatched messages are distinct sentences anyway: *Undo the last change* and *Redo the undone change*, added to the message grammar in `src/lib/configurator.ts` and mirrored in `tests/scenario_grammar.py`.
 
-Both messages are visible in the chat, unlike a `Canvas edit: `. After a restore the document shows only the restored state, so if the chat did not carry what was reversed nothing would. The tool result names the reversal by diffing the two configurations — every variable whose live value moved, frames added or removed, the monthly figure, and reconciliation marks that changed — and the prompt asks the agent to say that back in one sentence and stop. Diffing rather than labelling each batch at its call site keeps the description truthful by construction and touches no existing tool; the price is that the sentence describes the *effect* ("rated speed back to 1.6 m/s") rather than the move that caused it.
+Both messages are visible in the chat, unlike a `Canvas edit: `. After a restore the document shows only the restored state, so if the chat did not carry what was reversed nothing would. The tool result names the reversal by diffing the two configurations — every variable whose live value moved, the monthly figure, and reconciliation marks that changed — and the prompt asks the agent to say that back in one sentence and stop. Diffing rather than labelling each batch at its call site keeps the description truthful by construction and touches no existing tool; the price is that the sentence describes the *effect* ("rated speed back to 1.6 m/s") rather than the move that caused it.
 
 Typed prose lands on the same tools, which is the point of the requirement that the control and the sentence are one move. The prompt's existing instruction never to restore older values from the transcript gains its counterpart here: there is now a sanctioned way to put a value back, and it is this tool rather than a fresh `set_choices` reconstructed from what the transcript remembers.
 
@@ -54,7 +54,7 @@ The suggestion strip stays out of this. Pills are sentences a customer could hav
 
 ## Verification
 
-- `uv run pytest`, 140 passing: the transitions in `test_configuration.py` (round trip with sources, candidate and frames; statuses re-derived rather than kept; RFQ marks restored; a candidate that no longer extends its choices dropped; a value the model no longer has refused) and the stack arithmetic in `test_workspace_store.py` (push, both directions, redo tail discarded by a new batch, depth bound, a no-op batch pushing nothing, history crossing conversations and surviving a store round trip, a record written before this feature).
+- `uv run pytest`, 140 passing: the transitions in `test_configuration.py` (round trip with sources and candidate; statuses re-derived rather than kept; RFQ marks restored; a candidate that no longer extends its choices dropped; a value the model no longer has refused) and the stack arithmetic in `test_workspace_store.py` (push, both directions, redo tail discarded by a new batch, depth bound, a no-op batch pushing nothing, history crossing conversations and surviving a store round trip, a record written before this feature).
 - The scenario harness extends the existing revision-with-repair scenario rather than adding one — it is already the storyboard's F7 case, and a run costs money. Two turns after the repair is applied: `undo_change` returns the choices to the pre-repair set, `redo_change` brings the repaired set back. Not run at implementation time (it bills a provider key); the assertions are tool-call- and state-level, so they read like the rest of that scenario.
 - Run in the app against a live agent (constitution #9), all confirmed: the Undo control is absent on an untouched agreement and appears as soon as the first batch commits; undo returns the sheet to its prior state and swaps the control for Redo; redo brings it back with provenance intact; at the earliest state only Redo is offered, so each control is absent rather than disabled at its end of the history. Typed prose — "actually undo that, put it back" — lands on `undo_change` and reverses the same batch. History survives a page reload, and a conversation started afterwards offers the control and restores a batch the *other* conversation applied.
 

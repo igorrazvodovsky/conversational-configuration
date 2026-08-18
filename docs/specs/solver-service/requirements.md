@@ -25,4 +25,4 @@ A Python module wrapping Z3 that turns the product model into the operations int
 
 ## Out of scope
 
-Candidate frames/comparison (the [nonlinear-interaction](../nonlinear-interaction/requirements.md) agent layer), enumerating every possible repair (top-N by retention suffices), agent tool wrappers ([agent-tools](../agent-tools/requirements.md)).
+Parallel candidates and their comparison (the [nonlinear-interaction](../nonlinear-interaction/requirements.md) and [parallel-drafts](../parallel-drafts/requirements.md) agent layers), enumerating every possible repair (top-N by retention suffices), agent tool wrappers ([agent-tools](../agent-tools/requirements.md)).

@@ -34,14 +34,6 @@ export interface Candidate {
   objective?: "price" | "co2";
 }
 
-export interface Frame {
-  name: string;
-  assignment: Record<string, string>;
-  price: number;
-  footprint?: Footprint;
-  objective?: "price" | "co2";
-}
-
 /** The frozen requirements document an RFQ-seeded agreement diverges from
  * (docs/specs/rfq-reconciliation). Immutable after ingestion apart from the
  * `reconciliation` mark — which is what lets the register be derived here
@@ -60,12 +52,22 @@ export interface RFQ {
   budget_cap?: number;
 }
 
+/** One draft of the agreement (docs/specs/parallel-drafts) — what rides in
+ * agent state is always the current draft's. */
 export interface Configuration {
   choices: Record<string, Choice>;
   statuses: Record<string, Record<string, OptionStatus>>;
   candidate: Candidate | null;
-  frames?: Frame[]; // absent on threads persisted before docs/specs/nonlinear-interaction
   rfq?: RFQ; // only on document-seeded agreements
+}
+
+/** A draft as the switcher draws it, mirrored into agent state by the agent's
+ * committing tools. `price` is null whenever a draft has been edited since its
+ * last completion — it lives on the candidate, which such an edit drops. */
+export interface DraftSummary {
+  id: string;
+  name: string;
+  price: number | null;
 }
 
 export type RegisterStatus = "met" | "waived" | "revised" | "deviation";
@@ -330,7 +332,7 @@ export function canvasEditMessage(
 /**
  * Structured messages for the docs/specs/nonlinear-interaction cards. Same principle as
  * choiceMessage: a visible user message the agent maps onto one atomic tool
- * call (revise_choices with drop+changes / adopt_frame).
+ * call (revise_choices with drop+changes).
  */
 export function repairMessage(
   drop: { variable: string; value: string }[],
@@ -383,8 +385,29 @@ export function leaveOpenMessage(variable: string): string {
   return `${RECONCILE_PREFIX}leave ${label} (${variable}) open`;
 }
 
-export function adoptMessage(frameName: string): string {
-  return `Adopt frame "${frameName}"`;
+/**
+ * The draft moves (docs/specs/parallel-drafts), dispatched by the canvas head
+ * and the comparison card. Visible, like undo and the reconciliation moves:
+ * switching changes what the whole document says, and one transcript can hold
+ * turns that acted on two drafts, so the sentence is what keeps it readable.
+ * Each maps onto one atomic tool call — fork_draft, switch_draft,
+ * discard_draft, compare_drafts.
+ *
+ * A fork carries no name: the agent names the draft from the conversation, and
+ * asking the operator for one is exactly what the prompt forbids.
+ */
+export const forkDraftMessage = "Keep this draft and start another from it";
+
+export function switchDraftMessage(draftName: string): string {
+  return `Switch to draft "${draftName}"`;
+}
+
+export function discardDraftMessage(draftName: string): string {
+  return `Discard draft "${draftName}"`;
+}
+
+export function compareDraftMessage(draftName: string): string {
+  return `Compare draft "${draftName}" with the current one`;
 }
 
 /**

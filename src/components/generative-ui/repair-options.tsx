@@ -39,7 +39,7 @@ interface Payload {
 }
 
 export function RepairOptions({ toolCallId, status, result }: CardProps) {
-  const { inert, dispatch } = useCardDispatch(toolCallId);
+  const { inert, reason, dispatch } = useCardDispatch(toolCallId);
 
   if (status !== "complete" || !result) {
     return <CardPending>checking the revision…</CardPending>;
@@ -54,7 +54,7 @@ export function RepairOptions({ toolCallId, status, result }: CardProps) {
     .join(", ");
 
   return (
-    <CardShell inert={inert} className="space-y-2">
+    <CardShell inert={inert} reason={reason} className="space-y-2">
       <p className="text-sm">
         <span className="font-medium">{wanted}</span> collides with earlier
         decisions. Ways forward:

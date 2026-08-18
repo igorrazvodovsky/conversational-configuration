@@ -41,7 +41,7 @@ interface Payload {
 }
 
 export function AskChoices({ toolCallId, status, result }: CardProps) {
-  const { inert, dispatch: send } = useCardDispatch(toolCallId);
+  const { inert, reason, dispatch: send } = useCardDispatch(toolCallId);
   const [selections, setSelections] = useState<Record<string, string>>({});
 
   if (status !== "complete" || !result) {
@@ -66,7 +66,7 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
   };
 
   return (
-    <CardShell inert={inert} className="space-y-3">
+    <CardShell inert={inert} reason={reason} className="space-y-3">
       {payload.prompt && <p className="text-sm">{payload.prompt}</p>}
       {payload.variables.map((variable) => (
         <div key={variable.name}>

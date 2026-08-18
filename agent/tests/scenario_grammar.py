@@ -43,8 +43,19 @@ def repair_message(model, drop: list[tuple[str, str]],
             else f"Apply repair: {change_part}")
 
 
-def adopt_message(frame_name: str) -> str:
-    return f'Adopt frame "{frame_name}"'
+FORK_DRAFT_MESSAGE = "Keep this draft and start another from it"
+
+
+def switch_draft_message(draft_name: str) -> str:
+    return f'Switch to draft "{draft_name}"'
+
+
+def discard_draft_message(draft_name: str) -> str:
+    return f'Discard draft "{draft_name}"'
+
+
+def compare_draft_message(draft_name: str) -> str:
+    return f'Compare draft "{draft_name}" with the current one'
 
 
 UNDO_MESSAGE = "Undo the last change"

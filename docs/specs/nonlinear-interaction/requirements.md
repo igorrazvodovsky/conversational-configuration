@@ -1,6 +1,6 @@
 # Nonlinear interaction: revision, candidates, resumption
 
-Status: implemented (approved 2026-08-13; browser-verified same day). The candidate-frames half is superseded by [parallel-drafts](../parallel-drafts/requirements.md), approved 2026-08-16 and not yet built: frames become drafts — full configurations with their own provenance and history — and the three frame tools are replaced. What is recorded below is what is built; reconcile it when that spec lands. Revision with repair and resumption are unaffected.
+Status: implemented (approved 2026-08-13; browser-verified same day). The candidate-frames half is superseded by [parallel-drafts](../parallel-drafts/requirements.md), implemented 2026-08-17: frames became drafts — full configurations with their own provenance and history — and the three frame tools were replaced. Revision with repair and resumption are unaffected.
 
 The prototype's actual research contribution ([docs/research/interaction-literature.md](../../research/interaction-literature.md), thread E): revising constrained choices with ripple explanation and repair, comparing parallel candidate configurations, and resuming mid-configuration. Everything before this made revision *safe* (atomic rejection); this feature makes it *productive*.
 
@@ -21,17 +21,17 @@ Revision with repair:
 - GIVEN a repair option is chosen (in chat or via its rendered card), WHEN it is applied, THEN the revision and the repair land as one atomic solver-validated batch — never a half-applied state.
 - GIVEN a requested change that does NOT conflict, WHEN `revise_choices` runs, THEN it behaves exactly like `set_choices` (no ceremony for the easy case).
 
-Candidate frames:
+Parallel candidates:
 
-- GIVEN a current candidate, WHEN the customer asks to keep it (e.g. "save this as the practical one"), THEN it is stored as a named frame in agent state; frames survive further configuration changes.
-- GIVEN two frames (or a frame and the current candidate), WHEN compared, THEN a comparison card renders in chat: only the variables that differ, each with both values and the price delta, plus total prices — data computed backend-side, valid by construction.
-- GIVEN a comparison, WHEN the customer adopts one side, THEN its assignment replaces the current choices atomically and the spec sheet reflects it; the other frame remains stored.
+Frames — deliberately lossy snapshots carrying an assignment and a price — were removed by the [parallel-drafts spec](../parallel-drafts/requirements.md), which holds the criteria for this half of the feature: a workspace keeps several whole drafts of its agreement, one of them current, and comparing two of them renders the card this spec designed. Its *automatic frame naming* exclusion below is reversed there: the agent names a draft when it forks it.
+
+- GIVEN two parallel candidates, WHEN compared, THEN a comparison card renders in chat: only the variables that differ, each with both values and the price delta, plus total prices — data computed backend-side, valid by construction.
 
 Resumption:
 
-- GIVEN an existing conversation reopened from its workspace's conversation list, WHEN the canvas mounts, THEN the transcript renders as it was and the canvas shows the agreement's *current* state with provenance badges, candidate, and frames. (Since the [agreement-workspace spec](../agreement-workspace/requirements.md), configuration hydrates from the durable workspace rather than the thread checkpoint; see its design.)
+- GIVEN an existing conversation reopened from its workspace's conversation list, WHEN the canvas mounts, THEN the transcript renders as it was and the canvas shows the agreement's *current* state with provenance badges, candidate, and the draft it belongs to. (Since the [agreement-workspace spec](../agreement-workspace/requirements.md), configuration hydrates from the durable workspace rather than the thread checkpoint; see its design.)
 - GIVEN a resumed thread, WHEN the customer asks what's left, THEN the agent answers from `get_configuration` — decided (with who decided), forced, and undecided variables — without re-eliciting anything already settled.
 
 ## Out of scope
 
-Comparing more than two frames at once; automatic frame naming; canvas-side ripple animation or diff visualization (comparison lives in chat for now); persistence beyond LangGraph thread checkpoints; enumerating every possible repair (top-N by retention suffices).
+Comparing more than two drafts at once; canvas-side ripple animation or diff visualization (comparison lives in chat for now); persistence beyond LangGraph thread checkpoints; enumerating every possible repair (top-N by retention suffices).

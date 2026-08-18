@@ -1,6 +1,6 @@
 """Configuration state and solver-backed agent tools (docs/specs/agent-tools,
-ask_choices from docs/specs/agreement-document, revision/frames from
-docs/specs/nonlinear-interaction)."""
+ask_choices from docs/specs/agreement-document, revision from
+docs/specs/nonlinear-interaction, drafts from docs/specs/parallel-drafts)."""
 
 import json
 from pathlib import Path
@@ -28,9 +28,9 @@ class Choice(TypedDict):
     source: Source
 
 
-# Lifetime kg CO2e (docs/specs/environmental-footprint). Stored on candidates
-# and frames; absent on threads persisted before the footprint feature —
-# always read with .get.
+# Lifetime kg CO2e (docs/specs/environmental-footprint). Stored on candidates;
+# absent on threads persisted before the footprint feature — always read with
+# .get.
 class Footprint(TypedDict):
     embodied: int
     use_phase: int
@@ -47,14 +47,6 @@ Objective = Literal["price", "co2"]
 # never labels a lowest-footprint completion "cheapest"; absent on
 # pre-footprint threads, which were always cheapest.
 class Candidate(TypedDict):
-    assignment: dict[str, str]
-    price: int
-    footprint: NotRequired[Footprint]
-    objective: NotRequired[Objective]
-
-
-class Frame(TypedDict):
-    name: str
     assignment: dict[str, str]
     price: int
     footprint: NotRequired[Footprint]
@@ -90,11 +82,13 @@ class RFQ(TypedDict):
     budget_cap: NotRequired[int]
 
 
+# One draft of the agreement (docs/specs/parallel-drafts). `configuration`
+# below is always the *current* draft's — every tool acts on that one, and
+# which one it is lives in the store.
 class Configuration(TypedDict):
     choices: dict[str, Choice]
     statuses: dict[str, dict[str, str]]  # var -> value -> chosen|forced|invalid|open
     candidate: Candidate | None
-    frames: list[Frame]
     rfq: NotRequired[RFQ]  # only on document-seeded agreements
 
 
@@ -105,15 +99,26 @@ class Configuration(TypedDict):
 class Snapshot(TypedDict):
     choices: dict[str, Choice]
     candidate: Candidate | None
-    frames: list[Frame]
     rfq: NotRequired[RFQ]
 
 
-# How far each way the workspace's history reaches, mirrored into agent state
-# so the canvas can offer the controls without polling the store.
+# How far each way the current draft's history reaches, mirrored into agent
+# state so the canvas can offer the controls without polling the store.
 class HistoryDepths(TypedDict):
     undo: int
     redo: int
+
+
+# What the canvas's draft switcher draws a row from (docs/specs/parallel-drafts).
+# `price` is nullable and routinely null: it lives on the candidate, which
+# `_keep_candidate` drops as soon as a choice diverges from it, so a draft
+# edited since its last completion has no price to report and shows by name
+# alone. Solving the other drafts to fill the gap would put solver calls behind
+# a render.
+class DraftSummary(TypedDict):
+    id: str
+    name: str
+    price: int | None
 
 
 class AgentState(BaseAgentState):
@@ -125,11 +130,18 @@ class AgentState(BaseAgentState):
     # workspace's UI re-renders with the name immediately. The store is the
     # durable copy; this field is display plumbing.
     workspace_name: NotRequired[str]
-    # Mirror of the workspace's undo/redo depths (docs/specs/undo), on the same
-    # terms: the store holds the history, this is what the canvas renders its
-    # controls from. Absent until the first batch of a conversation commits,
-    # and seeded by the frontend on attach.
+    # Mirror of the current draft's undo/redo depths (docs/specs/undo), on the
+    # same terms: the store holds the history, this is what the canvas renders
+    # its controls from. Absent until the first batch of a conversation
+    # commits, and seeded by the frontend on attach.
     history: NotRequired[HistoryDepths]
+    # Mirrors of the workspace's drafts and which one this conversation is
+    # working on (docs/specs/parallel-drafts). Chrome only — the store decides
+    # what is current — but `current_draft_id` also rides in the thread
+    # checkpoint, where it is half of what tells a reopened conversation that
+    # its cards refer to another document.
+    current_draft_id: NotRequired[str]
+    drafts: NotRequired[list[DraftSummary]]
 
 
 def empty_configuration() -> Configuration:
@@ -137,7 +149,6 @@ def empty_configuration() -> Configuration:
         "choices": {},
         "statuses": SOLVER.valid_options({}),
         "candidate": None,
-        "frames": [],
     }
 
 
@@ -173,11 +184,6 @@ def _keep_candidate(candidate: Candidate | None, choices: dict[str, str]) -> Can
     return None
 
 
-def _frames(config: Configuration) -> list[Frame]:
-    # .get: threads persisted before docs/specs/nonlinear-interaction have no frames key
-    return config.get("frames", [])
-
-
 def _carry_rfq(config: Configuration, new_config: Configuration) -> Configuration:
     """Keep the frozen RFQ reference across a transition that rebuilds the
     configuration wholesale. The register is the difference between it and the
@@ -211,7 +217,6 @@ def apply_choices(
         "choices": choices,
         "statuses": statuses,
         "candidate": _keep_candidate(config["candidate"], merged),
-        "frames": _frames(config),
     })
     return new_config, newly_forced
 
@@ -226,7 +231,6 @@ def withdraw_choices(config: Configuration, variables: list[str]) -> Configurati
         "choices": choices,
         "statuses": SOLVER.valid_options(remaining),
         "candidate": _keep_candidate(config["candidate"], remaining),
-        "frames": _frames(config),
     })
 
 
@@ -244,11 +248,10 @@ def make_candidate(config: Configuration, objective: Objective = "price") -> Con
         "candidate": {"assignment": assignment, "price": price,
                       "footprint": _state_footprint(assignment),
                       "objective": objective},
-        "frames": _frames(config),
     }
 
 
-# -- revision and frames (docs/specs/nonlinear-interaction) ---------------------------------------
+# -- revision (docs/specs/nonlinear-interaction) --------------------------
 
 
 def revise(
@@ -270,58 +273,45 @@ def revise(
     return apply_choices(base, changes, source)
 
 
-def save_frame(config: Configuration, name: str) -> Configuration:
-    """Store the current candidate as a named frame (replacing a same-named
-    one). Frames survive later configuration changes."""
-    candidate = config["candidate"]
+# -- drafts (docs/specs/parallel-drafts) ----------------------------------
+
+
+def _draft_candidate(name: str, config: Configuration) -> Candidate:
+    """The priced whole a draft is compared by. A draft whose candidate was
+    dropped by an edit has nothing to compare *with* — the choices alone carry
+    no price and no footprint — so the fix is named rather than guessed at, and
+    never solved for here: the solver answers for the draft being worked on
+    (constitution #1)."""
+    candidate = config.get("candidate")
     if not candidate:
-        raise ValueError("no candidate to save — call propose_completion first")
-    if not name.strip():
-        raise ValueError("frame needs a non-empty name")
-    frame: Frame = {
-        "name": name.strip(),
-        "assignment": dict(candidate["assignment"]),
-        "price": candidate["price"],
-    }
-    if "footprint" in candidate:
-        frame["footprint"] = candidate["footprint"]
-    if "objective" in candidate:
-        frame["objective"] = candidate["objective"]
-    frames = [f for f in _frames(config) if f["name"] != frame["name"]] + [frame]
-    return {**config, "frames": frames}
-
-
-def _find_frame(config: Configuration, name: str) -> Frame:
-    frame = next((f for f in _frames(config) if f["name"] == name), None)
-    if frame is None:
-        stored = [f["name"] for f in _frames(config)] or ["<none>"]
-        raise ValueError(f"no frame named {name!r}; stored frames: {stored}")
-    return frame
-
-
-def frame_comparison(config: Configuration, a: str, b: str | None = None) -> dict:
-    """Comparison payload between frame `a` and frame `b` (or the current
-    candidate when `b` is omitted): only the differing variables, both values
-    with their monthly deltas, and the monthly-price delta. Per-side deltas are
-    computed at each side's own term — two agreements may differ precisely in
-    term. Data is computed from stored solver results, so both sides are valid
-    by construction."""
-    side_a = _find_frame(config, a)
-    if b is not None:
-        side_b: Frame | dict = _find_frame(config, b)
-    elif config["candidate"]:
-        side_b = {"name": "current", **config["candidate"]}
-    else:
         raise ValueError(
-            "nothing to compare against — name a second frame or call "
-            "propose_completion to create a current candidate"
+            f"draft {name!r} has no priced agreement to compare — switch to it "
+            "and propose a completion first"
         )
+    return candidate
+
+
+def draft_comparison(
+    a_name: str,
+    a_config: Configuration,
+    b_name: str,
+    b_config: Configuration,
+    b_is_current: bool = False,
+) -> dict:
+    """Comparison payload between two drafts: only the differing variables,
+    both values with their monthly deltas, and the monthly-price delta.
+    Per-side deltas are computed at each side's own term — two agreements may
+    differ precisely in term. Each side is its draft's stored solver result, so
+    both are valid by construction."""
+    side_a = {"name": a_name, **_draft_candidate(a_name, a_config)}
+    side_b = {"name": b_name, **_draft_candidate(b_name, b_config)}
 
     months_a = MODEL.months_of(side_a["assignment"].get(TERM_VAR))
     months_b = MODEL.months_of(side_b["assignment"].get(TERM_VAR))
 
     def _side(var_name: str, val: str | None, months: int) -> dict:
-        # val is None when a frame persisted before the service frame lacks an agreement variable
+        # val is None when a draft adapted from a workspace written before the
+        # service frame lacks an agreement variable
         if val is None:
             return {"value": None, "label": "—", "price": 0}
         return {"value": val, "label": _label(var_name, val),
@@ -345,38 +335,15 @@ def frame_comparison(config: Configuration, a: str, b: str | None = None) -> dic
     fp_a = side_a.get("footprint")
     fp_b = side_b.get("footprint")
     return {
-        "kind": "frame_comparison",
+        "kind": "draft_comparison",
         "a": {"name": side_a["name"], "price": side_a["price"], "footprint": fp_a},
         "b": {"name": side_b["name"], "price": side_b["price"],
-              "isCurrent": b is None, "footprint": fp_b},
+              "isCurrent": b_is_current, "footprint": fp_b},
         "differences": differences,
         "priceDelta": side_b["price"] - side_a["price"],
         # 0 when either side predates the footprint feature — the card shows "—"
         "footprintDelta": (fp_b["total"] - fp_a["total"]) if fp_a and fp_b else 0,
     }
-
-
-def adopt_frame(config: Configuration, name: str) -> Configuration:
-    """Atomically replace the current choices with the frame's full assignment
-    (source 'user' — adopting is the customer's decision). The frame stays
-    stored."""
-    frame = _find_frame(config, name)
-    assignment = dict(frame["assignment"])
-    candidate: Candidate = {"assignment": assignment, "price": frame["price"]}
-    if "footprint" in frame:
-        candidate["footprint"] = frame["footprint"]
-    if "objective" in frame:
-        candidate["objective"] = frame["objective"]
-    # Every choice becomes source "user": adopting is the customer's decision,
-    # so a frame adopted over a document-seeded agreement clears the document
-    # badges. The register still derives correctly from the frozen block —
-    # the provenance of the *current* values is genuinely the adoption.
-    return _carry_rfq(config, {
-        "choices": {v: {"value": val, "source": "user"} for v, val in assignment.items()},
-        "statuses": SOLVER.valid_options(assignment),
-        "candidate": candidate,
-        "frames": _frames(config),
-    })
 
 
 # -- RFQ reconciliation (docs/specs/rfq-reconciliation) -------------------
@@ -613,7 +580,6 @@ def restore(snap: Snapshot) -> Configuration:
         # The candidate cannot be recomputed faithfully (see `ingest`), so it
         # is restored as it was — but only if it still extends these choices.
         "candidate": _keep_candidate(snap.get("candidate"), values),
-        "frames": list(snap.get("frames") or []),
     }
     rfq = snap.get("rfq")
     if rfq is not None:
@@ -650,12 +616,6 @@ def describe_restoration(before: Configuration, after: Configuration) -> str:
             f"{after_price} EUR/month" if after_price is not None
             else "no priced candidate — propose a completion to price it again"
         )
-    was_frames = {f["name"] for f in _frames(before)}
-    now_frames = {f["name"] for f in _frames(after)}
-    for name in sorted(now_frames - was_frames):
-        parts.append(f"frame {name!r} back")
-    for name in sorted(was_frames - now_frames):
-        parts.append(f"frame {name!r} gone")
     # Requirements are immutable after ingestion and only their mark moves, so
     # the two lists line up by position wherever both agreements have one.
     before_reqs = (before.get("rfq") or {}).get("requirements", [])
@@ -862,14 +822,36 @@ def _current_thread_id() -> str | None:
         return None
 
 
-def _commit(runtime: ToolRuntime, config: Configuration) -> HistoryDepths | None:
+def _mirrors(record: dict) -> dict:
+    """The chrome the canvas renders from, read off the record that was just
+    written: how far the current draft's history reaches, which draft is
+    current, and what other drafts exist with their prices
+    (docs/specs/parallel-drafts). Every path that moves the workspace goes
+    through here, structural moves included — a switch that left the history
+    depths behind would offer an undo belonging to the other document."""
+    return {
+        "history": workspace_store.history_depths(record),
+        "current_draft_id": workspace_store.current_draft(record)["id"],
+        "drafts": [
+            {
+                "id": d["id"],
+                "name": d["name"],
+                "price": (d["configuration"].get("candidate") or {}).get("price"),
+            }
+            for d in record["drafts"]
+        ],
+    }
+
+
+def _commit(runtime: ToolRuntime, config: Configuration) -> dict | None:
     """Write-through to the durable workspace (docs/specs/agreement-workspace):
     the thread checkpoint keeps its own copy as the historical record of what
-    this conversation saw. A missing workspace must not break the conversation.
+    this conversation saw. The write lands on the current draft
+    (docs/specs/parallel-drafts) and no other. A missing workspace must not
+    break the conversation.
 
-    Returns the workspace's undo/redo depths after the write, for the state
-    mirror the canvas renders its controls from — None when there is no
-    workspace and so no history."""
+    Returns the state mirrors after the write — None when there is no workspace
+    and so nothing to mirror."""
     workspace_id = runtime.state.get("workspace_id")
     if not workspace_id:
         return None  # legacy thread — nothing durable to update
@@ -879,7 +861,7 @@ def _commit(runtime: ToolRuntime, config: Configuration) -> HistoryDepths | None
     except KeyError:
         print(f"workspace {workspace_id!r} not found — configuration not persisted")
         return None
-    return workspace_store.history_depths(record)
+    return _mirrors(record)
 
 
 def _undecided(config: Configuration) -> list[str]:
@@ -919,11 +901,8 @@ def _committed(runtime: ToolRuntime, config: Configuration, lines: list[str]) ->
     """A tool that moved the agreement: write through to the workspace, then
     report. The write-through precedes the reply everywhere, so a message the
     agent has read always describes a durable agreement."""
-    depths = _commit(runtime, config)
-    update = {"configuration": config}
-    if depths is not None:
-        update["history"] = depths
-    return _reply(runtime, "\n".join(lines), **update)
+    mirrors = _commit(runtime, config)
+    return _reply(runtime, "\n".join(lines), configuration=config, **(mirrors or {}))
 
 
 def _repair_options(
@@ -1036,7 +1015,7 @@ def propose_completion(runtime: ToolRuntime, objective: Objective = "price") -> 
     fee; objective="co2" minimizes the modelled lifetime CO2e. The other
     objective is always solved too — when the two disagree, the result says
     how many variables differ and both deltas; offer to show the pair
-    (save_frame the first, propose the other, compare_frames)."""
+    (fork_draft, propose the other objective on the fork, compare_drafts)."""
     config = _get_config(runtime)
     new_config = make_candidate(config, objective)
     other: Objective = "co2" if objective == "price" else "price"
@@ -1046,60 +1025,149 @@ def propose_completion(runtime: ToolRuntime, objective: Objective = "price") -> 
     return _committed(runtime, new_config, [content])
 
 
-@tool("save_frame")
-def save_frame_tool(name: str, runtime: ToolRuntime) -> Command:
-    """Store the current candidate as a named frame so the customer can keep
-    exploring and compare or return to it later. Offer this before big
-    exploratory changes. Requires a candidate (propose_completion first)."""
-    config = _get_config(runtime)
+# -- draft tools (docs/specs/parallel-drafts) -----------------------------
+#
+# Structural moves over whole documents. None of them writes a configuration
+# through `_committed`: forking copies one, switching moves a pointer, and
+# discarding removes one, so none of the three is a change to a document and
+# none of them lands in a document's history.
+
+
+def _no_drafts(runtime: ToolRuntime) -> Command:
+    return _reply(runtime, "This conversation is not attached to an elevator, "
+                           "so it has no drafts.")
+
+
+@tool("fork_draft")
+def fork_draft_tool(name: str, runtime: ToolRuntime) -> Command:
+    """Keep the agreement as it stands and start a second draft of it to work
+    on, under the name you give it. Both drafts stay whole and editable, and
+    the customer can switch between them.
+
+    Offer this whenever the customer wants to try something without giving up
+    what they have ("what would a premium version look like?", "keep this one
+    but show me…") — it is the alternative to changing the agreement and
+    relying on undo. `name` is yours to choose from the conversation, short and
+    descriptive of what this draft is for ("Premium service", "Without the
+    modernization"). Never ask the customer to name it.
+    """
+    workspace_id = runtime.state.get("workspace_id")
+    if not workspace_id:
+        return _no_drafts(runtime)
     try:
-        new_config = save_frame(config, name)
-    except ValueError as e:
+        record = workspace_store.fork_draft(workspace_id, name, _current_thread_id())
+    except (KeyError, ValueError) as e:
         return _error(runtime, e)
-    frame = new_config["frames"][-1]
-    return _committed(runtime, new_config, [
-        f"Saved frame {frame['name']!r} at {frame['price']} EUR/month."
-    ])
+    draft = workspace_store.current_draft(record)
+    source = next(
+        (d["name"] for d in record["drafts"] if d["id"] == draft["forkedFrom"]), None
+    )
+    return _reply(
+        runtime,
+        f"Forked into a new draft {draft['name']!r}, which is now the one being "
+        f"worked on; it holds everything "
+        + (f"{source!r}" if source else "the previous draft")
+        + " holds, and that draft is unchanged and still open to return to.",
+        **_mirrors(record),
+    )
+
+
+@tool("switch_draft")
+def switch_draft_tool(name: str, runtime: ToolRuntime) -> Command:
+    """Work on another draft of this agreement. Everything after this — every
+    change, the candidate, undo — applies to that draft, and the one being left
+    keeps its choices and their sources exactly as they are. Nothing is
+    replaced and nothing is re-attributed."""
+    workspace_id = runtime.state.get("workspace_id")
+    if not workspace_id:
+        return _no_drafts(runtime)
+    try:
+        record = workspace_store.switch_draft(workspace_id, name, _current_thread_id())
+    except (KeyError, ValueError) as e:
+        return _error(runtime, e)
+    draft = workspace_store.current_draft(record)
+    price = (draft["configuration"].get("candidate") or {}).get("price")
+    return _reply(
+        runtime,
+        f"Now working on draft {draft['name']!r}"
+        + (f", {price} EUR/month." if price is not None
+           else " — it has no priced candidate; propose a completion to price it.")
+        + " The sheet already shows it: say in one sentence what this draft "
+          "reads, and stop.",
+        configuration=draft["configuration"],
+        **_mirrors(record),
+    )
+
+
+@tool("discard_draft")
+def discard_draft_tool(name: str, runtime: ToolRuntime) -> Command:
+    """Remove a draft the customer has decided against. Only a draft that is
+    not the one being worked on can go, and it does not come back — offer it
+    when they say they are done with an alternative, never on your own
+    initiative."""
+    workspace_id = runtime.state.get("workspace_id")
+    if not workspace_id:
+        return _no_drafts(runtime)
+    try:
+        record = workspace_store.discard_draft(workspace_id, name, _current_thread_id())
+    except (KeyError, ValueError) as e:
+        return _error(runtime, e)
+    return _reply(
+        runtime,
+        f"Discarded the draft {name.strip()!r}. Remaining: "
+        + ", ".join(d["name"] for d in record["drafts"])
+        + ".",
+        **_mirrors(record),
+    )
 
 
 @tool
-def compare_frames(a: str, runtime: ToolRuntime, b: str | None = None) -> str:
-    """Compare two saved frames (or frame `a` against the current candidate if
-    `b` is omitted). The customer sees a side-by-side card of only the
-    differing variables with the price delta."""
-    config = _get_config(runtime)
+def compare_drafts(a: str, runtime: ToolRuntime, b: str | None = None) -> str:
+    """Compare two drafts of this agreement (or draft `a` against the one being
+    worked on, if `b` is omitted). The customer sees a side-by-side card of
+    only the differing variables with the monthly-price delta and the footprint
+    delta. Both drafts need a priced candidate."""
+    workspace_id = runtime.state.get("workspace_id")
+    if not workspace_id:
+        return ("ERROR: this conversation is not attached to an elevator, so it "
+                "has no drafts to compare.")
     try:
-        return json.dumps(frame_comparison(config, a, b))
-    except ValueError as e:
+        record = workspace_store.get_workspace(workspace_id)
+        current = workspace_store.current_draft(record)
+        side_a = workspace_store.draft_named(record, a)
+        side_b = current if b is None else workspace_store.draft_named(record, b)
+        if side_a["id"] == side_b["id"]:
+            raise ValueError(
+                f"{side_a['name']!r} is one draft, not two — name the other one"
+            )
+
+        # The current side comes from the run's own state rather than the
+        # record, so the column labelled current is the sheet the customer is
+        # looking at; the other side can only come from the store.
+        def _config(draft: dict) -> Configuration:
+            return (_get_config(runtime) if draft["id"] == current["id"]
+                    else draft["configuration"])
+
+        return json.dumps(draft_comparison(
+            side_a["name"], _config(side_a),
+            side_b["name"], _config(side_b),
+            side_b["id"] == current["id"],
+        ))
+    except (KeyError, ValueError) as e:
         return f"ERROR: {e}"
-
-
-@tool("adopt_frame")
-def adopt_frame_tool(name: str, runtime: ToolRuntime) -> Command:
-    """Replace the current configuration with a saved frame's full assignment
-    (atomic; the frame stays stored). Use when the customer picks a compared
-    frame to continue from."""
-    config = _get_config(runtime)
-    try:
-        new_config = adopt_frame(config, name)
-    except ValueError as e:
-        return _error(runtime, e)
-    price = new_config["candidate"]["price"]
-    return _committed(runtime, new_config, [
-        f"Adopted frame {name!r} — agreement replaced, {price} EUR/month."
-    ])
 
 
 # -- undo tools (docs/specs/undo) -----------------------------------------
 
 
 def _restore_step(runtime: ToolRuntime, direction: str) -> Command:
-    """One step through the workspace's history, in either direction.
+    """One step through the current draft's history, in either direction.
 
     The history belongs to the agreement, not to this transcript: the store is
-    read fresh, so the batch reversed is the last one applied whoever applied
-    it and from whichever conversation. Nothing is written until the solver
-    has re-validated the restored state.
+    read fresh, so the batch reversed is the last one applied to this draft
+    whoever applied it and from whichever conversation — and never one applied
+    to another draft (docs/specs/parallel-drafts). Nothing is written until the
+    solver has re-validated the restored state.
     """
     workspace_id = runtime.state.get("workspace_id")
     if not workspace_id:
@@ -1117,7 +1185,7 @@ def _restore_step(runtime: ToolRuntime, direction: str) -> Command:
             if direction == "undo" else
             "Nothing to redo — nothing has been undone since the last change."
         ))
-    before = record["configuration"]
+    before = workspace_store.current_draft(record)["configuration"]
     try:
         restored = restore(snap)
     except ValueError as e:
@@ -1127,7 +1195,6 @@ def _restore_step(runtime: ToolRuntime, direction: str) -> Command:
 
     record = workspace_store.commit_restore(
         workspace_id, direction, restored, _current_thread_id())
-    depths = workspace_store.history_depths(record)
     verb = ("Reversed the last change applied to this agreement"
             if direction == "undo" else
             "Reapplied the change that had been undone")
@@ -1137,7 +1204,7 @@ def _restore_step(runtime: ToolRuntime, direction: str) -> Command:
         "The sheet already shows this. Say in one sentence what the agreement "
         "now reads, and stop; do not list it back to the customer.",
     ]
-    return _reply(runtime, "\n".join(lines), configuration=restored, history=depths)
+    return _reply(runtime, "\n".join(lines), configuration=restored, **_mirrors(record))
 
 
 @tool
@@ -1384,13 +1451,30 @@ def get_configuration(runtime: ToolRuntime) -> str:
     config = _get_config(runtime)
     forced = _forced(config["statuses"])
     lines = []
+    drafts_line = None
     workspace_id = runtime.state.get("workspace_id")
     if workspace_id:
         try:
-            name = workspace_store.get_workspace(workspace_id)["name"]
+            record = workspace_store.get_workspace(workspace_id)
+            name = record["name"]
             lines.append(f"Elevator: {name}" if name
                          else "Elevator: unnamed — call name_workspace once you "
                               "know which installation this is.")
+            current = workspace_store.current_draft(record)
+            # Which document this state belongs to, and what else exists beside
+            # it (docs/specs/parallel-drafts) — everything below describes the
+            # current draft and no other.
+            if len(record["drafts"]) > 1:
+                drafts_line = "Drafts: " + ", ".join(
+                    f"{d['name']}"
+                    + (" (this one)" if d["id"] == current["id"] else "")
+                    + (f" {price} EUR/month" if (price := (
+                        d["configuration"].get("candidate") or {}).get("price"))
+                       else "")
+                    for d in record["drafts"]
+                )
+            else:
+                lines.append(f"Draft: {current['name']} (the only one)")
         except KeyError:
             pass
     lines.append("Choices:")
@@ -1405,10 +1489,8 @@ def get_configuration(runtime: ToolRuntime) -> str:
         if fp:
             line += f", modelled lifetime footprint {_format_co2(fp['total'])}"
         lines.append(line + " is stored.")
-    if _frames(config):
-        lines.append("Saved frames: " + ", ".join(
-            f"{f['name']} ({f['price']} EUR/month)" for f in _frames(config)
-        ))
+    if drafts_line:
+        lines.append(drafts_line)
     lines += _register_lines(config)
     lines += _budget_lines(config)
     return "\n".join(lines)
@@ -1503,9 +1585,10 @@ configuration_tools = [
     revise_choices,
     clear_choices,
     propose_completion,
-    save_frame_tool,
-    compare_frames,
-    adopt_frame_tool,
+    fork_draft_tool,
+    switch_draft_tool,
+    discard_draft_tool,
+    compare_drafts,
     undo_change,
     redo_change,
     get_configuration,

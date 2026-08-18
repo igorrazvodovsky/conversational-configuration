@@ -38,20 +38,32 @@ export function CardPending({ children }: { children: ReactNode }) {
 }
 
 /** The card itself, dimmed once it goes inert — spent, or overtaken by a later
- * message, or belonging to a conversation the agreement has moved past. */
+ * message, or belonging to a conversation the agreement has moved past. Only
+ * that last condition has a cause outside the conversation, so only it passes
+ * a `reason`, rendered as a line inside the card: the confusion happens at the
+ * control the operator tried to use, which is where the sentence belongs. */
 export function CardShell({
   inert,
+  reason,
   className,
   children,
 }: {
   inert: boolean;
+  reason?: string | null;
   /** extra classes for the content box, which owns the card's own spacing */
   className?: string;
   children: ReactNode;
 }) {
   return (
     <Card className={cn("my-2 gap-0 py-0 shadow-none", inert && "opacity-60")}>
-      <CardContent className={cn("p-3", className)}>{children}</CardContent>
+      <CardContent className={cn("p-3", className)}>
+        {children}
+        {reason && (
+          <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
+            {reason}
+          </p>
+        )}
+      </CardContent>
     </Card>
   );
 }

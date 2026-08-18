@@ -5,7 +5,8 @@
  * in three layers: recitals — what will happen at the building, in the
  * building's language; operative terms — the commitments and the consideration;
  * schedules — the derived hardware as the sheet it has always been, annexed and
- * collapsed. The frames strip is from docs/specs/nonlinear-interaction.
+ * collapsed. The draft it is one of, and the way to the others, sit at its
+ * identity (docs/specs/parallel-drafts).
  *
  * The document is a projection of `agent.state.configuration`, never a store
  * (constitution #3), and every edit round-trips through the agent as a
@@ -27,20 +28,19 @@ import {
 } from "@copilotkit/react-core/v2";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bookmark, Redo2, Undo2 } from "lucide-react";
+import { ArrowLeft, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription } from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Configuration,
+  DraftSummary,
   RegisterEntry,
   canvasEditMessage,
+  compareDraftMessage,
   completionLabel,
+  discardDraftMessage,
+  forkDraftMessage,
   formatMonthly,
   layerOf,
   liveValue,
@@ -48,12 +48,14 @@ import {
   redoMessage,
   registerEntries,
   reviseRequirementMessage,
+  switchDraftMessage,
   termMonthsInEffect,
   undoMessage,
   variablesByName,
 } from "@/lib/configurator";
 import { PLACEHOLDER_NAME } from "@/lib/workspaces";
 import type { DocumentView } from "./document-parts";
+import { DraftSwitcher } from "./draft-switcher";
 import { Recitals } from "./recitals";
 import { Schedules } from "./schedules";
 import { OperativeTerms } from "./terms";
@@ -62,7 +64,6 @@ const EMPTY: Configuration = {
   choices: {},
   statuses: {},
   candidate: null,
-  frames: [],
 };
 
 /** How long a reveal mark stays before the shell drops it and the highlight
@@ -84,7 +85,12 @@ export function ConfigCanvas({
   const { copilotkit } = useCopilotKit();
   const config: Configuration = agent.state?.configuration ?? EMPTY;
   const isRunning = agent.isRunning;
-  const frames = config.frames ?? [];
+  // Which draft this configuration belongs to and what else exists beside it
+  // (docs/specs/parallel-drafts) — mirrors of the store, seeded on attach and
+  // refreshed by every committing tool, exactly as the undo depths are.
+  const draftState = agent.state as
+    | { drafts?: DraftSummary[]; current_draft_id?: string }
+    | undefined;
   // How far the workspace's history reaches (docs/specs/undo). A mirror of the
   // store, seeded on attach and refreshed by every committing tool; empty
   // before state arrives, and possibly a batch behind when another
@@ -287,6 +293,19 @@ export function ConfigCanvas({
           </div>
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-xl font-semibold">Service agreement</h1>
+            <div className="flex shrink-0 items-center gap-1">
+              {/* Which draft this is, and the way to the others
+                  (docs/specs/parallel-drafts). A menu, so it mounts a tick
+                  after hydration — see the component. */}
+              <DraftSwitcher
+                drafts={draftState?.drafts ?? []}
+                currentDraftId={draftState?.current_draft_id}
+                disabled={isRunning}
+                onSwitch={(name) => dispatch(switchDraftMessage(name))}
+                onFork={() => dispatch(forkDraftMessage)}
+                onCompare={(name) => dispatch(compareDraftMessage(name))}
+                onDiscard={(name) => dispatch(discardDraftMessage(name))}
+              />
             {/* Undo lives on the record's own chrome (docs/specs/undo): the
                 history belongs to the agreement, not to the transcript. Each
                 control is absent rather than disabled at its end of the
@@ -295,7 +314,7 @@ export function ConfigCanvas({
                 is where what was reversed can be said. A `title` rather than
                 a tooltip: nothing here may mint a React id. */}
             {(history.undo > 0 || history.redo > 0) && (
-              <div className="flex shrink-0 items-center gap-1">
+              <>
                 {history.undo > 0 && (
                   <Button
                     variant="ghost"
@@ -322,8 +341,9 @@ export function ConfigCanvas({
                     Redo
                   </Button>
                 )}
-              </div>
+              </>
             )}
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">{productModel.name}</p>
           {/* The monthly figure is stated as a term, in the consideration
@@ -355,37 +375,6 @@ export function ConfigCanvas({
             </p>
           )}
         </header>
-
-        {frames.length > 0 && (
-          <div className="mb-6 flex flex-wrap items-center gap-1.5">
-            <Bookmark className="h-3 w-3 text-muted-foreground" />
-            {frames.map((frame) => (
-              <Tooltip key={frame.name}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    disabled={isRunning}
-                    onClick={() =>
-                      dispatch(
-                        `Compare frame "${frame.name}" with the current configuration`,
-                      )
-                    }
-                    className="font-normal hover:border-primary"
-                  >
-                    {frame.name}
-                    <span className="tabular-nums text-muted-foreground">
-                      {formatMonthly(frame.price)}
-                    </span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  click to compare with the current configuration
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-        )}
 
         {/* Empty, the document still renders — the same three layers with their
             values blank. The shape of the agreement is itself the skeleton, and

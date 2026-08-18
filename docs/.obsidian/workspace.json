@@ -190,6 +190,7 @@
   },
   "active": "a89680baa27c5dca",
   "lastOpenFiles": [
+    "specs/parallel-drafts/tasks.md",
     "discovery/phase-plan.md",
     "research/branching-in-ai-uis.md",
     "discovery/problem-framing.md",
@@ -220,7 +221,6 @@
     "discovery/assertions/choices-that-quote-their-source.md",
     "discovery/assertions/candidate-works-better-than-questions.md",
     "discovery/principles/elicit-in-the-buildings-vocabulary.md",
-    "discovery/principles/revision-is-an-ordinary-move.md",
     "specs/choice-provenance",
     "specs/undo",
     "specs/chat-pane",

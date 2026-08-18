@@ -1,6 +1,6 @@
 # Parallel drafts
 
-Status: approved 2026-08-16; not yet built.
+Status: implemented 2026-08-17.
 
 The built system gives a workspace one agreement and, beside it, *frames*: deliberately lossy snapshots carrying an assignment and a price with no choices, no provenance, no statuses and no register state. A frame cannot be rendered as a document, cannot be worked on, and can only be taken up by `adopt_frame`, which rewrites every source to `user`. So an operator who wants to hold a practical agreement and a premium one cannot; they can park a flattened copy of one and swap the live agreement for it.
 
