@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "discovery/phase-plan.md",
+                "file": "discovery/jtbd/job-stories.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "phase-plan"
+              "title": "job-stories"
             }
           }
         ]
@@ -42,7 +42,7 @@
               "state": {
                 "sortOrder": "alphabetical",
                 "autoReveal": false,
-                "showSearch": false,
+                "showSearch": true,
                 "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
@@ -55,7 +55,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "gaps",
+                "query": "walkthrough",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "discovery/phase-plan.md",
+                "file": "discovery/jtbd/job-stories.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "discovery/phase-plan.md",
+                "file": "discovery/jtbd/job-stories.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "discovery/phase-plan.md",
+                "file": "discovery/jtbd/job-stories.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,41 +190,41 @@
   },
   "active": "a89680baa27c5dca",
   "lastOpenFiles": [
+    "specs/conversation-checks/requirements.md",
+    "specs/conversation-checks/design.md",
+    "specs/conversation-checks",
+    "discovery/scenarios/tender-as-entrance.md",
+    "discovery/scenarios/renewal-as-revision.md",
+    "discovery/scenarios/needs-not-nomenclature.md",
+    "discovery/scenarios/mid-contract-revision.md",
+    "discovery/scenarios/comparing-agreements.md",
+    "discovery/scenarios",
+    "specs/demo-scenarios/requirements.md",
+    "specs/scenario-harness/requirements.md",
+    "specs/scenario-harness/design.md",
+    "specs/scenario-harness",
+    "discovery/docs/discovery/scenarios/tender-as-entrance.md",
+    "discovery/docs/discovery/scenarios/renewal-as-revision.md",
+    "discovery/docs/discovery/scenarios/needs-not-nomenclature.md",
+    "discovery/docs/discovery/scenarios/mid-contract-revision.md",
+    "discovery/docs/discovery/scenarios/comparing-agreements.md",
+    "discovery/docs/discovery/scenarios",
+    "discovery/docs/discovery",
+    "discovery/docs",
+    "demo-scenarios.md",
+    "discovery/jtbd/job-stories.md",
+    "discovery/phase-plan.md",
+    "discovery/direction.md",
+    "discovery/jtbd/micro-job-stories.md",
     "specs/visual-configuration/tasks.md",
     "specs/visual-configuration/design.md",
     "specs/visual-configuration/requirements.md",
     "specs/visual-configuration",
-    "discovery/direction.md",
     "research/branching-in-ai-uis.md",
     "specs/open-points/requirements.md",
     "specs/open-points",
     "discovery/assertions/open-points-carried-by-the-document.md",
-    "specs/parallel-drafts/tasks.md",
-    "discovery/phase-plan.md",
-    "discovery/problem-framing.md",
-    "research/gaps.md",
-    "specs/parallel-drafts/design.md",
-    "specs/parallel-drafts/requirements.md",
     "specs/parallel-drafts/requirements.md.tmp.35961.ad7be9d6697f",
-    "specs/parallel-drafts",
-    "specs/rfq-reconciliation/design.md",
-    "discovery/jtbd/persona-building-operator.md",
-    "specs/undo/tasks.md",
-    "specs/undo/design.md",
-    "research/living-document-undo.md",
-    "specs/suggested-moves/tasks.md",
-    "specs/shared-attention/tasks.md",
-    "research/copilotkit-surface.md",
-    "specs/suggested-moves/design.md",
-    "specs/suggested-moves/requirements.md",
-    "specs/suggested-moves",
-    "specs/shared-attention/design.md",
-    "specs/shared-attention/requirements.md",
-    "specs/shared-attention",
-    "research/interaction-literature.md.tmp.59267.1940252726b2",
-    "discovery/assertions/generated-controls-work-better-than-free-text.md",
-    "specs/choice-provenance",
-    "specs/undo",
-    "specs/chat-pane"
+    "specs/parallel-drafts"
   ]
 }

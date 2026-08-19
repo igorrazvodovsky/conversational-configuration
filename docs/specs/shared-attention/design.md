@@ -124,5 +124,5 @@ Two environment findings recorded so they are not rediscovered. The composer's k
 
 ## Known gaps
 
-- A stale transcript that already contains the agent's *own* contradicting answer can still anchor it: after one wrong "still 15 years" (given before the prompt hardening), a repeat question got the same wrong answer even under the hard rule. Differently shaped questions escape it. Tuning this further is scenario-harness work (`compare_refs` is the instrument that sees prompt edits), not walkthrough work.
+- A stale transcript that already contains the agent's *own* contradicting answer can still anchor it: after one wrong "still 15 years" (given before the prompt hardening), a repeat question got the same wrong answer even under the hard rule. Differently shaped questions escape it. Tuning this further is conversation-checks work (`compare_refs` is the instrument that sees prompt edits), not walkthrough work.
 - The agent's App Context block carries the A2UI starter catalog's five entries beside this spec's two (decision 1's caveat); the dilution goes away when that starter surface is unmounted.

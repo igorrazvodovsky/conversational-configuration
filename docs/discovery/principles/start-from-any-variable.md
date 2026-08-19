@@ -10,7 +10,7 @@ The user may start from any variable, in any order, and edit anything at any tim
 
 *The limiting case is a document.* An inbound RFQ specifies many variables at once, and the [rfq-reconciliation spec](../../specs/rfq-reconciliation/requirements.md) treats document-seeding as this principle taken to its limit, with [a document-seeded candidate with named deviations is better than manual compliance checking](../assertions/seeded-candidate-with-named-deviations.md) carrying the claim.
 
-*Coverage.* Deliberately exercised in the fourth [demo scenario](../../specs/demo-scenarios/requirements.md): the renewal opens with the bare dimension statement "the shaft is 1800 by 1700", with no canvas control and no pending question, and must land on the right variable without re-eliciting anything settled ([../direction.md](../direction.md) §4).
+*Coverage.* Deliberately exercised in [renewal as revision](../scenarios/renewal-as-revision.md): the renewal opens with the bare dimension statement "the shaft is 1800 by 1700", with no canvas control and no pending question, and must land on the right variable without re-eliciting anything settled ([../direction.md](../direction.md) §4).
 
 ## Related
 

@@ -1,5 +1,5 @@
 """Comparison mode: the same scenarios against two checkouts of the agent
-(docs/specs/demo-scenarios design).
+(docs/specs/conversation-checks design).
 
 A prompt or docstring edit is invisible to every other check in this repo. This
 runs the scenarios against the working tree and against a git ref, and reports
@@ -53,7 +53,14 @@ def main(ref: str, scenario: str | None) -> int:
     for name in sorted(set(baseline) | set(current)):
         print(f"\n## {name}\n")
         b, c = baseline.get(name, {}), current.get(name, {})
-        width = max(len(k) for k in set(b) | set(c))
+        # A scenario can report nothing on a side — one tree does not define it,
+        # or it stopped before its first check. Nothing to compare, and a bare
+        # max() over no keys would end the report with a traceback instead.
+        keys = set(b) | set(c)
+        if not keys:
+            print("no assertions on either side")
+            continue
+        width = max(len(k) for k in keys)
         print(f"{'assertion':{width}}  {ref:>12}  {'working tree':>14}")
         for key in sorted(set(b) | set(c)):
             def mark(side):

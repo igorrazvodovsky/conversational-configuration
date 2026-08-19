@@ -38,7 +38,7 @@ Serves discovery principle [the agent proposes and the user decides](../../disco
 
 - [Chat pane](../chat-pane/requirements.md) owns what the suggestion strip is *made of* — the pill component, its place above the composer, its styling. This spec owns only what the pills say, which that spec and [chat surface](../chat-surface/requirements.md) both explicitly leave unassigned.
 - [Agreement document](../agreement-document/requirements.md) owns the in-chat controls the agent raises with `ask_choices`. Those answer the agent's question; these open the customer's move. The two must not converge: a pill that answers a pending question is that spec's control in the wrong place.
-- [Demo scenarios](../demo-scenarios/requirements.md) sets its scenarios up from a suggestion chip on a fresh workspace, which the first acceptance criterion preserves.
+- The [demo scenarios](../../discovery/scenarios/) set up from a suggestion chip on a fresh workspace, which the first acceptance criterion preserves.
 - [RFQ reconciliation](../rfq-reconciliation/requirements.md) supplies the outstanding-deviation state one family of pills reads.
 
 ## Out of scope

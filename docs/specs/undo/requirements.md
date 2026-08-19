@@ -49,7 +49,7 @@ Affordance:
 - [agreement-workspace](../agreement-workspace/requirements.md): the store gains a history field beside each draft's configuration; write-through and last-write-wins are unchanged.
 - [agreement-document](../agreement-document/requirements.md): the structured grammar gains the undo and redo messages; the canvas hosts the control. Prompt wording and message copy stay coupled — change them together.
 - [choice-provenance](../choice-provenance/requirements.md) (draft): quotes ride the snapshots untouched. An undo that restores a superseded choice restores its words with it, consistent with that spec's rule that a choice carries its current grounds — the restored words are current again.
-- [demo-scenarios](../demo-scenarios/requirements.md): undo's criteria are tool-call- and state-level, so the harness can assert them; whether that is a new scenario or an extension of an existing one is design's to decide.
+- [conversation checks](../conversation-checks/requirements.md): undo's criteria are tool-call- and state-level, and the harness asserts them as the closing turns of [mid-contract revision](../../discovery/scenarios/mid-contract-revision.md) rather than as a scenario of their own — the reversal the storyboard cares about is the repair's, so it belongs where the repair is.
 
 ## Out of scope
 

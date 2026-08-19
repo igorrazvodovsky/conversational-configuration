@@ -878,7 +878,7 @@ def _undecided(config: Configuration) -> list[str]:
 # Every tool answers with a ToolMessage the agent reads, optionally alongside
 # the state it changed. The wording of those messages is what the LLM acts on
 # and no automated check sees it (the default suite exercises the transitions
-# above, and the scenario harness asserts on tool calls, never prose), so these
+# above, and the conversation checks assert on tool calls, never prose), so these
 # helpers carry the shapes and leave every sentence to the call site.
 
 

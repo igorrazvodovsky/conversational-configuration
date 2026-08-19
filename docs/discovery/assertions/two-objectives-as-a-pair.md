@@ -10,7 +10,7 @@ This claim is the least supported by anything but reasoning.
 
 *How we would know it is wrong.* Users want one number and treat the pair as unresolved work.
 
-*Where it gets demonstrated.* The [comparison scenario](../../specs/demo-scenarios/requirements.md), on a case where price and footprint disagree — travel band versus any finish ([footprint spec](../../specs/environmental-footprint/requirements.md), *relationship to other specs*).
+*Where it gets demonstrated.* The [comparing agreements](../scenarios/comparing-agreements.md) scenario, on a case where price and footprint disagree — travel band versus any finish ([footprint spec](../../specs/environmental-footprint/requirements.md), *relationship to other specs*).
 
 ## Related
 

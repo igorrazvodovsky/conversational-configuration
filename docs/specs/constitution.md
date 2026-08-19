@@ -15,7 +15,7 @@ Principles that hold across all features of this prototype. Specs and code must 
 ## Engineering principles
 
 8. Python agent code is managed with uv in `agent/`; frontend is Next.js/React/Tailwind at the repo root.
-9. Solver and model logic get automated checks (the model validator, unit tests for solver operations). Conversation behavior gets the scenario harness — end-to-end runs against the live agent, asserting on tool calls, payloads and state, never on the agent's prose; it costs money and a provider key, so it is excluded from the default suite and opted into. UI is verified by running the app.
+9. Solver and model logic get automated checks (the model validator, unit tests for solver operations). Conversation behavior gets the [conversation checks](conversation-checks/requirements.md) — end-to-end runs against the live agent, asserting on tool calls, payloads and state, never on the agent's prose; it costs money and a provider key, so it is excluded from the default suite and opted into. UI is verified by running the app.
 10. Simple over complex: this is a prototype and template; prefer the smallest mechanism that demonstrates the pattern.
 
 ## Process: spec-anchored development

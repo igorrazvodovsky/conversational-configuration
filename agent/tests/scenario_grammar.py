@@ -2,7 +2,7 @@
 
 The cards and the canvas dispatch these strings; the harness dispatches the same
 ones, so a state-critical turn takes the one validated path rather than hoping
-the model parses an improvised sentence (docs/specs/demo-scenarios design).
+the model parses an improvised sentence (docs/specs/conversation-checks design).
 
 Divergence from the TypeScript is a bug in both directions — the agent is
 prompted against this exact wording (docs/specs/agent-tools design).
@@ -60,3 +60,27 @@ def compare_draft_message(draft_name: str) -> str:
 
 UNDO_MESSAGE = "Undo the last change"
 REDO_MESSAGE = "Redo the undone change"
+
+
+# Reconciliation moves (docs/specs/rfq-reconciliation). Visible messages, like
+# the draft moves and unlike a canvas edit: answering a requirement of the
+# customer's own document is negotiation and belongs in the record.
+
+RECONCILE_PREFIX = "Reconcile deviation: "
+
+
+def accept_offered_message(model, variable: str, offered: str) -> str:
+    var_label, opt_label = _labels(model, variable, offered)
+    return (f"{RECONCILE_PREFIX}accept the offered {var_label}, "
+            f"{opt_label} ({variable}={offered})")
+
+
+def revise_requirement_message(model, variable: str, value: str) -> str:
+    var_label, opt_label = _labels(model, variable, value)
+    return (f"{RECONCILE_PREFIX}change {var_label} to "
+            f"{opt_label} ({variable}={value})")
+
+
+def leave_open_message(model, variable: str) -> str:
+    var_label = model.variables[variable].label
+    return f"{RECONCILE_PREFIX}leave {var_label} ({variable}) open"

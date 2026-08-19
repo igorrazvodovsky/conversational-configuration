@@ -30,9 +30,9 @@ FIRST_DRAFT_NAME = "Original"
 
 
 def data_dir() -> Path:
-    """Where workspaces live. The scenario harness points WORKSPACE_STORE_DIR
+    """Where workspaces live. The conversation checks point WORKSPACE_STORE_DIR
     at a temp directory so a test run cannot write into the developer's own
-    agreements (docs/specs/demo-scenarios design).
+    agreements (docs/specs/conversation-checks design).
 
     Resolved per call, not at import: pytest imports every test module before
     deselecting any, so this module is already loaded by the time a scenario

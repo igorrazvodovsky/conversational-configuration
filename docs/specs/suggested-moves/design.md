@@ -14,7 +14,7 @@ The static form wins here, recomputed from state through its `deps` argument. Th
 
 *Cost.* A generated strip is one extra model call every time the agreement changes, including after every canvas edit, for a surface the customer may never look at.
 
-What this does *not* buy is automated verification. The catalogue is TypeScript evaluated in the browser; the scenario harness is Python asserting on tool calls, payloads and state from live runs, and the repo carries no frontend test runner. Neither can see the strip. Templates make it *reviewable by reading* — the pairing rule is a line of code rather than a hoped-for behaviour — and that is the whole of the checking advantage. Adding a frontend test runner for this one surface would run against constitution #9, which assigns UI to running the app, and #10.
+What this does *not* buy is automated verification. The catalogue is TypeScript evaluated in the browser; the conversation checks are Python asserting on tool calls, payloads and state from live runs, and the repo carries no frontend test runner. Neither can see the strip. Templates make it *reviewable by reading* — the pairing rule is a line of code rather than a hoped-for behaviour — and that is the whole of the checking advantage. Adding a frontend test runner for this one surface would run against constitution #9, which assigns UI to running the app, and #10.
 
 The counter-argument is real and should be recorded: templated pills will read stiffer than generated ones, and the whole point is to speak in the building's vocabulary about *this* building. If the walkthrough finds the strip reads as boilerplate, the fallback is the dynamic form with the pairing enforced by post-filtering the generated list rather than by instruction.
 
@@ -98,7 +98,7 @@ The alternative considered was to fold a nonce into the config so that the libra
 
 ## Verification
 
-By running the app (constitution #9), which is the whole of the check — see decision 1 for why the scenario harness cannot reach this surface. Checked against saved workspaces covering each family, plus one conversation driven end to end:
+By running the app (constitution #9), which is the whole of the check — see decision 1 for why the conversation checks cannot reach this surface. Checked against saved workspaces covering each family, plus one conversation driven end to end:
 
 - An empty workspace opens with the four entry prompts and nothing beside them.
 - A workspace with a candidate and no outstanding deviation offers *make it cheaper* and *lower the carbon* and, where a value is forced or agent-chosen, the question about it. Neither trade-off pill ever appeared alone.

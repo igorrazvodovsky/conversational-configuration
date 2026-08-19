@@ -31,7 +31,7 @@ It answers one of the open questions the framing does not settle ([problem-frami
 
 Two walkthroughs of the mechanism the stories state abstractly. Both open on a workspace holding a priced, solver-valid agreement; the option prices are the product model's and any monthly total would be illustrative.
 
-*Comparing two service levels.* The spine of [demo-scenarios](../demo-scenarios/requirements.md) scenario 3 and of the *comparing agreements* [job story](../../discovery/jtbd/job-stories.md), recast onto drafts.
+*Comparing two service levels.* The spine of the [comparing agreements](../../discovery/scenarios/comparing-agreements.md) scenario and of the [job story](../../discovery/jtbd/job-stories.md) it grounds, recast onto drafts.
 
 1. The operator has an agreement at the standard service level — 24/7 call-out, 8 h response, €300 a month — and asks to see what a premium version would look like without giving this one up. The agent forks. The canvas head now names the new draft, and the switcher beside it lists the draft it came from with that draft's price. The operator was not asked to invent a name and the chat does not remark on the one it was given; what the transcript carries is the fork itself, as a visible sentence.
 2. On the fork the service level goes to premium (4 h response, remote diagnostics, €550 a month), remote monitoring is added, and call dispatching becomes destination control. The ripple is shown and applied as it would be on any other document. The switcher meanwhile shows the fork by name alone: a draft edited since its last completion has no price to report, and one returns when the agent next proposes a candidate.
@@ -82,7 +82,7 @@ Persistence:
 - [agreement-document](../agreement-document/requirements.md): the canvas head gains the draft's name and a switcher, and the structured grammar gains the fork, switch and discard sentences. Its exclusion of *multiple named candidates* is amended — that line defers the whole of this to nonlinear-interaction, and half of it now lands here; where a comparison is *placed* stays excluded in both. Prompt wording and control copy stay coupled — change them together.
 - [rfq-reconciliation](../rfq-reconciliation/requirements.md): the register is derived, not stored, so each draft answers the ingested document on its own choices with no change to how reconciliation works. A second draft is a second answer to the same RFQ.
 - [environmental-footprint](../environmental-footprint/requirements.md): the cheapest-versus-greenest pair is still a four-step sequence over the renamed tools, and the docstring and prompt trigger that teach it move with them.
-- [demo-scenarios](../demo-scenarios/requirements.md): the harness asserts on tool calls, so the renames move assertions; whether the comparison scenario becomes a two-draft scenario is design's to decide.
+- [conversation checks](../conversation-checks/requirements.md): the harness asserts on tool calls, so the renames moved assertions; [comparing agreements](../../discovery/scenarios/comparing-agreements.md) became a two-draft scenario, and asserts that the draft left behind keeps its own choices, sources and history.
 - [suggested-moves](../suggested-moves/requirements.md): *fork and compare* is held back pending a surface. This spec supplies the mechanism and the canvas affordance; whether the pill is offered is that spec's call once this lands.
 
 ## Out of scope

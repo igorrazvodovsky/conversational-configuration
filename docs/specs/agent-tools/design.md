@@ -47,10 +47,10 @@ Register `StateItem(state_key="configuration", tool="set_choices", tool_argument
 
 ## Verification of the de-duplication
 
-Measured against the pre-de-duplication prompt with a scripted A/B — six scenarios, three runs per arm, eighteen completed conversations each side. Every scorable behavior came out identical: call order, `source="user"`, `revise_choices` on a revision, no options enumerated where a control was shown, empty text after a clean canvas edit, the workspace named without announcing it, no prohibited vocabulary, no untraceable footprint figure. The first pass found the one regression recorded above; a full re-run after the fix showed no remaining difference, and `tests/compare_refs.py HEAD` reproduces that result through the permanent harness ([demo-scenarios](../demo-scenarios/design.md)).
+Measured against the pre-de-duplication prompt with a scripted A/B — six scenarios, three runs per arm, eighteen completed conversations each side. Every scorable behavior came out identical: call order, `source="user"`, `revise_choices` on a revision, no options enumerated where a control was shown, empty text after a clean canvas edit, the workspace named without announcing it, no prohibited vocabulary, no untraceable footprint figure. The first pass found the one regression recorded above; a full re-run after the fix showed no remaining difference, and `tests/compare_refs.py HEAD` reproduces that result through the permanent harness ([conversation checks](../conversation-checks/design.md)).
 
-Known gap: this evidence is all about single moves. A manual pass over the demo scenarios — a whole conversation's arc, resumption, the RFQ entrance — has not been done, and nothing automated would catch an agent that merely grew vaguer over twenty turns.
+Known gap: this evidence is all about single moves. A manual pass over the [demo scenarios](../../discovery/scenarios/) — a whole conversation's arc, resumption, the RFQ entrance — has not been done, and nothing automated would catch an agent that merely grew vaguer over twenty turns.
 
 ## Testing
 
-`agent/tests/test_configuration.py` on the pure functions: apply/conflict-rejection/forced-reporting, withdraw + candidate invalidation, candidate correctness (extends choices, solver-valid, price matches). Chat-level behavior is exercised manually via `npm run dev` and by the [demo-scenarios](../demo-scenarios/design.md) harness as its scenarios land.
+`agent/tests/test_configuration.py` on the pure functions: apply/conflict-rejection/forced-reporting, withdraw + candidate invalidation, candidate correctness (extends choices, solver-valid, price matches). Chat-level behavior is exercised manually via `npm run dev` and by the [conversation checks](../conversation-checks/design.md).

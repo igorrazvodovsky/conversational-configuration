@@ -23,7 +23,7 @@ These constrain the interaction design. They are not up for rediscovery; only th
 
 All four are *assertions*, in Brown's sense: the current best understanding, written to be argued with and revised.
 
-Beneath the four artifacts sits the processed knowledge they draw on: the JTBD analysis in [jtbd/](jtbd/) — domain, job ladder, job map, three personas, consumption journey, job stories. Notes are models, not decisions; decisions live in the four artifacts above. Design models from [direction.md](direction.md) §3 live in [models/](models/) as they get drawn. The principles and assertions are atomic too — one note each in [principles/](principles/) and [assertions/](assertions/), indexed by §2 and §4 of their parent artifact. Cite the note, not the section.
+Beneath the four artifacts sits the processed knowledge they draw on: the JTBD analysis in [jtbd/](jtbd/) — domain, job ladder, job map, three personas, consumption journey, job stories. Notes are models, not decisions; decisions live in the four artifacts above. Design models from [direction.md](direction.md) §3 live in [models/](models/) as they get drawn, and the situated walkthroughs that ground the job stories live in [scenarios/](scenarios/), indexed by §4. The principles and assertions are atomic too — one note each in [principles/](principles/) and [assertions/](assertions/), indexed by §2 of [direction.md](direction.md) and §4 of [problem-framing.md](problem-framing.md). Cite the note, not the section.
 
 ## How to use this in a working session
 

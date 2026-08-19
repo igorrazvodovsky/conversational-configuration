@@ -16,7 +16,7 @@ Listed in dependency order — each builds on the ones above it. Nothing else de
 | [solver-service](solver-service/) | Interactive Z3 solver service | Implemented |
 | [agent-tools](agent-tools/) | Configuration state + solver-backed agent tools | Implemented |
 | [nonlinear-interaction](nonlinear-interaction/) | Revision with ripple, parallel candidates, resumption | Implemented; the parallel-candidates half now lives in [parallel-drafts](parallel-drafts/) |
-| [demo-scenarios](demo-scenarios/) | Scripted walkthroughs as definition of done | Approved; harness and scenario 2 built. Remaining: scenarios 1, 3, 4, the presenter document, and scenario 5 (now unblocked — rfq-reconciliation is built). Still to be recast to the service frame's job stories |
+| [conversation-checks](conversation-checks/) | The [demo scenarios](../discovery/scenarios/) as executable checks on conversation behavior | Implemented; all five run against the live agent. The scenarios themselves are discovery, and the presenter document is [docs/demo-scenarios.md](../demo-scenarios.md), not yet walked in a browser |
 | [service-agreement](service-agreement/) | Elevator as a service: outcome terms, monthly price, derived hardware | Implemented |
 | [environmental-footprint](environmental-footprint/) | Environmental footprint as a decision dimension | Implemented |
 | [agreement-workspace](agreement-workspace/) | Durable workspace per installation; conversations decoupled from the agreement | Implemented, with one criterion added 2026-08-16 and not yet built: a card made inert because the agreement moved on must say so, where the shipped card only dims |

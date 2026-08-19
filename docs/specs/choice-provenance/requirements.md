@@ -20,7 +20,7 @@ Recording:
 
 Fidelity:
 
-- GIVEN a recorded quote, THEN it is the customer's words, never the agent's paraphrase — verbatim, modulo trimming, from a user message in the conversation. The scenario harness can check this mechanically (the quote is a substring of a prior user message), which makes fidelity assertable without reading prose (constitution #9).
+- GIVEN a recorded quote, THEN it is the customer's words, never the agent's paraphrase — verbatim, modulo trimming, from a user message in the conversation. The conversation checks reach this mechanically (the quote is a substring of a prior user message), which makes fidelity assertable without reading prose (constitution #9).
 - GIVEN the customer's words state a need rather than a value ("mostly elderly residents" → an accessibility package), THEN the quote is still their words: the *mapping* may be the agent's translation; the *grounds* may not be. A quote must never contain words the customer did not write.
 
 Rendering:

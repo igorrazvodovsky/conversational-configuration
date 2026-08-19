@@ -67,7 +67,7 @@ Two further observations, neither of them a defect:
 
 - [undo](../specs/undo/requirements.md): its exclusion of branching history stands, and the survey supports it. Every tool in §1 keeps the history within a branch linear and puts the branching one level up, in what the history belongs to.
 - [suggested-moves](../specs/suggested-moves/requirements.md): whether a *fork and compare* pill is offered is unaffected; the genre puts the branch control on the object, which is where the canvas switcher already is.
-- [demo-scenarios](../specs/demo-scenarios/requirements.md): no scenario changes on this note's account.
+- [scenarios](../discovery/scenarios/): no scenario changes on this note's account.
 - The [surface architecture](../discovery/models/Surface%20architecture.md): the tldraw geometry — conversation as a node graph on an infinite canvas — is the one branching presentation that would reframe the surface, and it is incompatible with a decision already taken, that the canvas holds the agreement rather than the conversation.
 
 ## Related
