@@ -123,8 +123,10 @@ export function WorkspaceSplit({
         // not satisfy both, so they only apply side by side.
         minSize={sideBySide ? "360px" : undefined}
         // min-h-0/min-w-0 so the canvas ScrollArea scrolls inside the panel
-        // rather than growing it.
-        className="min-h-0 min-w-0"
+        // rather than growing it. `relative` is the positioning context the
+        // canvas's second mode needs: the render covers the panel while the
+        // document stays laid out beneath it (docs/specs/visual-configuration).
+        className="relative min-h-0 min-w-0"
       >
         {canvas}
       </ResizablePanel>

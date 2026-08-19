@@ -27,8 +27,9 @@ import {
   useCopilotKit,
 } from "@copilotkit/react-core/v2";
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, Redo2, Undo2 } from "lucide-react";
+import { ArrowLeft, Box, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription } from "@/components/ui/empty";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -54,6 +55,7 @@ import {
   variablesByName,
 } from "@/lib/configurator";
 import { PLACEHOLDER_NAME } from "@/lib/workspaces";
+import { cn } from "@/lib/utils";
 import type { DocumentView } from "./document-parts";
 import { DraftSwitcher } from "./draft-switcher";
 import { Recitals } from "./recitals";
@@ -65,6 +67,14 @@ const EMPTY: Configuration = {
   statuses: {},
   candidate: null,
 };
+
+/**
+ * The render, loaded only when the mode is entered
+ * (docs/specs/visual-configuration). `ssr: false` is doing two jobs: a WebGL
+ * surface cannot render on the server, and the three.js chunk stays out of the
+ * page a workspace opens on — a canvas showing the document costs nothing.
+ */
+const CarViewer = dynamic(() => import("./render"), { ssr: false });
 
 /** How long a reveal mark stays before the shell drops it and the highlight
  * transitions out (docs/specs/shared-attention). Long enough to be found on
@@ -111,6 +121,15 @@ export function ConfigCanvas({
   useEffect(() => {
     if (!isRunning) setPending({});
   }, [isRunning]);
+
+  // Which of the canvas's two representations is showing
+  // (docs/specs/visual-configuration). A workspace opens on the document; the
+  // render is reached by a deliberate move and left by one, and nothing but a
+  // click may change this — in particular not the reveal below, which may mark
+  // the document but never switch away from it.
+  const [canvasMode, setCanvasMode] = useState<"document" | "render">(
+    "document",
+  );
 
   // ——— Shared attention (docs/specs/shared-attention) ———
   //
@@ -255,10 +274,25 @@ export function ConfigCanvas({
     revealed,
     onEditorOpen,
     onEditorClose,
+    onEnterRender: () => setCanvasMode("render"),
   };
 
   return (
-    <ScrollArea className="h-full bg-background">
+    <>
+    {/* Two surfaces over one tree, and the document is never unmounted: a node
+        with no layout box has no scroll offset to keep, so returning from the
+        render would land at the top of the agreement. Hidden the way the chat
+        pane is hidden (workspace-split.tsx) — laid out, transparent and inert.
+        The render comes *after* it in the tree and mounts only on demand, so
+        nothing is ever inserted above the schedules' collapsibles
+        (docs/specs/chat-surface). */}
+    <ScrollArea
+      className={cn(
+        "h-full bg-background",
+        canvasMode === "render" && "pointer-events-none opacity-0",
+      )}
+      inert={canvasMode === "render"}
+    >
       {/* The margin column is a container query away, not a viewport one: the
           canvas is a resizable panel and its width has nothing to do with the
           window's. */}
@@ -306,6 +340,21 @@ export function ConfigCanvas({
                 onCompare={(name) => dispatch(compareDraftMessage(name))}
                 onDiscard={(name) => dispatch(discardDraftMessage(name))}
               />
+              {/* The way into the render (docs/specs/visual-configuration).
+                  A plain button, not `Tabs` or a `ToggleGroup`: this sits in
+                  the hydrated tree, where a Radix primitive would shift every
+                  `useId` on the page. The way back is the render's own, which
+                  is what keeps this one node. */}
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => setCanvasMode("render")}
+                title="See the car the schedules describe"
+                className="font-normal text-muted-foreground"
+              >
+                <Box />
+                View
+              </Button>
             {/* Undo lives on the record's own chrome (docs/specs/undo): the
                 history belongs to the agreement, not to the transcript. Each
                 control is absent rather than disabled at its end of the
@@ -399,5 +448,12 @@ export function ConfigCanvas({
         )}
       </div>
     </ScrollArea>
+    {canvasMode === "render" && (
+      <CarViewer
+        config={config}
+        onExit={() => setCanvasMode("document")}
+      />
+    )}
+    </>
   );
 }

@@ -61,6 +61,10 @@ export interface DocumentView {
    * half of docs/specs/shared-attention. The shell keeps the last one open. */
   onEditorOpen: (variable: string) => void;
   onEditorClose: (variable: string) => void;
+  /** Switches the canvas to the render (docs/specs/visual-configuration).
+   * Only the schedules layer offers it, because that is the layer whose
+   * content the render depicts. */
+  onEnterRender: () => void;
 }
 
 /**

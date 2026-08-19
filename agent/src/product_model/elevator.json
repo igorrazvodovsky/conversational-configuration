@@ -213,6 +213,16 @@
       ]
     },
     {
+      "name": "car_height",
+      "label": "Car clear height",
+      "group": "dimensions",
+      "options": [
+        { "value": "ch2100", "label": "2100 mm", "price": 0, "co2": -25, "note": "low ceiling, and it fits under a tight slab" },
+        { "value": "ch2200", "label": "2200 mm", "price": 0, "co2": 0, "note": "the usual clear height" },
+        { "value": "ch2400", "label": "2400 mm", "price": 1400, "co2": 70, "note": "generous, and it asks the shaft for more headroom" }
+      ]
+    },
+    {
       "name": "shaft",
       "label": "Shaft size (width × depth)",
       "group": "dimensions",
@@ -860,6 +870,17 @@
       "type": "implication",
       "if_all": [{ "var": "lead_time", "in": ["expedited"] }],
       "then": { "var": "door_finish", "in": ["painted", "brushed_ss"] }
+    },
+    {
+      "id": "R54",
+      "label": "A 2400 mm cabin needs at least 3800 mm of headroom",
+      "type": "table",
+      "vars": ["car_height", "headroom"],
+      "allowed": [
+        ["ch2100", "h3400"], ["ch2100", "h3800"], ["ch2100", "h4200"], ["ch2100", "h4600"],
+        ["ch2200", "h3400"], ["ch2200", "h3800"], ["ch2200", "h4200"], ["ch2200", "h4600"],
+        ["ch2400", "h3800"], ["ch2400", "h4200"], ["ch2400", "h4600"]
+      ]
     }
   ],
   "footprint": {

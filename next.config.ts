@@ -10,6 +10,9 @@ const agentUrl =
 const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["@copilotkit/runtime"],
+  // three.js ships its add-ons untranspiled and the render imports them
+  // (docs/specs/visual-configuration design decision 1).
+  transpilePackages: ["three"],
   async rewrites() {
     // Workspace store routes (docs/specs/agreement-workspace) live on the
     // agent server (langgraph.json http.app); proxy keeps them same-origin.

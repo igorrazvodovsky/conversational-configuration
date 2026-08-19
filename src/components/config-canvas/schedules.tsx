@@ -18,13 +18,14 @@
 
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronRight } from "lucide-react";
+import { Box, ChevronRight } from "lucide-react";
 import { ModelVariable, layerGroups, optionLabel } from "@/lib/configurator";
 import { cn } from "@/lib/utils";
 import {
@@ -194,6 +195,19 @@ export function Schedules({ doc }: { doc: DocumentView }) {
         The machine that delivers the terms above — derived from them, and
         editable here.
       </p>
+      {/* The second way into the render, on the layer whose content it depicts
+          (docs/specs/visual-configuration). The dimensions, the doors and the
+          cabin are stated here in catalogue nouns; the render is the same
+          annex said in the building's terms. */}
+      <Button
+        variant="outline"
+        size="xs"
+        onClick={doc.onEnterRender}
+        className="mb-3 font-normal"
+      >
+        <Box />
+        See the car these schedules describe
+      </Button>
       {SCHEDULE_GROUPS.map((group, i) => (
         <Schedule key={group.name} group={group} doc={doc} index={i + 1} />
       ))}

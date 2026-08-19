@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "research/branching-in-ai-uis.md",
+                "file": "discovery/phase-plan.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "branching-in-ai-uis"
+              "title": "phase-plan"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "research/branching-in-ai-uis.md",
+                "file": "discovery/phase-plan.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "research/branching-in-ai-uis.md",
+                "file": "discovery/phase-plan.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "research/branching-in-ai-uis.md",
+                "file": "discovery/phase-plan.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,11 +190,18 @@
   },
   "active": "a89680baa27c5dca",
   "lastOpenFiles": [
+    "specs/visual-configuration/tasks.md",
+    "specs/visual-configuration/design.md",
+    "specs/visual-configuration/requirements.md",
+    "specs/visual-configuration",
+    "discovery/direction.md",
+    "research/branching-in-ai-uis.md",
+    "specs/open-points/requirements.md",
+    "specs/open-points",
+    "discovery/assertions/open-points-carried-by-the-document.md",
     "specs/parallel-drafts/tasks.md",
     "discovery/phase-plan.md",
-    "research/branching-in-ai-uis.md",
     "discovery/problem-framing.md",
-    "discovery/direction.md",
     "research/gaps.md",
     "specs/parallel-drafts/design.md",
     "specs/parallel-drafts/requirements.md",
@@ -216,15 +223,8 @@
     "specs/shared-attention",
     "research/interaction-literature.md.tmp.59267.1940252726b2",
     "discovery/assertions/generated-controls-work-better-than-free-text.md",
-    "discovery/assertions/seeded-candidate-with-named-deviations.md",
-    "discovery/assertions/cores-are-sufficient-for-trust.md",
-    "discovery/assertions/choices-that-quote-their-source.md",
-    "discovery/assertions/candidate-works-better-than-questions.md",
-    "discovery/principles/elicit-in-the-buildings-vocabulary.md",
     "specs/choice-provenance",
     "specs/undo",
-    "specs/chat-pane",
-    "specs/chat-surface/tasks.md.tmp.89498.f728d2fca4eb",
-    "specs/chat-surface"
+    "specs/chat-pane"
   ]
 }
