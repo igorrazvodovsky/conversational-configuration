@@ -29,9 +29,17 @@ export interface SuggestedMove {
   message: string;
 }
 
-/** The four entry prompts, which are right exactly once — on a workspace where
- * nothing has been said yet. Wording unchanged from before this spec; the demo
- * scenarios open from these chips. */
+/** The entry prompts, which are right exactly once — on a workspace where
+ * nothing has been said yet. The first four are worded as they were before this
+ * spec; the demo scenarios open from those chips.
+ *
+ * The fifth is the document entrance (docs/specs/rfq-reconciliation). It is
+ * here rather than in a family below because it belongs to the untouched
+ * workspace, and it is here at all because it is the one way in that a customer
+ * cannot find by trying: the delivery lead's project has already written the
+ * requirements, and nothing else in the interface says the composer will take
+ * them. A click cannot carry the document, so the pill opens the subject and
+ * the agent asks for the text. */
 export const ENTRY_PROMPTS: SuggestedMove[] = [
   {
     title: "Hotel new build",
@@ -52,6 +60,11 @@ export const ENTRY_PROMPTS: SuggestedMove[] = [
     title: "What can you configure?",
     message:
       "What decisions go into configuring an elevator here, and where should we start?",
+  },
+  {
+    title: "Start from our RFQ",
+    message:
+      "We've issued an RFQ for the lift package. Can I hand you our requirements and have you tell me what you can do against them?",
   },
 ];
 

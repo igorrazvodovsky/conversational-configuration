@@ -32,7 +32,7 @@ Each pill family is a predicate over the configuration plus the text to offer wh
 
 | Family | Offered when | Move |
 |---|---|---|
-| Entry prompts | Nothing said, nothing recorded, no candidate | The four existing prompts, unchanged, and nothing beside them |
+| Entry prompts | Nothing said, nothing recorded, no candidate | The demo scenarios' prompts, unchanged, plus the document entrance, and nothing beside them |
 | Answer the document | A requirement of the customer's document is still in deviation | The first such clause, named, asking for what it asked for |
 | The trade-off pair | A candidate exists | *Make it cheaper* and *lower the carbon*, always both |
 | Ask why | A value is solver-forced or agent-chosen | Why that term reads as it does — the term named, not the value (see the notes below) |
@@ -41,6 +41,16 @@ Each pill family is a predicate over the configuration plus the text to offer wh
 The table is the starting point, not a fixed set; what it must preserve is that every family maps to a move the inventory already lists, so a pill can never offer something the system has no move for.
 
 The first two families are retired by the move being made — an answered clause leaves deviation, an accepted trade-off changes the candidate — and the last two are not, which is decision 7's subject.
+
+### The moves the inventory gained, and which of them the strip may say
+
+[Conversation moves](../../discovery/models/Conversation%20moves.md) §2 now lists five moves it did not when this table was drawn — handing over a document, reconciling a deviation, withdrawing a choice, declining a proposal and discarding a draft. Every one of them is therefore admissible under the rule above, which makes the rule necessary rather than sufficient: what a pill may say is decided here.
+
+*Handing over a document is offered*, as an entry prompt. It belongs to the untouched workspace, which is where the entry branch already rules, and it is the one entrance a customer cannot discover by other means: the [delivery lead](../../discovery/jtbd/persona-delivery-lead.md) enters through a tender their organization has already written, and nothing in the interface says the composer will take it. A click cannot carry the document, so the pill opens the subject and the agent asks for the text — which is the same shape as the *answer the document* family, a sentence that starts a move rather than completing one.
+
+*Reconciling a deviation is already offered*, by the *answer the document* family, and it stays one pill rather than three. The other two answers — take what is offered, leave it open — name a value or a decision, and naming either from the strip would make the pill a concession the customer has not yet chosen to make. Both have an affordance where they belong, on the deviation itself.
+
+*The other three are refused.* Withdrawing a choice would offer to unmake a decision nobody has questioned, and its predicate holds on every agreement that has one, so the strip would carry a standing invitation to retract. Declining a proposal is only meaningful while a proposal stands, which is exactly when the repair card is on screen carrying its own abandon control — the convergence with the [agreement document](../agreement-document/requirements.md)'s in-chat controls that the boundary section rules out. Discarding a draft is refused on the tool's own instruction, which tells the agent to offer it when the customer says they are done with an alternative and never on its own initiative; a pill is the system taking that initiative.
 
 Two inventory moves are deliberately absent, for the same reason. *Fork and compare* has its mechanism and a canvas affordance ([parallel-drafts](../parallel-drafts/design.md): the draft switcher forks, switches, compares and discards), and where a comparison is *placed* is now decided — a canvas comparison mode, with the chat keeping one sentence ([models/Comparison view.md](../../discovery/models/Comparison%20view.md)). The pill waits on that mode being built rather than on a decision, and offering it is this spec's call when it is. *Accept* waits until accepting means something in state: nothing today distinguishes a candidate from an agreement the customer has taken, so the pill would send a sentence with nowhere to land, and the agent would have to answer it with warmth alone.
 
@@ -100,7 +110,8 @@ The alternative considered was to fold a nonce into the config so that the libra
 
 By running the app (constitution #9), which is the whole of the check — see decision 1 for why the conversation checks cannot reach this surface. Checked against saved workspaces covering each family, plus one conversation driven end to end:
 
-- An empty workspace opens with the four entry prompts and nothing beside them.
+- An empty workspace opens with the entry prompts and nothing beside them.
+- The document entrance renders and leads somewhere, checked when it was added on 2026-08-20. The strip wraps to two rows in the sidebar geometry and three in the floating one, clipping nothing and moving the composer in neither. Clicking it sent the chip's own sentence, and the agent — with no prompt change — answered by asking for the paste or the attachment and describing what it would do with the clauses. The strip then went empty, which is the between-state the first criterion calls correct.
 - A workspace with a candidate and no outstanding deviation offers *make it cheaper* and *lower the carbon* and, where a value is forced or agent-chosen, the question about it. Neither trade-off pill ever appeared alone.
 - An RFQ-seeded workspace with a pending deviation led with its clause, ahead of the pair.
 - A workspace with two recorded choices, no candidate and nothing forced showed an empty strip, which is the intended answer rather than a failure.

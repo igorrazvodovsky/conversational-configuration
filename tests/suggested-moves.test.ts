@@ -45,6 +45,25 @@ describe("the entry prompts", () => {
     expect(suggestedMoves(agreement(), true, NOTHING_ASKED)).toEqual([]);
   });
 
+  it("offer the document entrance, which nothing else in the interface announces", () => {
+    // The delivery lead's project has already written the requirements, and the
+    // composer does not say it will take them (docs/specs/suggested-moves).
+    const offered = suggestedMoves(agreement(), false, NOTHING_ASKED);
+    expect(offered.some((m) => /RFQ|requirements/i.test(m.message))).toBe(true);
+  });
+
+  it("keep the wording the demo scenarios open from", () => {
+    // The set may gain a prompt; it may not lose or reword one.
+    for (const opening of [
+      "We're planning a new 6-storey hotel in Munich",
+      "New hospital wing in Boston",
+      "We're modernizing a 1970s office building in Berlin",
+      "What decisions go into configuring an elevator here",
+    ]) {
+      expect(ENTRY_PROMPTS.some((m) => m.message.startsWith(opening))).toBe(true);
+    }
+  });
+
   it("stop on a document-seeded agreement, whose requirements are choices already", () => {
     const seeded = agreement({
       choices: chose({ building_type: "office" }, "document"),
