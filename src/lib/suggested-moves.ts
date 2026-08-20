@@ -9,9 +9,10 @@
  * a pill is a sentence the customer could have typed, sent on the path a typed
  * sentence takes.
  *
- * With no automated check able to reach this surface, the file is meant to be
- * read — which is why the catalogue lives here alone rather than beside the
- * projection helpers it calls.
+ * The catalogue lives here alone rather than beside the projection helpers it
+ * calls, so that it can be read as a list of what the strip may say. What the
+ * families decide is checked in `tests/suggested-moves.test.ts`; what the strip
+ * looks like is still only visible in the app.
  */
 import {
   Configuration,

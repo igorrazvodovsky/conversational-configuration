@@ -1,0 +1,47 @@
+# The offline checks (docs/specs/offline-checks): everything that runs without
+# a provider key. The conversation checks are deliberately absent — they drive
+# the live agent, cost money per run, and are opted into with `pytest -m
+# scenario` (docs/specs/conversation-checks).
+name: checks
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  agent:
+    name: agent
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --dev
+      - name: Product model
+        run: uv run python src/product_model/validate.py
+      - name: Tests
+        run: uv run pytest
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # --ignore-scripts skips the postinstall that provisions the Python
+      # agent; this job only needs the frontend's own dependencies.
+      - name: Install
+        run: npm ci --ignore-scripts
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests
+        run: npm test

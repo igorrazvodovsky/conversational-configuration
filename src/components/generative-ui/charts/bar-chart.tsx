@@ -138,8 +138,10 @@ export function BarChart({ title, description, data }: BarChartProps) {
               dataKey="value"
               radius={[6, 6, 0, 0]}
               maxBarSize={48}
-              shape={(props: Record<string, unknown>) => (
-                <AnimatedBar {...props} isNew={isNew(props.index as number)} />
+              // Recharts types `shape`'s props as its own BarShapeProps, which
+              // has no index signature; AnimatedBar takes them as they come.
+              shape={(props) => (
+                <AnimatedBar {...props} isNew={isNew(props.index)} />
               )}
             >
               {data.map((_, index) => (

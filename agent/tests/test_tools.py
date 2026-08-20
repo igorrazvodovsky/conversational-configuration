@@ -625,3 +625,36 @@ def test_the_catalog_carries_the_assessment_assumptions():
     catalog = configuration_module.describe_product.func()
     assert "Assessment assumptions" in catalog
     assert "kg CO₂e/kWh" in catalog
+
+
+# -- the one figure both languages format ---------------------------------
+
+# `_format_co2` reimplements `formatCO2` in `src/lib/configurator.ts` in
+# integer arithmetic, because Python's own rounding goes half-to-even and that
+# one goes half away from zero — the customer reads the lifetime total on the
+# sheet and hears it in chat, and 1250 kg read 1.2 t beside 1.3 t. This table
+# is the shared specification; `tests/couplings.test.ts` asserts the same rows
+# against the TypeScript.
+CO2_ROWS = [
+    (0, "0 kg CO₂e"),
+    (540, "540 kg CO₂e"),
+    (999, "999 kg CO₂e"),
+    (1000, "1.0 t CO₂e"),
+    (1250, "1.3 t CO₂e"),
+    (1350, "1.4 t CO₂e"),
+    (12400, "12.4 t CO₂e"),
+    (-1250, "-1.3 t CO₂e"),
+    (-540, "-540 kg CO₂e"),
+]
+
+
+@pytest.mark.parametrize("kg,expected", CO2_ROWS)
+def test_a_lifetime_total_reads_the_same_in_chat_as_on_the_sheet(kg, expected):
+    assert configuration_module._format_co2(kg) == expected
+
+
+def test_a_signed_footprint_delta_keeps_its_direction():
+    assert configuration_module._signed_co2(1250).startswith("+")
+    assert configuration_module._signed_co2(-1250).startswith("−") or \
+        configuration_module._signed_co2(-1250).startswith("-")
+    assert "0" in configuration_module._signed_co2(0)

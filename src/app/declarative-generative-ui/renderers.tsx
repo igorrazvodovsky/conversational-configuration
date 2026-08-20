@@ -105,9 +105,13 @@ function ActionButton({
 const demonstrationCatalogRenderers: CatalogRenderers<DemonstrationCatalogDefinitions> =
   {
     Title: ({ props }) => {
+      // Typed as one heading rather than as the union of the three: a union
+      // of element types narrows their props to an intersection, which is
+      // never, and the style below then type-checks against nothing. The three
+      // headings take identical props, so the pinned one describes them all.
       const Tag = (
         props.level === "h1" ? "h1" : props.level === "h3" ? "h3" : "h2"
-      ) as keyof JSX.IntrinsicElements;
+      ) as "h2";
       const sizes: Record<string, string> = {
         h1: "1.75rem",
         h2: "1.25rem",
