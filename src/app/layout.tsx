@@ -40,7 +40,15 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider delayDuration={300}>
             <CopilotKit
-              runtimeUrl="/api/copilotkit"
+              /*
+                Configuration rather than a literal so the app can be pointed
+                at a mocked AG-UI stream (docs/specs/interface-checks). The
+                default is the app's own route, so a normal run is unchanged.
+              */
+              runtimeUrl={
+                process.env.NEXT_PUBLIC_COPILOTKIT_RUNTIME_URL ??
+                "/api/copilotkit"
+              }
               /*
                 The inspector defaults to on for localhost, which is every run
                 of this prototype. It brings CopilotKit's announcement bubble

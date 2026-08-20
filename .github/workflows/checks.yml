@@ -1,5 +1,7 @@
-# The offline checks (docs/specs/offline-checks): everything that runs without
-# a provider key. The conversation checks are deliberately absent — they drive
+# The checks that run without a provider key: the offline checks
+# (docs/specs/offline-checks) and the interface checks
+# (docs/specs/interface-checks), both under `npm test`. The conversation
+# checks are deliberately absent — they drive
 # the live agent, cost money per run, and are opted into with `pytest -m
 # scenario` (docs/specs/conversation-checks).
 name: checks
@@ -37,9 +39,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # The coupling checks run the agent's half of the shared contracts and
-      # compare what it builds, so this job needs both toolchains
-      # (docs/specs/offline-checks design, decision 4).
+      # Both frontend tiers read the agent's half of the shared contracts:
+      # the coupling checks compare what it builds (docs/specs/offline-checks
+      # design, decision 4), and the interface checks take their agreement
+      # payloads from the same dump (docs/specs/interface-checks). So this job
+      # needs both toolchains.
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true

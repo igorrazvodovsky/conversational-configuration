@@ -4,13 +4,13 @@
 
 `uv run pytest` in `agent/` and `vitest` at the root. Each owns its own language, and neither is driven from the other — with one deliberate exception: the coupling checks run the agent's half as a subprocess and compare what it builds, because a contract spanning the boundary cannot be checked from one side (decisions 3 and 4). That exception is confined to `tests/couplings.test.ts`, so the rest of the frontend checks stay a Node-only, sub-second run.
 
-Vitest rather than Jest because the repo is already a Vite-adjacent Next.js project and vitest resolves the TypeScript, the `@/` alias and the imported `elevator.json` with no transform configuration. `vitest.config.mts` carries the alias and pins `environment: "node"` — the absence of a DOM is the point, not a default to be overridden later.
+Vitest rather than Jest because the repo is already a Vite-adjacent Next.js project and vitest resolves the TypeScript, the `@/` alias and the imported `elevator.json` with no transform configuration. `vitest.config.mts` carries the alias and pins `environment: "node"` for this tier — the absence of a DOM is the point, not a default to be overridden later. When the [interface checks](../interface-checks/design.md) later needed a DOM, they got their own vitest project rather than an override here, so this tier still cannot acquire one by accident.
 
 ## 2. What is checked, and what is deliberately not
 
 Checked: `src/lib/configurator.ts`, `src/lib/suggested-moves.ts`, `src/lib/workspaces.ts`, `src/lib/attachments.ts` (its pure readers) and `src/components/config-canvas/render/geometry.ts`. All of it is logic that computes what a surface shows or what a click sends, and none of it renders.
 
-Not checked: every component, every hook, and `card-dispatch.ts` — which is a hook, and whose interesting behavior (a card going inert, a dispatch racing a run) is behavior of the CopilotKit core it calls. Constitution #9 keeps UI on the running app, and the hydration rules in `docs/specs/chat-surface/design.md` are the kind of thing only a browser shows.
+Not checked here: every component and every hook. `useWorkspaceAttachment` is checked by the [interface checks](../interface-checks/design.md), which render it against a mocked stream; `card-dispatch.ts` is checked by neither, because its interesting behavior (a card going inert, a dispatch racing a run) is behavior of the CopilotKit core it calls. The hydration rules in `docs/specs/chat-surface/design.md` are the kind of thing only a browser shows, and constitution #9 keeps them on the running app.
 
 The failure mode the geometry checks exist for is specific: the scene is computed from millimetre codes, and a renamed code makes `carGeometry` return `null` rather than throw. The render then shows its empty state and reports nothing. So the check is not "these codes parse" but "every code the model currently has still parses", iterated over the live model — 540 combinations, and cheap.
 
@@ -18,7 +18,7 @@ The failure mode the geometry checks exist for is specific: the scene is compute
 
 The grammar exists three times: `src/lib/configurator.ts` mints it, `agent/tests/scenario_grammar.py` mints it again for the conversation checks, and `agent/main.py` teaches the agent to recognise it. Two of the three are code, and are compared as code.
 
-`agent/tests/grammar_dump.py` builds every sentence from the agent's own helpers, for a set of inputs it names itself, and prints the lot as JSON. `tests/couplings.test.ts` runs it, builds the same sentences from the same inputs — read out of the dump, so the two provably compared the same thing — and asserts the two objects equal. Comparing the two sources as text, which is what this check did first, passes on two files that hold the same words and build different sentences; this does not.
+`agent/tests/grammar_dump.py` builds every sentence from the agent's own helpers, for a set of inputs it names itself, and prints the lot as JSON. `tests/couplings.test.ts` runs it through the shared loader in `tests/agent-dump.ts` (shared with the [interface checks](../interface-checks/design.md), which take their agreement payloads from the same dump), builds the same sentences from the same inputs — read out of the dump, so the two provably compared the same thing — and asserts the two objects equal. Comparing the two sources as text, which is what this check did first, passes on two files that hold the same words and build different sentences; this does not.
 
 The inputs include a draft name with quotes inside it, because the draft moves quote the name and escaping is where the two sides would diverge first.
 
@@ -57,7 +57,9 @@ The frontend job installs both toolchains, because the coupling checks run the a
 ## Verification
 
 - `uv run pytest` in `agent/`: 249 passed, 5 deselected, ~34s (158 before this work).
-- `npm test`: 185 passed across 6 files, ~1.6s (there was no runner before).
+- `npm test`, this tier (`--project offline`): 187 passed across 6 files, ~2s (there was no
+  runner before). This record said 185 until 2026-08-20: the two invariant checks added when
+  the fixtures were held against the agent's own agreements (§5) were never counted here.
 - `npm run typecheck`: clean.
 - `uv run python src/product_model/validate.py`: passes, and now also runs inside the suite.
 - Coverage of the agent package, measured with `uv run --with pytest-cov pytest --cov=src`, moved from 69% to 90% overall; `src/configuration.py` from 58% to 96% and `src/http_app.py` from 0% to complete. What remains uncovered is the dead starter modules, which the suite correctly ignores.
