@@ -10,6 +10,8 @@ The agent may fill forced values, propose completions and flag dead ends without
 
 *Standing tension with [always show a valid whole](always-show-a-valid-whole.md),* which pulls toward the agent choosing a lot early. The resolution is visible provenance plus cheap reversal.
 
+*What the walkthrough of 2026-08-20 found.* Provenance reads correctly move by move. Values the agent picked when asked to carry `agent`, an override in the customer's own words flipped that row to `you` and moved nothing else, and document-seeded terms carry `document` with their clause. The deciding half broke twice. A batch of choices the solver rejects is discarded whole, including the choices that did not conflict, and the completion that follows fills those variables with its own picks: the customer's stated office, Frankfurt, European codes and 1000 kg car left no trace in the workspace record, which held one choice, and the sheet then asserted a residential building at 630 kg. And clicking "Keep everything as it is — abandon this change" led the agent to `undo_change` in two of four samples, reversing the previous change instead of doing nothing. Both are reversible, which is the resolution this principle relies on, and neither is a choice the customer made. Both were repaired the same day: the innocent half of a rejected batch is recorded and the declined half comes back named with its rules, and declining a change is answered by a tool that holds no state and so cannot move the agreement ([agent-tools](../../specs/agent-tools/design.md), [nonlinear-interaction](../../specs/nonlinear-interaction/design.md)).
+
 ## Related
 
 - [../direction.md](../direction.md) §2 — the principle index

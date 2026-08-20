@@ -8,6 +8,8 @@ Cost and footprint are held side by side, with the differing variables named. Th
 
 *Test.* After seeing the comparison, can the user say *which options* differ and what each costs?
 
+*What the walkthrough of 2026-08-20 found.* Wherever the pair is drawn it holds. The sheet states the monthly fee and the modelled lifetime footprint together, and the comparison card lists the differing variables with both totals, both footprints and a delta line reading "€528/mo more · 3.9 t CO₂e less", with the agent's sentence quoting the same two figures. The test fails on the disclosure that is not drawn. Beside a completion the second objective arrives as prose — "the lower-footprint completion would cut modelled lifetime CO₂e by 31.3 t, but add €52/month and change 6 choices" — and the six choices are never named, so the reader can say what the alternative costs and not which options differ. Two different pairs are also spoken in the same voice: the one between two completions of the current draft and the one between two drafts, with nothing marking which is which.
+
 *The line the agent may not cross.* Resolving the cost/footprint weighting on the user's behalf is the irreducible user decision ([../models/Conversation moves.md](../models/Conversation%20moves.md) §3). The current implementation completes on cheapest price but solves the other objective in the same call and discloses both deltas whenever the two disagree, which makes the default disclosed rather than silent ([footprint spec](../../specs/environmental-footprint/design.md)). Whether disclosure suffices, or the first proposal must arrive as a pair, remains open in [../models/Conversation moves.md](../models/Conversation%20moves.md) §6.
 
 ## Related

@@ -53,6 +53,21 @@ class Candidate(TypedDict):
     objective: NotRequired[Objective]
 
 
+# A product rule as the interface may quote it: the id and the model's own
+# label, never a paraphrase (constitution #6).
+class Rule(TypedDict):
+    id: str
+    label: str
+
+
+# A choice `set_choices` would not record, because it cannot hold with the
+# rest, and the rules that say so (docs/specs/agent-tools).
+class Declined(TypedDict):
+    variable: str
+    value: str
+    rules: list[Rule]
+
+
 # The frozen reference an RFQ-seeded agreement diverges from
 # (docs/specs/rfq-reconciliation). Requirements are immutable after ingestion —
 # variable, value, clause and quote never change — and tools may only move the
@@ -88,6 +103,18 @@ class RFQ(TypedDict):
 class Configuration(TypedDict):
     choices: dict[str, Choice]
     statuses: dict[str, dict[str, str]]  # var -> value -> chosen|forced|invalid|open
+    # Why every option that cannot be taken cannot be taken: variable -> value
+    # -> the named rules that rule it out (constitution #6). Derived, never
+    # stored in a snapshot, and rebuilt wherever `statuses` is.
+    #
+    # Each row is computed with that variable's *own* recorded choice lifted,
+    # so it answers the swap the customer is weighing rather than restating
+    # what they already chose. Without the lift every alternative to a decided
+    # value is invalid by construction, which is what locked the document
+    # everywhere the agreement had been decided. An empty list means the only
+    # thing separating the value is the structural one-value-per-variable,
+    # which is not a product rule and is not narrated as one.
+    unavailable: dict[str, dict[str, list[Rule]]]
     candidate: Candidate | None
     rfq: NotRequired[RFQ]  # only on document-seeded agreements
 
@@ -145,9 +172,11 @@ class AgentState(BaseAgentState):
 
 
 def empty_configuration() -> Configuration:
+    statuses, unavailable = _derived({})
     return {
         "choices": {},
-        "statuses": SOLVER.valid_options({}),
+        "statuses": statuses,
+        "unavailable": unavailable,
         "candidate": None,
     }
 
@@ -170,6 +199,39 @@ def _validate_known(choices: dict[str, str]) -> None:
         raise ValueError("; ".join(problems))
 
 
+def _unavailable(
+    choices: dict[str, str], statuses: dict[str, dict[str, str]]
+) -> dict[str, dict[str, list[Rule]]]:
+    """The rules behind every unavailable option, for the `unavailable` field.
+
+    Around 40 ms on the shipped model: one `valid_options` per decided
+    variable (the lift), then one `explain` per option that is genuinely out.
+
+    Which options are out is settled; *which* minimal core comes back for one
+    of them is not, since an incremental solver can answer the same question
+    with either of two true cores. Nothing may depend on getting the same one
+    twice.
+    """
+    out: dict[str, dict[str, list[Rule]]] = {}
+    for var in MODEL.variables:
+        base = {k: v for k, v in choices.items() if k != var}
+        row = SOLVER.valid_options(base)[var] if var in choices else statuses[var]
+        for val, status in row.items():
+            if status != "invalid":
+                continue
+            conflict = SOLVER.explain({**base, var: val})
+            out.setdefault(var, {})[val] = _rules(conflict) if conflict else []
+    return out
+
+
+def _derived(choices: dict[str, str]) -> tuple[dict[str, dict[str, str]], dict]:
+    """The two solver-derived halves of a configuration, always built together
+    so neither can go stale behind the other (a restore that rebuilt only
+    `statuses` would leave the document explaining an older agreement)."""
+    statuses = SOLVER.valid_options(choices)  # raises ConflictError if infeasible
+    return statuses, _unavailable(choices, statuses)
+
+
 def _forced(statuses: dict[str, dict[str, str]]) -> dict[str, str]:
     return {
         var: val
@@ -184,6 +246,10 @@ def _keep_candidate(candidate: Candidate | None, choices: dict[str, str]) -> Can
     return None
 
 
+def _rules(conflict) -> list[Rule]:
+    return [{"id": rid, "label": label} for rid, label in conflict.rules]
+
+
 def _carry_rfq(config: Configuration, new_config: Configuration) -> Configuration:
     """Keep the frozen RFQ reference across a transition that rebuilds the
     configuration wholesale. The register is the difference between it and the
@@ -194,6 +260,30 @@ def _carry_rfq(config: Configuration, new_config: Configuration) -> Configuratio
     return new_config
 
 
+def _repriced(config: Configuration, new_config: Configuration) -> Configuration:
+    """Keep a priced agreement priced across a change.
+
+    A candidate that no longer matches the choices is invalid and `_keep_candidate`
+    drops it, which used to leave the document unpriced after every edit — a
+    click on a cabin finish took the sheet from a monthly fee to "no priced
+    proposal yet", against [always show a valid whole]. So a change to an
+    agreement that *had* a candidate completes again on the same objective,
+    inside the same batch, and undo reverses the pair together. An agreement
+    that never had one still has none: pricing is asked for, not assumed.
+    """
+    previous = config.get("candidate")
+    if previous is None or new_config["candidate"] is not None:
+        return new_config
+    return make_candidate(
+        new_config,
+        previous.get("objective", "price"),
+        # Keep what the customer has already read wherever the objective is
+        # indifferent: a completion is one of many optima, and re-solving from
+        # scratch would flip cost-free values nobody touched.
+        prefer=previous["assignment"],
+    )
+
+
 def apply_choices(
     config: Configuration, new_choices: dict[str, str], source: Source
 ) -> tuple[Configuration, dict[str, str]]:
@@ -202,7 +292,7 @@ def apply_choices(
     unknown variables/values."""
     _validate_known(new_choices)
     merged = {**_chosen_values(config), **new_choices}
-    statuses = SOLVER.valid_options(merged)  # raises ConflictError if infeasible
+    statuses, unavailable = _derived(merged)  # raises ConflictError if infeasible
 
     choices = dict(config["choices"])
     for var, val in new_choices.items():
@@ -216,9 +306,50 @@ def apply_choices(
     new_config: Configuration = _carry_rfq(config, {
         "choices": choices,
         "statuses": statuses,
+        "unavailable": unavailable,
         "candidate": _keep_candidate(config["candidate"], merged),
     })
-    return new_config, newly_forced
+    return _repriced(config, new_config), newly_forced
+
+
+def record_choices(
+    config: Configuration, new_choices: dict[str, str], source: Source
+) -> tuple[Configuration, dict[str, str], list[Declined]]:
+    """Record what can hold, and say what cannot, rather than losing the lot.
+
+    `apply_choices` is all-or-nothing, which is right for a revision the
+    customer aimed at one term and wrong for a batch of things they just
+    stated: one collision inside it used to discard the choices that had
+    nothing to do with the collision, and the completion that followed filled
+    those variables with the agent's own guesses (docs/specs/agent-tools, and
+    [the agent proposes and the user decides]). So each round asks the solver
+    which choices are in the conflict, declines the ones that came in this
+    batch — every member of that minimal set, so nothing arbitrary is picked
+    between two things the customer said — and tries again with the rest.
+    Declined choices come back with the rules that separate them, for the
+    agent to put to the customer.
+
+    The recorded remainder is applied by `apply_choices`, so a batch with no
+    conflict in it behaves exactly as before.
+    """
+    _validate_known(new_choices)
+    keep = dict(new_choices)
+    existing = _chosen_values(config)
+    declined: list[Declined] = []
+    while keep:
+        conflict = SOLVER.explain({**existing, **keep})
+        if conflict is None:
+            break
+        offenders = [(v, val) for v, val in conflict.choices if v in keep]
+        if not offenders:
+            # The conflict is entirely among choices already recorded, which
+            # the invariant says cannot happen; refuse rather than guess.
+            raise ConflictError(conflict, conflict.describe(MODEL))
+        rules = _rules(conflict)
+        for var, _ in offenders:
+            declined.append({"variable": var, "value": keep.pop(var), "rules": rules})
+    new_config, newly_forced = apply_choices(config, keep, source)
+    return new_config, newly_forced, declined
 
 
 def withdraw_choices(config: Configuration, variables: list[str]) -> Configuration:
@@ -227,11 +358,13 @@ def withdraw_choices(config: Configuration, variables: list[str]) -> Configurati
         raise ValueError(f"unknown variables: {unknown}")
     choices = {var: c for var, c in config["choices"].items() if var not in variables}
     remaining = {var: c["value"] for var, c in choices.items()}
-    return _carry_rfq(config, {
+    statuses, unavailable = _derived(remaining)
+    return _repriced(config, _carry_rfq(config, {
         "choices": choices,
-        "statuses": SOLVER.valid_options(remaining),
+        "statuses": statuses,
+        "unavailable": unavailable,
         "candidate": _keep_candidate(config["candidate"], remaining),
-    })
+    }))
 
 
 def _state_footprint(assignment: dict[str, str]) -> Footprint:
@@ -241,8 +374,15 @@ def _state_footprint(assignment: dict[str, str]) -> Footprint:
     return {"embodied": fp["embodied"], "use_phase": fp["use_phase"], "total": fp["total"]}
 
 
-def make_candidate(config: Configuration, objective: Objective = "price") -> Configuration:
-    assignment, price = SOLVER.complete(_chosen_values(config), objective)
+def make_candidate(
+    config: Configuration,
+    objective: Objective = "price",
+    prefer: dict[str, str] | None = None,
+) -> Configuration:
+    """`prefer` is passed through to the solver as a tie-break — see
+    `SolverService.complete`. Used when repricing, so an edit moves what it
+    forced and nothing else."""
+    assignment, price = SOLVER.complete(_chosen_values(config), objective, prefer)
     return {
         **config,
         "candidate": {"assignment": assignment, "price": price,
@@ -343,6 +483,13 @@ def draft_comparison(
         "priceDelta": side_b["price"] - side_a["price"],
         # 0 when either side predates the footprint feature — the card shows "—"
         "footprintDelta": (fp_b["total"] - fp_a["total"]) if fp_a and fp_b else 0,
+        # The same figure already formatted, for the same reason `_format_co2`
+        # exists at all: the card renders this string and the agent quotes it,
+        # so the sheet and the prose beside it cannot disagree. Left to the two
+        # runtimes separately, they did — the card said 1.5 t CO₂e where the
+        # agent's sentence said 1,529 kg CO2e, having read the raw delta.
+        "footprintDeltaText": _format_co2(
+            abs(fp_b["total"] - fp_a["total"])) if fp_a and fp_b else None,
     }
 
 
@@ -573,10 +720,11 @@ def restore(snap: Snapshot) -> Configuration:
     """
     values = {var: c["value"] for var, c in snap["choices"].items()}
     _validate_known(values)
-    statuses = SOLVER.valid_options(values)
+    statuses, unavailable = _derived(values)
     config: Configuration = {
         "choices": dict(snap["choices"]),
         "statuses": statuses,
+        "unavailable": unavailable,
         # The candidate cannot be recomputed faithfully (see `ingest`), so it
         # is restored as it was — but only if it still extends these choices.
         "candidate": _keep_candidate(snap.get("candidate"), values),
@@ -674,6 +822,9 @@ def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
     for var_name in variables:
         var = MODEL.variables[var_name]
         statuses = config["statuses"][var_name]
+        # An option the customer cannot take says which rules say so, so the
+        # card can name them rather than greying the row out (constitution #6).
+        unavailable = config.get("unavailable", {}).get(var_name, {})
         options = [
             {
                 "value": o.value,
@@ -681,6 +832,7 @@ def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
                 "price": MODEL.monthly_option_delta(var_name, o.value, months),
                 "status": "valid" if statuses[o.value] == "open" else statuses[o.value],
                 "cheapest": cheapest[var_name] == o.value,
+                "rules": unavailable.get(o.value, []),
             }
             for o in var.options
         ]
@@ -926,15 +1078,26 @@ def _consequence_lines(
     discarded: str = "The previous candidate no longer fits and was discarded.",
 ) -> list[str]:
     """What a transition did beyond what was asked: the values the rules now
-    force, and whether the standing candidate survived."""
+    force, and what happened to the standing candidate — repriced, in the
+    ordinary case, since a priced agreement stays priced across a change
+    (`_repriced`)."""
     lines = []
     if newly_forced:
         lines.append(
             "Now forced by the rules (announce these to the customer): "
             + ", ".join(f"{_label(v, val)} ({v})" for v, val in newly_forced.items())
         )
-    if new_config["candidate"] is None and config["candidate"] is not None:
+    before, after = config["candidate"], new_config["candidate"]
+    if after is None and before is not None:
         lines.append(discarded)
+    elif before is not None and after is not None and after["price"] != before["price"]:
+        # Stated, not narrated: the consideration line on the sheet carries the
+        # new fee, so a canvas edit that only moved the price has nothing the
+        # sheet cannot explain by itself and ends in silence.
+        lines.append(
+            f"Repriced: {after['price']} EUR/month (was {before['price']}). "
+            "The sheet shows this."
+        )
     return lines
 
 
@@ -948,18 +1111,33 @@ def set_choices(choices: dict[str, str], source: Source, runtime: ToolRuntime) -
     `choices` maps variable names to option value codes (from describe_product),
     e.g. {"building_type": "hospital", "rated_load": "kg2000"}.
     Use source="user" for things the customer stated, source="agent" for values
-    you derived or proposed. If the combination violates product rules it is
-    rejected and you get an explanation of which choices conflict and why.
+    you derived or proposed. Everything in the batch that can hold is recorded;
+    anything that cannot comes back as NOT RECORDED with the rules that
+    separate it, for you to put to the customer.
     """
     config = _get_config(runtime)
     try:
-        new_config, newly_forced = apply_choices(config, choices, source)
+        new_config, newly_forced, declined = record_choices(config, choices, source)
     except ValueError as e:
         return _error(runtime, e)
     except ConflictError as e:
         return _rejected(runtime, e)
 
-    lines = ["Recorded: " + ", ".join(f"{v}={val}" for v, val in choices.items())]
+    refused = {d["variable"] for d in declined}
+    kept = {v: val for v, val in choices.items() if v not in refused}
+    lines = ["Recorded: " + (", ".join(f"{v}={val}" for v, val in kept.items()) or "nothing")]
+    if declined:
+        lines.append(
+            "NOT recorded, they cannot hold together: "
+            + ", ".join(f"{d['variable']}={d['value']}" for d in declined)
+            + ". Rules: "
+            + "; ".join(dict.fromkeys(
+                f"{r['id']}: {r['label']}" for d in declined for r in d["rules"]))
+            + ". Tell the customer which of these has to give, naming the rule, "
+            "and record their answer. If they want one of them and it collides "
+            "with something already agreed, call revise_choices instead — that "
+            "returns repair paths."
+        )
     lines += _consequence_lines(config, new_config, newly_forced)
     return _committed(runtime, new_config, lines)
 
@@ -1126,7 +1304,14 @@ def compare_drafts(a: str, runtime: ToolRuntime, b: str | None = None) -> str:
     """Compare two drafts of this agreement (or draft `a` against the one being
     worked on, if `b` is omitted). The customer sees a side-by-side card of
     only the differing variables with the monthly-price delta and the footprint
-    delta. Both drafts need a priced candidate."""
+    delta. Both drafts need a priced candidate.
+
+    The card already shows every row, both totals and both footprints. Say what
+    the trade-off is in one or two sentences — which direction each objective
+    moves and what the customer is trading for what — and stop. Do not walk the
+    rows back, and do not offer to show the drafts side by side: you just did.
+    Quote `footprintDeltaText` verbatim for the footprint difference rather than
+    restating the raw `footprintDelta`, so your sentence and the card agree."""
     workspace_id = runtime.state.get("workspace_id")
     if not workspace_id:
         return ("ERROR: this conversation is not attached to an elevator, so it "
@@ -1223,6 +1408,21 @@ def redo_change(runtime: ToolRuntime) -> Command:
     """Put back the change undo_change reversed. Use when the customer changes
     their mind about an undo ("actually keep it", "redo that")."""
     return _restore_step(runtime, "redo")
+
+
+@tool
+def keep_as_is(runtime: ToolRuntime) -> Command:
+    """The customer declined a change: confirm that nothing moved.
+
+    Call this — and nothing else — when a revision is abandoned ("keep
+    everything as it is", "leave it", "forget that one"). It is not undo:
+    undo_change reverses a change that was applied, while this one answers a
+    change that never was. Nothing is recorded and nothing is reversed."""
+    # Deliberately routed through _reply rather than _committed: this tool
+    # holds no `configuration` in its update and writes no history entry, so
+    # declining a change cannot move the agreement whatever the model intends
+    # by calling it (docs/specs/nonlinear-interaction).
+    return _reply(runtime, "Nothing changed — the agreement stands as it was.")
 
 
 # -- RFQ tools (docs/specs/rfq-reconciliation) ----------------------------
@@ -1482,6 +1682,19 @@ def get_configuration(runtime: ToolRuntime) -> str:
         lines.append(f"- {var} = {c['value']} (source: {c['source']})")
     if forced:
         lines.append("Forced by rules: " + ", ".join(f"{v}={val}" for v, val in forced.items()))
+        # With the rules that force them, so "why is this here?" is answered by
+        # quoting the model rather than by reasoning about it (constitution #6).
+        for var, val in forced.items():
+            named = dict.fromkeys(
+                f"{r['id']}: {r['label']}"
+                for rules in config.get("unavailable", {}).get(var, {}).values()
+                for r in rules
+            )
+            if named:
+                lines.append(
+                    f"- {var}={val} because every alternative is ruled out by "
+                    + "; ".join(named)
+                )
     lines.append("Undecided: " + (", ".join(_undecided(config)) or "none"))
     if config["candidate"]:
         line = f"Candidate agreement at {config['candidate']['price']} EUR/month"
@@ -1591,6 +1804,7 @@ configuration_tools = [
     compare_drafts,
     undo_change,
     redo_change,
+    keep_as_is,
     get_configuration,
     describe_product,
     ask_choices,

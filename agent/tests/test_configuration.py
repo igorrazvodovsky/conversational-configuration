@@ -5,6 +5,7 @@ import json
 import pytest
 
 from src.configuration import (
+    MODEL,
     SOLVER,
     apply_choices,
     build_repair_payload,
@@ -12,8 +13,10 @@ from src.configuration import (
     draft_comparison,
     empty_configuration,
     ingest,
+    keep_as_is,
     make_candidate,
     reconcile,
+    record_choices,
     register,
     restore,
     revise,
@@ -64,6 +67,106 @@ def test_apply_conflict_raises_and_reports(empty):
     assert list(config["choices"]) == ["installation"]
 
 
+def test_record_keeps_what_fits_and_names_what_does_not(empty):
+    """A batch with one collision in it records everything else, and hands back
+    the collision with its rules (docs/specs/agent-tools). Losing the innocent
+    choices used to let the next completion invent replacements for them."""
+    stated = {
+        "building_type": "office",
+        "region": "europe",
+        "travel": "mid_15_30",
+        "stops": "s13_24",
+    }
+    config, _, declined = record_choices(empty, stated, "user")
+    assert set(config["choices"]) == {"building_type", "region"}
+    assert {d["variable"] for d in declined} == {"travel", "stops"}
+    assert all(d["rules"] for d in declined)
+    assert "R14" in {r["id"] for d in declined for r in d["rules"]}
+    # every declined value is the one the customer stated, reported back verbatim
+    assert {d["variable"]: d["value"] for d in declined} == {
+        "travel": "mid_15_30", "stops": "s13_24"}
+
+
+def test_record_declines_the_new_choice_not_the_agreed_one(empty):
+    """A new choice that collides with something already recorded is the one
+    declined; what the customer agreed earlier is never quietly dropped."""
+    config, _ = apply_choices(empty, {"installation": "modernization"}, "user")
+    after, _, declined = record_choices(config, {"rated_speed": "mps3_0"}, "user")
+    assert after["choices"]["installation"]["value"] == "modernization"
+    assert "rated_speed" not in after["choices"]
+    assert [d["variable"] for d in declined] == ["rated_speed"]
+    # Which minimal core Z3 returns is its own business — pit depth and
+    # headroom each separate these two — so what is asserted is that the rules
+    # are the model's own, named, and about the modernization.
+    ids = {r["id"] for d in declined for r in d["rules"]}
+    assert ids <= {c.id for c in MODEL.constraints}
+    assert ids & {"R27", "R28"}
+
+
+def test_record_without_conflict_behaves_like_apply(empty):
+    config, forced, declined = record_choices(
+        empty, {"building_type": "hotel", "region": "europe"}, "user")
+    assert declined == []
+    assert set(config["choices"]) == {"building_type", "region"}
+    assert forced == apply_choices(
+        empty, {"building_type": "hotel", "region": "europe"}, "user")[1]
+
+
+def test_keeping_as_is_cannot_move_the_agreement():
+    """Declining a change is answered by a tool that holds no configuration in
+    its update and writes no history, so the agreement cannot move however the
+    model reaches for it (docs/specs/nonlinear-interaction). The defect this
+    replaces was the model answering the abandon message with undo_change,
+    which threw away the change *before* the one the customer declined."""
+
+    class Runtime:
+        tool_call_id = "call-1"
+        state: dict = {}
+
+    update = keep_as_is.func(runtime=Runtime()).update
+    assert set(update) == {"messages"}
+    assert "configuration" not in update
+
+
+def test_unavailable_answers_the_swap_not_the_choice(empty):
+    """A decided term still offers its alternatives: `unavailable` is computed
+    with the variable's own choice lifted, so it says what could be taken
+    instead (docs/specs/agreement-document). No rule in the model touches
+    contract_term, so recording one may not rule the others out."""
+    config, _ = apply_choices(empty, {"contract_term": "y15"}, "user")
+    assert config["statuses"]["contract_term"]["y5"] == "invalid"  # under the choice
+    assert "contract_term" not in config["unavailable"]  # as a swap, all three stand
+
+
+def test_unavailable_names_the_rules(empty):
+    """Every option that cannot be taken carries the rules that say so
+    (constitution #6)."""
+    config, _ = apply_choices(empty, {"building_type": "hospital"}, "user")
+    out = config["unavailable"]["accessibility"]["none"]
+    assert {r["id"] for r in out} & {"R17", "R18"}
+    assert all(r["label"] for r in out)
+    assert all(
+        rid in {c.id for c in MODEL.constraints}
+        for rules in config["unavailable"].values()
+        for rule_list in rules.values()
+        for rid in [r["id"] for r in rule_list]
+    )
+
+
+def test_unavailable_is_rebuilt_on_restore(empty):
+    """Derived state cannot survive an undo stale, or the document starts
+    explaining an agreement that is no longer there."""
+    config, _ = apply_choices(empty, {"building_type": "hospital"}, "user")
+    revived = restore(snapshot(config))
+    # Which options are out is the assertion; *which* minimal core Z3 hands
+    # back for one of them can differ between two runs of the same question,
+    # and either core is a true one.
+    assert {v: set(vals) for v, vals in revived["unavailable"].items()} == {
+        v: set(vals) for v, vals in config["unavailable"].items()
+    }
+    assert revived["unavailable"]["accessibility"]["none"]
+
+
 def test_apply_unknown_variable_and_value(empty):
     with pytest.raises(ValueError, match="unknown variable"):
         apply_choices(empty, {"colour": "red"}, "user")
@@ -80,10 +183,49 @@ def test_candidate_extends_and_prices_monthly(empty):
     assert cand["price"] == SOLVER.model.monthly(cand["assignment"])
 
 
-def test_candidate_dropped_when_overridden(empty):
+def test_candidate_repriced_when_overridden(empty):
+    """A change invalidates the standing candidate, and the agreement is
+    completed again on the same objective rather than left unpriced."""
     config, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
     config = make_candidate(config)
     changed, _ = apply_choices(config, {"building_type": "office"}, "user")
+    assert changed["candidate"] is not None
+    assert changed["candidate"]["assignment"] != config["candidate"]["assignment"]
+    assert changed["candidate"]["assignment"]["building_type"] == "office"
+    assert changed["candidate"]["objective"] == config["candidate"]["objective"]
+
+
+def test_repricing_moves_only_what_the_edit_moved(empty):
+    """A reprice may not churn values nobody touched. Cost-free variables leave
+    many equally cheap completions, so re-solving from scratch flipped car
+    height, shaft size and pit depth on a cabin-finish edit; the previous
+    assignment is passed as a tie-break to stop that."""
+    config, _ = apply_choices(empty, {
+        "building_type": "office", "region": "europe", "installation": "new_build",
+        "travel": "high_30_50", "stops": "s13_24", "usage_profile": "heavy",
+        "rated_load": "kg1000", "contract_term": "y15",
+    }, "user")
+    config = make_candidate(config)
+    before = config["candidate"]["assignment"]
+    after, _ = apply_choices(config, {"wall_finish": "brushed_ss"}, "user")
+    moved = {v for v in before if before[v] != after["candidate"]["assignment"][v]}
+    assert moved == {"wall_finish"}
+    # and the tie-break never buys a worse price
+    assert after["candidate"]["price"] == config["candidate"]["price"] + 16
+
+
+def test_a_greener_candidate_stays_green_across_a_change(empty):
+    """The reprice keeps the objective the customer asked for."""
+    config, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
+    config = make_candidate(config, "co2")
+    changed, _ = apply_choices(config, {"contract_term": "y10"}, "user")
+    assert changed["candidate"]["objective"] == "co2"
+
+
+def test_an_unpriced_agreement_stays_unpriced(empty):
+    """Pricing is asked for, never assumed: a change to an agreement that has
+    no candidate does not invent one."""
+    changed, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
     assert changed["candidate"] is None
 
 
@@ -231,12 +373,13 @@ def test_compare_two_drafts(with_candidate):
 
 
 def test_compare_needs_a_priced_candidate_on_each_side(with_candidate, empty):
-    """A draft edited since its last completion has no price to compare with,
-    and the tool says what to do about it rather than solving for it."""
-    edited, _ = apply_choices(with_candidate, {"cop": "touch_premium"}, "user")
-    assert edited["candidate"] is None
+    """A draft that has never been completed has no price to compare with, and
+    the tool says what to do about it rather than solving for it. Editing a
+    draft no longer costs it its price, so this is the only way to get there."""
+    unpriced, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
+    assert unpriced["candidate"] is None
     with pytest.raises(ValueError, match="propose a completion"):
-        draft_comparison("Premium", edited, "Original", with_candidate)
+        draft_comparison("Premium", unpriced, "Original", with_candidate)
 
 
 def test_compare_across_terms_uses_each_sides_own_term(empty):
@@ -289,6 +432,10 @@ def test_comparison_footprint_delta(empty):
     a, b = payload["a"]["footprint"], payload["b"]["footprint"]
     assert a and b
     assert payload["footprintDelta"] == b["total"] - a["total"]
+    # The card renders this string and the agent is told to quote it, so the
+    # sheet and the prose beside it cannot disagree about one figure.
+    from src.configuration import _format_co2
+    assert payload["footprintDeltaText"] == _format_co2(abs(payload["footprintDelta"]))
 
 
 def test_comparison_pre_footprint_draft_fallback(empty):
@@ -302,6 +449,7 @@ def test_comparison_pre_footprint_draft_fallback(empty):
     assert payload["a"]["footprint"] is None
     assert payload["b"]["footprint"] is not None
     assert payload["footprintDelta"] == 0
+    assert payload["footprintDeltaText"] is None
 
 
 def test_completion_message_teaser(empty):
@@ -656,9 +804,10 @@ def test_the_restoration_is_described_in_the_customer_s_terms(with_candidate):
 def test_a_restored_fee_is_named(with_candidate):
     """The monthly figure moves with the batch, so the description says so."""
     moved, _ = revise(with_candidate, {"cop": "touch_premium"}, [], "user")
-    assert moved["candidate"] is None
+    assert moved["candidate"]["price"] != with_candidate["candidate"]["price"]
     described = describe_restoration(moved, restore(snapshot(with_candidate)))
     assert f"{with_candidate['candidate']['price']} EUR/month" in described
 
-    described = describe_restoration(with_candidate, restore(snapshot(moved)))
+    unpriced, _ = apply_choices(empty_configuration(), {"building_type": "hotel"}, "user")
+    described = describe_restoration(with_candidate, restore(snapshot(unpriced)))
     assert "no priced candidate" in described

@@ -34,6 +34,11 @@ interface Payload {
   differences: { variable: string; label: string; a: SideValue; b: SideValue }[];
   priceDelta: number;
   footprintDelta: number; // 0 when either side lacks a footprint
+  // The delta already formatted backend-side, so this card and the agent's
+  // sentence beside it quote one figure; null when either side lacks a
+  // footprint. Older tool results in a reopened conversation have no such
+  // field, hence the fallback below.
+  footprintDeltaText?: string | null;
 }
 
 export function DraftComparison({ toolCallId, status, result }: CardProps) {
@@ -136,7 +141,7 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
             ? "same monthly price"
             : `${payload.b.name} is ${formatMonthly(Math.abs(payload.priceDelta))} ${payload.priceDelta > 0 ? "more" : "less"}`}
           {footprintDelta !== 0 &&
-            ` · ${formatCO2(Math.abs(footprintDelta))} ${footprintDelta > 0 ? "more" : "less"}`}
+            ` · ${payload.footprintDeltaText ?? formatCO2(Math.abs(footprintDelta))} ${footprintDelta > 0 ? "more" : "less"}`}
         </span>
         {sides
           .filter((s) => !s.isCurrent)

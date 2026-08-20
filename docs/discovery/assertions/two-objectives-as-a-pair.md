@@ -10,6 +10,8 @@ This claim is the least supported by anything but reasoning.
 
 *How we would know it is wrong.* Users want one number and treat the pair as unresolved work.
 
+The 2026-08-20 walkthrough confirms the pair is held apart on every drawn surface — the sheet's consideration line, the comparison card's totals and footprints, and the agent's sentence quoting the card's own figures — and finds the weak point in the prose disclosure, where the alternative's differing options are counted rather than named ([trade-offs are shown as a pair](../principles/trade-offs-shown-as-a-pair.md)).
+
 *Where it gets demonstrated.* The [comparing agreements](../scenarios/comparing-agreements.md) scenario, on a case where price and footprint disagree — travel band versus any finish ([footprint spec](../../specs/environmental-footprint/requirements.md), *relationship to other specs*).
 
 ## Related

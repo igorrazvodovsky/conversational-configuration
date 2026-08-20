@@ -360,11 +360,24 @@ class ConfigSolver:
         )
         return embodied + use_phase
 
-    def complete(self, choices: dict[str, str], objective: str = "price") -> tuple[dict[str, str], int]:
+    def complete(
+        self,
+        choices: dict[str, str],
+        objective: str = "price",
+        prefer: dict[str, str] | None = None,
+    ) -> tuple[dict[str, str], int]:
         """Cheapest-monthly (objective="price") or lowest-lifetime-footprint
         (objective="co2") full valid configuration extending `choices`.
         Returns (assignment, monthly fee in EUR/month) either way; the caller
         derives the footprint from the model.
+
+        `prefer` breaks ties toward an assignment the customer has already
+        seen. Cost-free variables leave many equally optimal completions and
+        the objective cannot separate them, so re-completing an agreement
+        after an edit used to flip car height, shaft size or pit depth —
+        values nobody touched — for no reason the customer could see. The
+        preference is the last objective declared, so it never buys a worse
+        price or footprint: it only decides between optima.
 
         For a fixed contract term, minimizing the monthly fee is the linear
         objective Σ cost_basis × financing_factor + months × Σ monthly_price
@@ -415,6 +428,9 @@ class ConfigSolver:
             if objective == "co2":
                 opt.minimize(self._lifetime_co2_grams())  # lexicographic: co2 first,
             opt.minimize(monthly_total)                   # then the monthly fee
+            for var, val in (prefer or {}).items():       # then what was already shown
+                if (var, val) in self.sel and var not in choices:
+                    opt.add_soft(self.sel[(var, val)], 1)
             assert opt.check() == sat
             m = opt.model()
             assignment = {

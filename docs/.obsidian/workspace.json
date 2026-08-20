@@ -190,6 +190,7 @@
   },
   "active": "a89680baa27c5dca",
   "lastOpenFiles": [
+    "discovery/models/Comparison view.md",
     "specs/conversation-checks/requirements.md",
     "specs/conversation-checks/design.md",
     "specs/conversation-checks",
@@ -223,7 +224,6 @@
     "research/branching-in-ai-uis.md",
     "specs/open-points/requirements.md",
     "specs/open-points",
-    "discovery/assertions/open-points-carried-by-the-document.md",
     "specs/parallel-drafts/requirements.md.tmp.35961.ad7be9d6697f",
     "specs/parallel-drafts"
   ]

@@ -27,9 +27,11 @@ Assertions it exercises: [two objectives held as a pair](../assertions/two-objec
 
 ## Working hypotheses
 
-The comparison's *layout* is unexplored, and so is where on the page it belongs: [direction.md](../direction.md) §3 records the comparison view as built in chat with both deltas and with no alternatives yet sketched against the principle it serves. A pair of figures read in a scrolling transcript may not be a pair the reader can hold.
+The doubt that a pair of figures read in a scrolling transcript may not be a pair the reader can hold is discharged, against this scenario's own drafts: at fourteen differences the card does not fit its pane, and the header naming the columns and the totals they come to cannot be seen at once ([models/Comparison view.md](../models/Comparison%20view.md) §1). The comparison moves to a canvas mode, and step 5 of the walkthrough above describes the card that is being replaced.
 
-Whether a reader can say which options differ and what each costs after seeing it — the principle's own test — has not been asked of anyone.
+Whether a reader can say which options differ and what each costs after seeing the chosen layout — the principle's own test — has still not been asked of anyone.
+
+Walked in the app on 2026-08-20. Forking, editing the fork, comparing and switching all behave as the expected outcome describes, and the card's figures and the agent's sentence agree. The card's placement failed earlier than the model measured: with five differences in a 715 px pane, the header naming the two columns had already scrolled out of view by the time the totals and footprints were visible, so the fourteen-difference measurement in [Comparison view](../models/Comparison%20view.md) §1 is the extreme rather than the threshold. The walkthrough also found the scenario's opening fragile for a reason that has nothing to do with comparison: a batch of choices rejected by the solver is discarded whole, so the agreement both drafts were forked from held one recorded choice and a completion that had invented the rest. That has since been fixed — a batch records what fits and names what it declines — so the scenario's opening no longer depends on the agent getting every clause of it past the solver at once.
 
 ## How it is played
 
@@ -38,4 +40,4 @@ Presenter walkthrough 3 in [docs/demo-scenarios.md](../../demo-scenarios.md). Au
 ## Related
 
 - [../direction.md](../direction.md) §4 — the scenario index and the coverage table
-- [../direction.md](../direction.md) §3 — the comparison view, still an unexplored model
+- [../models/Comparison view.md](../models/Comparison%20view.md) — the layout and placement this scenario walks, chosen 2026-08-20

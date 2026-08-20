@@ -8,6 +8,8 @@ This supports the direction's central tension. [The agent proposes and the user 
 
 *How we would know it is wrong.* The popover goes unopened, meaning the badge alone carries all the trust the customer needs and the words are ceremony. Or extraction fidelity is too low: the agent paraphrases, and a misattributed "quote" is worse than a bare badge because it puts words in the customer's mouth. The RFQ verification already logged one invented mapping, reading clause 5.2 as a requirement the document left open.
 
+*Status.* The 2026-08-20 walkthrough exercised both halves of the gap this note names. Document-seeded terms quoted their clause, and the deviation on the sheet read as the customer's own ask. Terms stated in prose carried the badge and nothing else, and when the customer asked why one of them was there the agent reconstructed a reason from current state rather than quoting anything that had been said. The walkthrough also found a way for words to be put in the customer's mouth that this note did not anticipate: clicking a card writes the catalogue's codes into the transcript as the customer's own sentence.
+
 *What rests on it.* The [choice-provenance spec](../../specs/choice-provenance/requirements.md), and the provenance half of the test in [the agent proposes and the user decides](../principles/agent-proposes-user-decides.md), which sharpens from *who chose a value* to *on what words*. The streaming generalisation — a stated-needs register diffing every channel's asks against the live agreement — depends on this assertion holding, and on the reference-semantics question recorded in [problem-framing](../problem-framing.md) §5.
 
 ## Related

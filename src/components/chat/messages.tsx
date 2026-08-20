@@ -24,11 +24,19 @@ import {
   MessageFooter,
 } from "@/components/ui/message";
 import { messageAttachments } from "@/lib/attachments";
+import { spokenText } from "@/lib/configurator";
 import { MessageAttachments } from "./attachments";
 
-/** The user's own words, unformatted — they typed text, not markdown. */
+/**
+ * The user's own words, unformatted — they typed text, not markdown.
+ *
+ * A message dispatched by a card is the customer's turn too, and it carries
+ * option codes for the agent to map. `spokenText` takes those out of what is
+ * displayed, so the transcript reads in the building's vocabulary rather than
+ * the catalogue's; the message the agent receives is unchanged.
+ */
 function UserText({ content }: { content: string }) {
-  return <span className="whitespace-pre-wrap">{content}</span>;
+  return <span className="whitespace-pre-wrap">{spokenText(content)}</span>;
 }
 
 function UserMessage(props: ComponentProps<typeof CopilotChatUserMessage>) {

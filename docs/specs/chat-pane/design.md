@@ -69,6 +69,7 @@ Constitution #9: UI is verified by running the app. The slots carry behaviour an
 
 ## Notes from implementation
 
+- A card's dispatched sentence is displayed without its option codes. Every card grammar spells them — the agent maps the sentence onto one atomic tool call, and a label is not a key — but the sentence is rendered in the customer's own bubble, so the transcript was quoting them saying `contract_term=y10`. `spokenText` (`src/lib/configurator.ts`) strips the parenthetical codes and says the repair's bare `var=value` drops in the words the card used, for display only; what reaches the agent is untouched. Gated on the card prefixes, so a customer who types a code sees what they typed. Found by the task 6 walkthrough (2026-08-20), against [elicitation uses the building's vocabulary, not the catalogue's](../../discovery/principles/elicit-in-the-buildings-vocabulary.md).
 - The browser pass ran in both themes. Dispatch was confirmed verbatim on all three cards; a used card goes inert exactly as before; the reply anchor and the composer clearance were measured, not eyeballed.
 - Two things the pass did not reach: drag-and-drop and paste into the composer — the file input was driven directly, and the drop-zone props pass through untouched, so this is unverified rather than changed.
 - CopilotKit's slash-command menu and its feather gradient are not reachable from the slots this composition uses; neither is configured, and the composer's opaque background does the feather's job. Virtualization is off, as decision 2 anticipated.

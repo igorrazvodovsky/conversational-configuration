@@ -33,7 +33,9 @@ import {
   monthlyDelta,
   optionLabel,
   optionNote,
+  refusalText,
   resolveValue,
+  rulesAgainst,
   variablesByName,
 } from "@/lib/configurator";
 import { KEEP_TITLE, cn } from "@/lib/utils";
@@ -137,12 +139,15 @@ export function OptionEditor({
   const model = variablesByName.get(variable);
   if (!model) return null;
   const display = displayOf(doc, variable);
-  const statuses = doc.config.statuses[variable] ?? {};
 
   return (
     <div className="flex flex-wrap gap-1.5">
       {model.options.map((option) => {
-        const invalid = (statuses[option.value] ?? "open") === "invalid";
+        // Availability is a swap question — could this value be taken instead
+        // of the one recorded? — which `statuses` cannot answer for a decided
+        // term (docs/specs/agreement-document). The rules come with the answer.
+        const rules = rulesAgainst(doc.config, variable, option.value);
+        const invalid = rules !== null;
         const isCurrent = display.value === option.value;
         const delta = monthlyDelta(option, doc.termMonths);
         return (
@@ -151,11 +156,7 @@ export function OptionEditor({
             size="xs"
             variant={isCurrent ? "default" : "outline"}
             disabled={invalid}
-            title={
-              invalid
-                ? "ruled out by your other choices — ask why in chat"
-                : option.note
-            }
+            title={rules ? refusalText(rules) : option.note}
             onClick={() => {
               onDone?.();
               doc.onSelect(variable, option.value);
@@ -360,12 +361,15 @@ export function ProvenanceBadge({
 }
 
 /**
- * What the customer's document asked, against what the agreement now says, and
- * the moves that answer it. Shown while the requirement is an open deviation,
- * while it is waived and while it is revised: a mark is not a reason to stop
- * showing the document's ask. The *reason* a value cannot be reached is not
- * here — it traces to a solver core the agent narrates in chat, where every
- * other grounded explanation in this app lives.
+ * What the customer's document asked, against what the agreement now says, the
+ * rules that separate them, and the moves that answer it. Shown while the
+ * requirement is an open deviation, while it is waived and while it is
+ * revised: a mark is not a reason to stop showing the document's ask.
+ *
+ * The rules are the solver's own, read from `unavailable` in state
+ * (constitution #6). They used to be spoken only in chat, which left the
+ * durable record of a negotiation carrying the ask and the offer with nothing
+ * to check them against once the conversation had scrolled away.
  *
  * In the document this is a margin mark on the affected term
  * (docs/specs/agreement-document); the schedules keep it as a row strip.
@@ -415,6 +419,15 @@ export function DeviationMark({
         {waived && " · waived, still listed"}
         {first.status === "revised" && " · you revised this"}
       </p>
+      {asks.map(({ value }) => {
+        const rules = rulesAgainst(doc.config, first.variable, value);
+        return rules?.length ? (
+          <p key={`why-${value}`} className="text-muted-foreground/80">
+            {optionLabel(first.variable, value)} is ruled out here by{" "}
+            {rules.map((r) => `${r.id}: ${r.label}`).join("; ")}
+          </p>
+        ) : null;
+      })}
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {!waived && first.offered && (
           <Button

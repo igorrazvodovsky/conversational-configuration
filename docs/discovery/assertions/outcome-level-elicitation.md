@@ -6,6 +6,8 @@ People can specify an agreement in outcome terms — handling capacity, uptime, 
 
 *How we would know it is wrong.* Users insist on specifying hardware directly, or cannot judge outcome terms without seeing hardware first.
 
+*Status.* Held in the 2026-08-20 walkthrough, at least on the system's side: every scenario was specified from the outcome layer — building, floors, traffic, service level, term — and the hardware was derived beneath it and shown in the schedules with plain-language glosses. Whether people can judge those outcome terms without seeing the hardware first is exactly what an author-run pass cannot answer.
+
 *What rests on it.* The derived layer beneath the outcome terms, and the agent's licence to fill it unasked. That delegation is what this assertion claims ([../models/Conversation moves.md](../models/Conversation%20moves.md) §1, §4).
 
 ## Related

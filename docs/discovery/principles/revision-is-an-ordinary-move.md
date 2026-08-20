@@ -8,6 +8,8 @@ Revision is the primary interaction rather than an escape hatch. A change shows 
 
 *Test.* Is revising a two-week-old agreement as smooth as making a new one?
 
+*What the walkthrough of 2026-08-20 found.* The repair path works and its exit does not. A speed the shaft could not carry produced a repair set with its rules, applying it landed as one batch, and undo reversed the change, what it dropped and what it rippled together, with redo restoring it. Abandoning is unreliable: the card's own last row, "Keep everything as it is — abandon this change", dispatches a sentence the agent is meant to answer by doing nothing, and in two of four samples it called `undo_change` instead, silently reversing the previous change and leaving the agreement unpriced — the second time saying the prior priced configuration was back while the sheet showed no price at all. Both failures fell in one conversation; two fresh conversations answered correctly, one with no tool call and one with a no-op `revise_choices`. Declining a change is therefore a coin-toss between nothing happening and the silent invalidation this principle rules out, arriving through the control that exists to prevent it. Repaired the same day, and structurally rather than by wording, since two of the four samples had already behaved: the abandon sentence maps onto `keep_as_is`, whose update carries a message and nothing else. Applying a repair now reprices rather than un-pricing, so the other half of the step behaves as the scenario describes.
+
 ## Related
 
 - [../direction.md](../direction.md) §2 — the principle index

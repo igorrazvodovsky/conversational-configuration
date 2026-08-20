@@ -82,7 +82,7 @@ export function DraftSwitcher({
       <DropdownMenuTrigger asChild disabled={disabled}>
         {trigger}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
           Drafts of this agreement
         </DropdownMenuLabel>
@@ -112,17 +112,42 @@ export function DraftSwitcher({
           Keep this and start another
         </DropdownMenuItem>
         {/* The compare trigger the frames strip carried, kept here beside the
-            drafts it compares. Where a comparison is *placed* once it exists is
-            still open (docs/discovery/phase-plan.md task 3). */}
-        {others.map((draft) => (
-          <DropdownMenuItem
-            key={`compare-${draft.id}`}
-            onSelect={() => onCompare(draft.name)}
-          >
+            drafts it compares. Where a comparison is *placed* is decided but
+            not yet built — a canvas mode, with the chat keeping one sentence
+            (docs/discovery/models/Comparison view.md).
+
+            `compare_drafts` needs a priced candidate on both sides, and a
+            draft edited since its last completion has none, so an unguarded
+            item offers a move that returns an error. The menu already shows
+            which drafts lack a price by omitting it; the compare item says the
+            same thing where the move is, and stays visible rather than
+            vanishing — a move that disappeared between two openings of the
+            same menu reads as a bug. */}
+        {current.price === null ? (
+          <DropdownMenuItem disabled>
             <Columns2 />
-            <span className="truncate">Compare with {draft.name}</span>
+            <span className="truncate">Compare</span>
+            <span className="ml-auto shrink-0 pl-2 text-xs whitespace-nowrap text-muted-foreground">
+              no price
+            </span>
           </DropdownMenuItem>
-        ))}
+        ) : (
+          others.map((draft) => (
+            <DropdownMenuItem
+              key={`compare-${draft.id}`}
+              disabled={draft.price === null}
+              onSelect={() => onCompare(draft.name)}
+            >
+              <Columns2 />
+              <span className="truncate">Compare with {draft.name}</span>
+              {draft.price === null && (
+                <span className="ml-auto shrink-0 pl-2 text-xs whitespace-nowrap text-muted-foreground">
+                  no price
+                </span>
+              )}
+            </DropdownMenuItem>
+          ))
+        )}
         {others.map((draft) => (
           <DropdownMenuItem
             key={draft.id}

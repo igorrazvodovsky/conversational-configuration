@@ -8,6 +8,8 @@ This is the project's central claim. If it fails, the project loses its novelty.
 
 *How we would know it is wrong.* Ripple explanations are ignored or overwhelm, or users prefer to start a fresh configuration over repairing one.
 
+*Status.* The 2026-08-20 walkthrough shows the mechanism working and the disclosure thin. The ripple does arrive at the moment of revision, with repairs proposed and the option of changing nothing; applying one lands atomically and undo reverses the whole batch. But the card names only the rules of the collision, not of the nine consequences it lists; it carries no price and no footprint for the path it proposes, so the customer chooses between paths without either objective; and for a twelve-floor building it offered a travel height of 75–100 m as an ordinary consequence, trading a measured fact about the building as though it were a preference. The claim stands as feasible and untested. Two of those three were repaired the same day — declining a repair can no longer move the agreement, and applying one reprices rather than leaving the sheet unpriced — while the disclosure faults, the unnamed ripple rules and the missing delta pair, are the storyboard's open amendment.
+
 *What rests on it.* The whole ripple storyboard ([../models/Ripple storyboard.md](../models/Ripple%20storyboard.md)), and review of delegated agent work, which reuses the same machinery ([../models/Conversation moves.md](../models/Conversation%20moves.md) §5).
 
 ## Related

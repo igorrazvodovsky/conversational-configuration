@@ -57,13 +57,64 @@ export interface RFQ {
 export interface Configuration {
   choices: Record<string, Choice>;
   statuses: Record<string, Record<string, OptionStatus>>;
+  /**
+   * Why an option cannot be taken, for every option that cannot: the named
+   * rules behind it, straight from a solver core (docs/specs/constitution.md
+   * #6). Absent on threads persisted before the field existed, which is why
+   * every read goes through `rulesAgainst`.
+   *
+   * Each row is computed with that variable's own recorded choice lifted, so
+   * presence here means "you cannot swap to this", not "you already chose
+   * something else" — the distinction the option editor turns on.
+   */
+  unavailable?: Record<string, Record<string, Rule[]>>;
   candidate: Candidate | null;
   rfq?: RFQ; // only on document-seeded agreements
 }
 
+/** A product rule as the interface may quote it: the model's own id and label. */
+export interface Rule {
+  id: string;
+  label: string;
+}
+
+/**
+ * The rules that rule this value out, or null when it can be taken.
+ *
+ * The one place validity is read for an editable control. It deliberately does
+ * not consult `statuses`: there, every alternative to a recorded choice is
+ * invalid by construction, which would lock the document everywhere the
+ * agreement has actually been decided. An empty array means unavailable with
+ * no product rule to cite — the structural one-value-per-variable — and reads
+ * as such.
+ */
+export function rulesAgainst(
+  config: Configuration,
+  variable: string,
+  value: string,
+): Rule[] | null {
+  // The map's absence is the legacy case, not a variable's absence from it: a
+  // variable with nothing ruled out has no row at all, and reading that as
+  // "fall back to statuses" would put every decided term back behind the lock
+  // this function exists to lift.
+  const map = config.unavailable;
+  if (!map) {
+    return (config.statuses[variable]?.[value] ?? "open") === "invalid" ? [] : null;
+  }
+  return map[variable]?.[value] ?? null;
+}
+
+/** How an unavailable option explains itself, in one line. */
+export function refusalText(rules: Rule[]): string {
+  return rules.length
+    ? `ruled out by ${rules.map((r) => r.label).join("; ")}`
+    : "ruled out by your other choices — ask why in chat";
+}
+
 /** A draft as the switcher draws it, mirrored into agent state by the agent's
- * committing tools. `price` is null whenever a draft has been edited since its
- * last completion — it lives on the candidate, which such an edit drops. */
+ * committing tools. `price` is null on a draft that has never been completed:
+ * it lives on the candidate, and a change to a priced agreement now completes
+ * again rather than dropping it (`_repriced` in the agent). */
 export interface DraftSummary {
   id: string;
   name: string;
@@ -418,3 +469,47 @@ export function compareDraftMessage(draftName: string): string {
  */
 export const undoMessage = "Undo the last change";
 export const redoMessage = "Redo the undone change";
+
+/**
+ * The same sentence, as the customer should read it.
+ *
+ * Every card grammar above spells option codes, because the agent maps the
+ * sentence onto one atomic tool call and a label is not a key. But the
+ * sentence is dispatched as the customer's own message and rendered in their
+ * bubble, so the transcript was putting `contract_term=y10` in their mouth —
+ * the catalogue vocabulary the whole surface exists to spare them
+ * ([elicitation uses the building's vocabulary]). This drops the codes for
+ * display only: what reaches the agent is untouched.
+ *
+ * Gated on the card prefixes rather than applied to all text, so a customer
+ * who types a code sees what they typed.
+ */
+const CARD_PREFIXES = [
+  "Set ",
+  "Apply repair:",
+  "Reconcile deviation:",
+  CANVAS_EDIT_PREFIX,
+];
+
+export function spokenText(content: string): string {
+  if (!CARD_PREFIXES.some((prefix) => content.startsWith(prefix))) return content;
+  return content
+    // "… 10 years (contract_term=y10)" — the label is already in the sentence
+    .replace(/ \(([a-z_]+)=([a-z0-9_]+)\)/g, (whole, variable: string) =>
+      variablesByName.has(variable) ? "" : whole,
+    )
+    // "leave Rated speed (rated_speed) open" — the variable named twice
+    .replace(/ \(([a-z_]+)\)/g, (whole, variable: string) =>
+      variablesByName.has(variable) ? "" : whole,
+    )
+    // "drop installation=modernization" — the repair's drop list, which has no
+    // label of its own to fall back on. Said the way the card that dispatched
+    // it says it: "Give up Installation type = Modernization (existing shaft)".
+    .replace(
+      /([a-z_]+)=([a-z0-9_]+)/g,
+      (whole, variable: string, value: string) =>
+        variablesByName.has(variable)
+          ? `${variablesByName.get(variable)!.label} = ${optionLabel(variable, value)}`
+          : whole,
+    );
+}

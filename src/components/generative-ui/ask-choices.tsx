@@ -14,7 +14,7 @@ import { BadgePercent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { choiceMessage, formatMonthly } from "@/lib/configurator";
+import { Rule, choiceMessage, formatMonthly, refusalText } from "@/lib/configurator";
 import { KEEP_TITLE } from "@/lib/utils";
 import { useCardDispatch } from "./card-dispatch";
 import { CardPending, CardProps, CardShell, parsePayload } from "./card-shell";
@@ -25,6 +25,9 @@ interface PayloadOption {
   price: number;
   status: "valid" | "invalid" | "chosen" | "forced";
   cheapest: boolean;
+  /** the named rules that rule this option out, when it is out
+   * (constitution #6); absent on cards rendered from older tool results */
+  rules?: Rule[];
 }
 
 interface PayloadVariable {
@@ -127,7 +130,14 @@ function Control({ variable, selected, inert, onSelect }: ControlProps) {
 
 function optionState(o: PayloadOption, selected?: string) {
   const active = selected ? selected === o.value : o.status === "chosen" || o.status === "forced";
-  return { active, disabled: o.status === "invalid" };
+  const disabled = o.status === "invalid";
+  // An unavailable option says which rules made it unavailable. Older tool
+  // results carry no rules, and fall back to the wording they shipped with.
+  return {
+    active,
+    disabled,
+    why: disabled ? refusalText(o.rules ?? []) : undefined,
+  };
 }
 
 function CheapestMark() {
@@ -143,7 +153,7 @@ function ChipRow({ variable, selected, inert, onSelect }: ControlProps) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {variable.options.map((o) => {
-        const { active, disabled } = optionState(o, selected);
+        const { active, disabled, why } = optionState(o, selected);
         return (
           <Button
             key={o.value}
@@ -151,7 +161,7 @@ function ChipRow({ variable, selected, inert, onSelect }: ControlProps) {
             variant={active ? "default" : "outline"}
             disabled={disabled || inert}
             onClick={() => onSelect(variable.name, o.value)}
-            title={disabled ? "ruled out by your other choices" : undefined}
+            title={why}
             className={`font-normal ${
               disabled
                 ? `cursor-not-allowed line-through opacity-40 ${KEEP_TITLE}`
@@ -192,18 +202,14 @@ function ScaleControl({ variable, selected, inert, onSelect }: ControlProps) {
         className="w-full"
       >
         {variable.options.map((o) => {
-          const { disabled } = optionState(o, selected);
+          const { disabled, why } = optionState(o, selected);
           return (
             <ToggleGroupItem
               key={o.value}
               value={o.value}
               disabled={disabled || inert}
               title={
-                disabled
-                  ? "outside the valid range for your other choices"
-                  : o.price > 0
-                    ? `+${formatMonthly(o.price)}`
-                    : undefined
+                why ?? (o.price > 0 ? `+${formatMonthly(o.price)}` : undefined)
               }
               // h-auto + whitespace-normal: toggle items are nowrap and fixed
               // height by default, which makes long scale labels ("630 kg /
@@ -228,7 +234,7 @@ function OptionList({ variable, selected, inert, onSelect }: ControlProps) {
   return (
     <div className="divide-y border">
       {variable.options.map((o) => {
-        const { active, disabled } = optionState(o, selected);
+        const { active, disabled, why } = optionState(o, selected);
         return (
           <Item
             key={o.value}
@@ -246,7 +252,8 @@ function OptionList({ variable, selected, inert, onSelect }: ControlProps) {
               type="button"
               disabled={disabled || inert}
               onClick={() => onSelect(variable.name, o.value)}
-              className="w-full text-left disabled:cursor-not-allowed"
+              title={why}
+              className={`w-full text-left disabled:cursor-not-allowed ${disabled ? KEEP_TITLE : ""}`}
             >
               <ItemContent>
                 <ItemTitle
@@ -257,7 +264,7 @@ function OptionList({ variable, selected, inert, onSelect }: ControlProps) {
               </ItemContent>
               <ItemActions className="text-xs text-muted-foreground">
                 {disabled ? (
-                  <span>unavailable</span>
+                  <span className="max-w-[18rem] text-right">{why}</span>
                 ) : (
                   <span className="tabular-nums">
                     {o.price > 0 ? `+${formatMonthly(o.price)}` : "included"}

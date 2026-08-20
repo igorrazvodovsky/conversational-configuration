@@ -197,6 +197,16 @@ def chosen(turn) -> dict[str, str]:
     return {v: c["value"] for v, c in turn["configuration"]["choices"].items()}
 
 
+def agreement(turn) -> tuple[dict[str, str], dict | None]:
+    """What the customer would see moved: the recorded choices *and* the priced
+    whole beside them. Asserting on choices alone missed a real regression —
+    an abandon answered with undo_change left every choice in place and threw
+    the candidate away, price and all (docs/specs/conversation-checks)."""
+    candidate = turn["configuration"].get("candidate")
+    return chosen(turn), candidate and {
+        "price": candidate["price"], "assignment": candidate["assignment"]}
+
+
 def sources(turn) -> dict[str, str]:
     return {v: c["source"] for v, c in turn["configuration"]["choices"].items()}
 
@@ -419,11 +429,19 @@ def scenario_mid_contract_revision(ctx) -> Checks:
            all(option["rules"] for option in repairs["repairs"]),
            f"rules per option: {[len(o['rules']) for o in repairs['repairs']]}")
 
-    # Abandon leaves the agreement exactly as it was.
-    before = chosen(turn)
+    # Abandon leaves the agreement exactly as it was — the priced whole
+    # included, and with no state-changing tool called at all.
+    before = agreement(turn)
     turn = convo.say(grammar.ABANDON_MESSAGE)
-    c.that("abandon_changes_nothing", chosen(turn) == before,
-           f"{before} -> {chosen(turn)}")
+    c.that("abandon_changes_nothing", agreement(turn) == before,
+           f"{before[0]} -> {agreement(turn)[0]}, "
+           f"candidate {before[1] and before[1]['price']} -> "
+           f"{agreement(turn)[1] and agreement(turn)[1]['price']}")
+    moved = [name for name in ("undo_change", "redo_change", "set_choices",
+                               "revise_choices", "clear_choices",
+                               "propose_completion")
+             if called(turn, name)]
+    c.that("abandon_calls_no_state_tool", not moved, f"called: {moved}")
 
     # Ask again, then apply the top repair through the card's own grammar.
     turn = convo.say("On reflection, let's do 3.0 m/s after all.")
