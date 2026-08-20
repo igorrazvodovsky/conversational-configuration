@@ -26,14 +26,19 @@ All user moves are legal at all times ([configuration can start from any variabl
 | Move | Example | Effect on the document |
 |---|---|---|
 | Describe the situation | "300-bed hospital, eight floors" | Agent translates into outcome terms; nothing is set without becoming visible |
+| Hand over a document | Pastes or attaches the RFQ | The document's requirements land as recorded commitments carrying their clause, *document*-sourced; what the rules cannot meet becomes a named deviation ([rfq-reconciliation](../../specs/rfq-reconciliation/requirements.md)). The situation description in document form, and the limiting case of [configuration can start from any variable, in any order](../principles/start-from-any-variable.md) |
+| Reconcile a deviation | "we'll take what you can do" · "make it 1.2 then" · "leave it open" | One of three answers to a departure from the customer's own document: the requirement is waived and stays listed, or it is changed and re-solved, or it is left open. Answering a clause of one's own document is negotiation, so it dispatches its own sentence rather than an edit |
 | Set a value | "Uptime 99.5%" · edits a canvas field | Value set, *user-chosen*; solver revalidates |
+| Withdraw a choice | "forget the drive type" | The recorded choice is removed and the variable returns to the solver's disposal. Distinct from undo, which reverses a batch whatever it contained, and from §5's *revoke*, which leaves the value in place and changes its standing |
 | Constrain without choosing | "Shaft can't exceed 1800 mm" · "under €2k/month" | Domain narrowed; solver may force or grey out values downstream |
 | Ask why | "Why can't I have the glass cab?" | No document change; explanation from the named core |
 | Revise by intent | "Make it cheaper" · "lower the carbon" | Agent proposes candidate changes as a ripple; nothing applies until accepted ([revision is an ordinary move, not a restart](../principles/revision-is-an-ordinary-move.md)) |
+| Decline a proposal | "leave it as it is" · "forget that one" | Nothing at all, by construction: the tool answering an abandoned revision holds no configuration in its update, so declining cannot move the agreement whatever the model intends by it ([nonlinear-interaction](../../specs/nonlinear-interaction/design.md)). It answers a change that never happened, where undo reverses one that did |
 | Fork and compare | "Show me both" | A second *draft* of the agreement held beside the first — a whole document with its own provenance and history, not a snapshot — with the differing variables named ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md), [parallel-drafts](../../specs/parallel-drafts/requirements.md)). One draft is current at a time; switching between them re-attributes nothing |
+| Discard a draft | "we're done with the premium one" | The draft leaves the workspace and does not come back. Only a draft that is not the current one can go, and no history is touched ([parallel-drafts](../../specs/parallel-drafts/requirements.md)) |
 | Undo | "Undo that" · the control on the document | Reverses any move, the agent's included, one applied batch at a time, and reverses itself through redo ([undo spec](../../specs/undo/requirements.md)). The history belongs to the agreement, so a move made in another conversation reverses from this one |
 | Delegate a scope | "You handle the interior" | Grants a mandate — see §5 |
-| Review the agent's work | Filters canvas to *agent-chosen* | No change; a review pass — see §5 |
+| Review the agent's work | Filters canvas to *agent-chosen* | No change; a review pass — see §5. Unbuilt: the canvas carries a provenance badge per value and no filter, so the agent's fills can be checked one row at a time and never gathered as a set |
 | Accept | "Yes" | The current candidate becomes the agreement — unbuilt: nothing in state distinguishes a candidate from one the customer has taken, so acceptance is conversational only. Always possible in principle, because what is shown is always valid ([always show a valid whole](../principles/always-show-a-valid-whole.md)) |
 
 ## 3. Agent moves
@@ -106,6 +111,7 @@ Failure signals to watch in the walkthrough ([phase-plan.md](../phase-plan.md) �
 - How a mandate is *afforded* — a canvas control on a section, a chat utterance, or both. Canvas anatomy territory, as is the per-artifact canvas form of the document-side artifacts named in §1.
 - Whether delegation should deepen for the returning operator (the primary persona). Session-map territory. The read half of the [shared-attention](../../specs/shared-attention/requirements.md) channel — what the operator has open, and whether the transcript is stale — is the first signal a session map has to work with.
 - The accountability framing: an *agent-chosen* term in a signed service agreement carries a weight the provenance tag alone may not discharge.
+- Whether a *move* has to be an event on the document, as §1 defines it. Two surfaces serve a customer's job and change nothing: the render of the configured car ([visual-configuration](../../specs/visual-configuration/design.md)), and the comparison mode the [Comparison view](Comparison%20view.md) decided on. Both are pure projections of state, so neither is a move under the definition, and neither has a place in these tables — while the jobs they answer are as real as the ones the tables serve ([micro-job-stories](../jtbd/micro-job-stories.md)).
 - Unit of revision and ripple disclosure (both in [problem-framing.md](../problem-framing.md) §5) — the ripple storyboard's job, though §5's review move constrains it: whatever disclosure level is chosen must also work for reviewing delegated work.
 
 ## Related

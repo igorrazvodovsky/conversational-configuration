@@ -15,4 +15,4 @@ These five were recast from an earlier product-frame set of walkthroughs when th
 - [consumption-journey.md](consumption-journey.md) — where each story sits in the journey
 - [../direction.md](../direction.md) §4 — principle and assertion coverage per story, with every principle now deliberately exercised
 - [../scenarios/](../scenarios/) — the situated walkthrough grounding each story
-- [micro-job-stories.md](micro-job-stories.md) — story 2 decomposed to design-problem grain; these stories do the roadmap play's work, that layer does the job-story play's
+- [micro-job-stories.md](micro-job-stories.md) — all five decomposed to design-problem grain and crossed to the move inventory; these stories do the roadmap play's work, that layer does the job-story play's

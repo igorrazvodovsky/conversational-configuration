@@ -190,6 +190,9 @@
   },
   "active": "a89680baa27c5dca",
   "lastOpenFiles": [
+    "specs/offline-checks/requirements.md",
+    "specs/offline-checks/design.md",
+    "specs/offline-checks",
     "discovery/models/Comparison view.md",
     "specs/conversation-checks/requirements.md",
     "specs/conversation-checks/design.md",
@@ -221,10 +224,7 @@
     "specs/visual-configuration/design.md",
     "specs/visual-configuration/requirements.md",
     "specs/visual-configuration",
-    "research/branching-in-ai-uis.md",
-    "specs/open-points/requirements.md",
     "specs/open-points",
-    "specs/parallel-drafts/requirements.md.tmp.35961.ad7be9d6697f",
-    "specs/parallel-drafts"
+    "specs/parallel-drafts/requirements.md.tmp.35961.ad7be9d6697f"
   ]
 }

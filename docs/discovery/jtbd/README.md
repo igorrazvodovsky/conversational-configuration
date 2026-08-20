@@ -16,6 +16,6 @@ Method: plays from the JTBD Playbook set — *Scope the JTBD Domain*, *Expand Ma
 | [persona-building-operator.md](persona-building-operator.md) | Owner/facility manager — the primary persona under the service frame |
 | [consumption-journey.md](consumption-journey.md) | How the offering is bought, used, adjusted, renewed — product frame vs service frame |
 | [job-stories.md](job-stories.md) | Situation, motivation and outcome per story; each grounded by a [scenario](../scenarios/) |
-| [micro-job-stories.md](micro-job-stories.md) | One story decomposed to design-problem grain and crossed to the move inventory — a probe of the method |
+| [micro-job-stories.md](micro-job-stories.md) | Every story decomposed to design-problem grain and crossed to the move inventory, with the moves no micro-job claims |
 
 The original document's implications section is not a note: its content was absorbed into [problem-framing.md](../problem-framing.md), [direction.md](../direction.md), and the [service-agreement spec](../../specs/service-agreement/requirements.md).
