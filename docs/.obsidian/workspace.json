@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "discovery/jtbd/job-stories.md",
+                "file": "discovery/problem-framing.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "job-stories"
+              "title": "problem-framing"
             }
           }
         ]
@@ -55,7 +55,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "walkthrough",
+                "query": "\"job performers\"",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "discovery/jtbd/job-stories.md",
+                "file": "discovery/problem-framing.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "discovery/jtbd/job-stories.md",
+                "file": "discovery/problem-framing.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "discovery/jtbd/job-stories.md",
+                "file": "discovery/problem-framing.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -188,8 +188,22 @@
       "bases:Create new base": false
     }
   },
-  "active": "a89680baa27c5dca",
+  "active": "37f3c7ab25b8ece4",
   "lastOpenFiles": [
+    "discovery/jtbd/README.md",
+    "discovery/problem-framing.md",
+    "discovery/phase-plan.md",
+    "discovery/assertions/open-points-carried-by-the-document.md",
+    "discovery/direction.md",
+    "discovery/principles/canvas-holds-state-chat-explains.md",
+    "discovery/models/Readings over time.md",
+    "discovery/assertions/sets-cannot-be-settled-in-the-transcript.md",
+    "discovery/dialogue-and-manipulation.md",
+    "specs/interface-checks/design.md",
+    "specs/interface-checks/tasks.md",
+    "specs/interface-checks/requirements.md",
+    "specs/interface-checks",
+    "discovery/jtbd/job-stories.md",
     "specs/offline-checks/requirements.md",
     "specs/offline-checks/design.md",
     "specs/offline-checks",
@@ -207,24 +221,10 @@
     "specs/scenario-harness/requirements.md",
     "specs/scenario-harness/design.md",
     "specs/scenario-harness",
-    "discovery/docs/discovery/scenarios/tender-as-entrance.md",
-    "discovery/docs/discovery/scenarios/renewal-as-revision.md",
-    "discovery/docs/discovery/scenarios/needs-not-nomenclature.md",
-    "discovery/docs/discovery/scenarios/mid-contract-revision.md",
-    "discovery/docs/discovery/scenarios/comparing-agreements.md",
     "discovery/docs/discovery/scenarios",
     "discovery/docs/discovery",
     "discovery/docs",
-    "demo-scenarios.md",
-    "discovery/jtbd/job-stories.md",
-    "discovery/phase-plan.md",
-    "discovery/direction.md",
-    "discovery/jtbd/micro-job-stories.md",
-    "specs/visual-configuration/tasks.md",
-    "specs/visual-configuration/design.md",
-    "specs/visual-configuration/requirements.md",
     "specs/visual-configuration",
-    "specs/open-points",
-    "specs/parallel-drafts/requirements.md.tmp.35961.ad7be9d6697f"
+    "specs/open-points"
   ]
 }

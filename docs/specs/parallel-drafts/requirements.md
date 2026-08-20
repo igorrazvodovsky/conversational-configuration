@@ -18,7 +18,7 @@ It answers one of the open questions the framing does not settle ([problem-frami
 - *The agent names a draft when it forks it,* from the conversation, the way it names the workspace — never by asking the customer to invent a name. This reverses the *automatic frame naming* exclusion in [nonlinear-interaction](../nonlinear-interaction/requirements.md), which was drawn when a frame was a chip in a strip rather than a document one navigates between.
 - *Forking, switching and discarding are structural moves, not history moves.* Undo walks the current draft's own history and never crosses into another draft's. Discard is the reverse of fork and is in scope, because uncapped creation with no removal is how parallel states rot.
 - *Parallel, not successive.* [agreement-workspace](../agreement-workspace/requirements.md) keeps successive agreements about one installation — renewal as a new document, change of counterparty — out of scope, and this spec does not reopen that. Drafts are alternatives under one negotiation, all of them the same agreement.
-- *Comparison presentation is unchanged.* The existing chat card compares two drafts as it compared two frames. Where a comparison is placed and how a two-objective layout reads is [phase-plan](../../discovery/phase-plan.md) task 3, still undrawn, and this spec deliberately leaves it open.
+- *Comparison presentation is unchanged.* The existing chat card compares two drafts as it compared two frames. Where a comparison is placed and how a two-objective layout reads was undrawn when this spec was written, and it deliberately leaves it open; the [comparison view](../../discovery/models/Comparison%20view.md) has since answered it.
 
 ## Stories
 
@@ -87,7 +87,7 @@ Persistence:
 
 ## Out of scope
 
-- Where a comparison is placed and how a two-objective comparison is laid out ([phase-plan](../../discovery/phase-plan.md) task 3).
+- Where a comparison is placed and how a two-objective comparison is laid out ([comparison view](../../discovery/models/Comparison%20view.md)).
 - Comparing more than two drafts at once, carried over from [nonlinear-interaction](../nonlinear-interaction/requirements.md).
 - Merging drafts, in whole or in part — partial acceptance is a named-open half of [gaps E6](../../research/gaps.md#e6) and ships nowhere in the genre surveyed.
 - Pinning a conversation to a draft, and per-draft transcripts.

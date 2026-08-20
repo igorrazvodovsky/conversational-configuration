@@ -29,13 +29,12 @@ Not "make configuration easier with AI". Not a chatbot wrapper on an existing CP
 
 Written as testable starting assumptions, with the assumption inside each one named.
 
-| Objective | Hidden assumption to probe |
-|---|---|
+| Objective                                                                                                 | Hidden assumption to probe                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Produce a research prototype demonstrating conversational navigation of a constrained configuration space | That a prototype is the right evidence at all — could a paper analysis or a wizard-of-oz study answer the question cheaper? Provisionally no: the argued novelty is the *interaction*, which has to be operable to be judged. |
-| Fidelity: working software over four scripted scenarios, illustrative data, single product family | That four scenarios cover the design claim. Verify each scenario maps to at least one assertion in §4; retire any that maps to none. |
-| Audience: a design and research argument, demonstrable to a knowledgeable observer | That the observer is the evaluator. There is no access to real job performers, so every user-facing claim stays a hypothesis (see [jtbd/](jtbd/README.md) status note). |
-| The solver decides validity; the agent elicits, translates and explains | Settled — constitution #1. Restated here because it is the source of most interaction constraints, not an implementation detail. |
-| Ship as a forkable template for the pattern | That template-quality and research-prototype-quality are compatible. They conflict at the margins; when they do, the research argument wins. |
+| Fidelity: working software over four scripted scenarios, illustrative data, single product family         | That four scenarios cover the design claim. Verify each scenario maps to at least one assertion in §4; retire any that maps to none.                                                                                          |
+| The solver decides validity; the agent elicits, translates and explains                                   | Settled — constitution #1. Restated here because it is the source of most interaction constraints, not an implementation detail.                                                                                              |
+| Ship as a forkable template for the pattern                                                               | That template-quality and research-prototype-quality are compatible. They conflict at the margins; when they do, the research argument wins.                                                                                  |
 
 Non-objectives: production readiness, real pricing or LCA data, multi-product-family scale, evaluation with real users.
 
@@ -54,8 +53,6 @@ Only the context that changes design decisions.
 *Technology.* Z3 gives three operations the interaction can lean on directly: incremental `check` for continuous validity, `consequences` for greying out what is no longer reachable, and named unsat cores for explanations that trace to business rules. Shared agent state (CopilotKit v2) makes chat and canvas two views of one object rather than two stores to reconcile. These are enabling constraints: the interaction design should exploit what the solver can prove and claim nothing more.
 
 *Content.* ~20 user-facing decisions over ~30–80 constraints; footprint and price data are illustrative with plausible relative magnitudes, and RFQ documents are authored fixtures of the same epistemic status — there is no access to real tenders. Small enough that the whole configuration fits on one canvas, which is a fidelity limitation worth stating: a real platform exposes 20–40 decisions over 250+ parameters, and the canvas would not fit.
-
-*Process.* Solo prototyping, no budget, no access to job performers, spec-anchored workflow, with most of the feature register implemented and the rest in flight ([../specs/README.md](../specs/README.md), the current statuses). Discovery has to be cheap and continuous; there will be no discovery phase with a start and an end date.
 
 ## 4. Assertions under test
 

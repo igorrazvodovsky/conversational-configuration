@@ -60,8 +60,8 @@ The agent:
 
 ## Out of scope, named
 
-- *The session map's presentation.* How a returning operator's arrival surface is laid out is the next discovery cycle's territory ([phase-plan](../../discovery/phase-plan.md)); this spec supplies its substrate and renders the points only as part of the document. The form they take on the canvas is a design decision inside [canvas anatomy](../../discovery/models/Canvas%20anatomy.md)'s frame.
-- *The cost/footprint pair as an open point.* Its closing fact — the customer engaged the trade-off — is recorded nowhere, and deriving whether the pair currently differs puts a solver call behind a read. Waits for the comparison model (phase-plan task 3).
+- *The session map's presentation.* How a returning operator's arrival surface is laid out is discovery's unexplored territory ([phase-plan](../../discovery/phase-plan.md) §3); this spec supplies its substrate and renders the points only as part of the document. The form they take on the canvas is a design decision inside [canvas anatomy](../../discovery/models/Canvas%20anatomy.md)'s frame.
+- *The cost/footprint pair as an open point.* Its closing fact — the customer engaged the trade-off — is recorded nowhere, and deriving whether the pair currently differs puts a solver call behind a read. Waits for the [comparison model](../../discovery/models/Comparison%20view.md).
 - *Review of agent fills, and mandates.* No delegation state exists to derive from ([move inventory](../../discovery/models/Conversation%20moves.md) §5 is design, not yet mechanism).
 - *Post-acceptance divergence.* Once acceptance is a frozen block, the difference between it and the live agreement is derivable exactly as the RFQ register is — a natural follow-on, not part of this spec.
 - *Unifying suggested-moves onto the derivation.* The strip already computes several of the same conditions; folding it onto open points is a refactor to weigh after both exist.

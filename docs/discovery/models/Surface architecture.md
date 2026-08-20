@@ -19,11 +19,13 @@ The choice is two-dimensional — *where* agent output lives (the geometry of su
 
 | Mechanism | What it would mean here | Verdict |
 |---|---|---|
-| Open-ended — the model composes markup per turn | The boilerplate's `generate_a2ui` | Set aside on constitution #1 and #5: an LLM composing option lists can offer values the solver never vetted |
+| Open-ended — the model composes markup per turn | The boilerplate's `generate_a2ui` | Set aside for anything the user can act on, on constitution #1 and #5: an LLM composing option lists can offer values the solver never vetted. The objection is to composed affordances and does not reach a read-only rendering — see below |
 | Declarative — the agent returns a schema the frontend renders | The boilerplate's A2UI path; server-driven UI generally | Available, unused. Held in reserve for a card whose shape is not known in advance |
-| Static — hand-written components the agent selects by tool | Payload computed server-side from solver state | *Chosen* for every configurator card |
+| Static — hand-written components the agent selects by tool | Payload computed server-side from solver state | *Chosen* for every configurator card. The current position rather than a closed one — see below |
 
 The chosen patterns compose: the living document is the geometry, static components are the form, and the suggestion layer is the grammar of the agent's proposals on the document. Each chosen pattern is also now a research target — how its mature implementations handle the mechanisms this concept needs is retrievable evidence, registered as [gaps E6](../../research/gaps.md#e6).
+
+*What the form choice is closed on, and what it is not.* The verdicts above rule a mechanism in or out for the cards that exist; they do not settle the form of artifacts not yet drawn, and either of the two paths held in reserve may be admitted if it makes the resulting experience better. The constitutional objection is narrower than the row it sits in. An LLM may not compose an affordance, because a control it composes can offer a value the solver never vetted (constitution #1 and #5) — that is a rule about what the user can click, not about what the user can read. A read-only rendering offers nothing to act on, so a chart, a breakdown or any other reading whose shape follows from the configuration is outside the objection entirely, and is the case where the declarative and open-ended paths become live candidates rather than reserves. Three conditions would have to hold: every figure in the rendering comes from a tool result rather than from the model's own arithmetic, the rendering carries no path back into the configuration, and anything the user can act on returns to the static path with a server-computed payload. Admitting a mechanism for presentation is not admitting it for control, and the two are separable here because the grammar already routes every action through one validated path.
 
 ## 2. What follows from the choice
 
@@ -42,5 +44,5 @@ The chosen patterns compose: the living document is the geometry, static compone
 ## 3. Edges this model does not settle
 
 - The per-artifact form on the canvas, and the status vocabulary it uses. Canvas anatomy's question — now drawn in [Canvas anatomy.md](Canvas%20anatomy.md).
-- Whether the declarative path earns a place after all — a footprint or price-breakdown card whose shape varies with the configuration is its natural candidate (the [footprint spec](../../specs/environmental-footprint/requirements.md)).
+- Which form the readings that are not the agreement itself arrive in — a footprint or price-breakdown card whose shape varies with the configuration, or a reading of the agreement over time. This is where the declarative or open-ended paths would earn their place under the conditions in §1 (the [footprint spec](../../specs/environmental-footprint/requirements.md)).
 - What the split does on a small screen. Below `lg` the two panes stack vertically, so both stay reachable, but the pattern has only ever been exercised at desktop widths and is untested against any principle. Their pixel floors apply side by side only; a short viewport can leave either pane too small to work in.

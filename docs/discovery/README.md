@@ -18,7 +18,7 @@ These constrain the interaction design. They are not up for rediscovery; only th
 |---|---|---|
 | [problem-framing.md](problem-framing.md) | Frame the problem | Problem statement, objectives, context, and the [assertions](assertions/) under test |
 | [direction.md](direction.md) | Set the direction | One concept, the [principles](principles/), the models worth making |
-| [phase-plan.md](phase-plan.md) | Plan your approach | Activity balance, milestones, constraints, stop signals |
+| [phase-plan.md](phase-plan.md) | Plan your approach | Activity balance, constraints, what's open, stop signals |
 | [brief.md](brief.md) | Document the outcome | The standing summary — start here if you read only one |
 
 All four are *assertions*, in Brown's sense: the current best understanding, written to be argued with and revised.

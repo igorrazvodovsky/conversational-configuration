@@ -1,4 +1,4 @@
-Status: drafted 2026-08-20, for critique. It answers *how a two-objective trade-off between two drafts is read, and where the reading happens* — [phase-plan.md](../phase-plan.md) §3 task 3, the exploring gap §1 names. The shipped chat card is candidate one, drawn from observation rather than from its source, and two alternatives are drawn against it. Judged against [trade-offs are shown as a pair, not collapsed into a score](../principles/trade-offs-shown-as-a-pair.md), whose own test is the criterion: after seeing the comparison, can the reader say which options differ and what each costs?
+Status: drafted 2026-08-20, for critique. It answers *how a two-objective trade-off between two drafts is read, and where the reading happens* — the exploring gap [phase-plan.md](../phase-plan.md) §1 names. The shipped chat card is candidate one, drawn from observation rather than from its source, and two alternatives are drawn against it. Judged against [trade-offs are shown as a pair, not collapsed into a score](../principles/trade-offs-shown-as-a-pair.md), whose own test is the criterion: after seeing the comparison, can the reader say which options differ and what each costs?
 
 ## 0. Scope, and what was in front of it
 
@@ -54,7 +54,7 @@ Why this and not the others: it is the only candidate that survives all four cha
 
 ## 5. Failure signals for the walkthrough
 
-For [phase-plan.md](../phase-plan.md) §3 task 6, this model predicts its own refutations:
+This model was drawn after the 2026-08-20 walkthrough and the canvas mode it chooses is unbuilt, so none of the following has been tested. For the walkthrough that follows the next cycle of building, the model predicts its own refutations:
 
 - The reader expands both columns to full documents every time, and reads the difference list not at all → the differences-first layering is wrong for comparison even though it was right for ripple, and the whole-document view is the default.
 - The reader switches drafts back and forth to compare rather than using the comparison → two columns do not in fact hold a pair, and the thing being tested is [two objectives held as a pair make the trade-off legible](../assertions/two-objectives-as-a-pair.md) rather than the layout.
