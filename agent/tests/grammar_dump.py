@@ -25,10 +25,14 @@ from src.configuration import (  # noqa: E402
     Requirement,
     Source,
     _format_co2,
+    apply_choices,
     empty_configuration,
+    ingest,
+    make_candidate,
 )
 from src.configuration import Configuration as AgentConfiguration  # noqa: E402
 from tests import scenario_grammar as grammar  # noqa: E402
+from tests.rfq_fixtures import OFFICE_TOWER, OFFICE_TOWER_BUDGET_CAP  # noqa: E402
 
 # The inputs both sides build from. Named here rather than in either check, so
 # the two cannot drift apart by disagreeing about what they compared.
@@ -71,6 +75,28 @@ def grammar_sentences() -> dict[str, str]:
     }
 
 
+def configurations() -> dict:
+    """Agreements the agent actually built, for the frontend checks to hold
+    their own fixtures against.
+
+    A fixture assembled by hand can be valid in shape and impossible in fact —
+    statuses saying every option is open beside a recorded choice, or a value
+    marked forced while its siblings stay open, neither of which the solver
+    ever produces. These are the real thing, so the invariants can be read off
+    them rather than asserted from memory.
+    """
+    chosen, _ = apply_choices(empty_configuration(), {"building_type": "hospital"}, "user")
+    seeded, _, _ = ingest(
+        empty_configuration(), OFFICE_TOWER, [], budget_cap=OFFICE_TOWER_BUDGET_CAP
+    )
+    return {
+        "empty": empty_configuration(),
+        "chosen": chosen,
+        "priced": make_candidate(chosen),
+        "seeded": seeded,
+    }
+
+
 def dump() -> dict:
     return {
         "inputs": {
@@ -94,6 +120,7 @@ def dump() -> dict:
             get_args(Requirement.__annotations__["reconciliation"])
         ),
         "co2": [_format_co2(kg) for kg in CO2_INPUTS],
+        "configurations": configurations(),
     }
 
 

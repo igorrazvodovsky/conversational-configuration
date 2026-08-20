@@ -27,6 +27,7 @@ import type {
 } from "@/lib/configurator";
 import { layerOf, modelGroups, productModel, variablesByName } from "@/lib/configurator";
 import { GEOMETRY_VARIABLES } from "@/components/config-canvas/render/geometry";
+import { agreement, chose, forcing, openStatuses } from "./agreement";
 
 const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
@@ -63,6 +64,10 @@ interface AgentDump {
   sourceValues: string[];
   reconciliationValues: string[];
   co2: string[];
+  configurations: Record<string, {
+    choices: Record<string, { value: string; source: string }>;
+    statuses: Record<string, Record<string, string>>;
+  }>;
 }
 
 function agentDump(): AgentDump {
@@ -384,5 +389,85 @@ describe("the one figure both languages format", () => {
   it("covers both sides of the rounding boundary", () => {
     expect(AGENT.inputs.co2).toContain(1250);
     expect(AGENT.inputs.co2.some((kg) => kg < 0)).toBe(true);
+  });
+});
+
+describe("the agreements the frontend checks build", () => {
+  /**
+   * A fixture assembled by hand can be valid in shape and impossible in fact.
+   * These invariants are not asserted from memory — they are read off
+   * agreements the agent actually built, which is what the first two checks
+   * establish, and only then required of the fixtures.
+   */
+  function violations(config: {
+    choices: Record<string, { value: string }>;
+    statuses: Record<string, Record<string, string>>;
+  }): string[] {
+    const problems: string[] = [];
+    for (const [variable, options] of Object.entries(config.statuses)) {
+      const entries = Object.entries(options);
+      if (!entries.length) continue;
+      const decided = entries.filter(([, s]) => s === "chosen" || s === "forced");
+      if (decided.length > 1) {
+        problems.push(`${variable}: two values decided at once`);
+      } else if (decided.length === 1) {
+        const siblings = entries.filter(([value]) => value !== decided[0][0]);
+        if (siblings.some(([, s]) => s !== "invalid")) {
+          problems.push(`${variable}: a sibling of the decided value is not invalid`);
+        }
+      } else if (!entries.some(([, s]) => s === "open")) {
+        problems.push(`${variable}: nothing decided and nothing open`);
+      }
+    }
+    for (const [variable, choice] of Object.entries(config.choices)) {
+      const status = config.statuses[variable]?.[choice.value];
+      if (status && status !== "chosen") {
+        problems.push(`${variable}: recorded as a choice but reads ${status}`);
+      }
+    }
+    return problems;
+  }
+
+  const REAL = AGENT.configurations as Record<string, Parameters<typeof violations>[0]>;
+
+  it.each(Object.keys(REAL))("%s, as the agent built it, holds them", (name) => {
+    expect(violations(REAL[name])).toEqual([]);
+  });
+
+  it("covers an agreement with choices, a candidate and a document", () => {
+    // An invariant read only off the empty agreement would be vacuous.
+    expect(Object.keys(REAL).sort()).toEqual(["chosen", "empty", "priced", "seeded"]);
+    expect(Object.keys(REAL.chosen.choices).length).toBeGreaterThan(0);
+  });
+
+  const FIXTURES: Record<string, ReturnType<typeof agreement>> = {
+    empty: agreement(),
+    withAChoice: agreement({ choices: chose({ building_type: "hospital" }) }),
+    withAForcedValue: agreement({ statuses: forcing({ rescue_operation: "ups" }) }),
+    withBoth: agreement({
+      choices: chose({ building_type: "hospital" }),
+      statuses: forcing({ rescue_operation: "ups" }),
+    }),
+    withACandidate: agreement({
+      choices: chose({ building_type: "hospital" }),
+      candidate: { assignment: { building_type: "hospital" }, price: 1450 },
+    }),
+  };
+
+  it.each(Object.keys(FIXTURES))("%s, as the checks build it, holds them too", (name) => {
+    expect(violations(FIXTURES[name])).toEqual([]);
+  });
+
+  it("starts every option of every variable open, exactly as a fresh agreement does", () => {
+    expect(openStatuses()).toEqual(REAL.empty.statuses);
+  });
+
+  it("marks a recorded choice the way the agent marks the same one", () => {
+    // The fixture runs no solver, so the ripple around the choice is the
+    // agent's alone; the variable the choice is on has to agree.
+    const variable = AGENT.inputs.oneSelection[0][0];
+    expect(FIXTURES.withAChoice.statuses[variable]).toEqual(
+      REAL.chosen.statuses[variable],
+    );
   });
 });

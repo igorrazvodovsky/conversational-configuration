@@ -2,7 +2,7 @@
 
 ## 1. Two runners, because there are two languages
 
-`uv run pytest` in `agent/` and `vitest` at the root. No attempt is made to drive one from the other: a single runner would mean either running Node from pytest or running Python from vitest, and every check below is expressible without it. The cost is that a coupling spanning the boundary is checked from one side only — see decision 4.
+`uv run pytest` in `agent/` and `vitest` at the root. Each owns its own language, and neither is driven from the other — with one deliberate exception: the coupling checks run the agent's half as a subprocess and compare what it builds, because a contract spanning the boundary cannot be checked from one side (decisions 3 and 4). That exception is confined to `tests/couplings.test.ts`, so the rest of the frontend checks stay a Node-only, sub-second run.
 
 Vitest rather than Jest because the repo is already a Vite-adjacent Next.js project and vitest resolves the TypeScript, the `@/` alias and the imported `elevator.json` with no transform configuration. `vitest.config.mts` carries the alias and pins `environment: "node"` — the absence of a DOM is the point, not a default to be overridden later.
 
@@ -32,15 +32,23 @@ The TypeScript interface is erased at runtime, so three witness objects stand in
 
 The CO₂ rows are compared against what the agent printed, not against a table copied from it. `agent/tests/test_tools.py` keeps a table of its own, which is the Python side's regression when Node is not around; that the two languages still agree is this check's job.
 
+## 5. The fixtures are held against agreements the agent actually built
+
+The frontend checks assemble their own `Configuration` values, and a hand-assembled one can be valid in shape and impossible in fact. `forcing()` was: it marked a value forced and left its siblings open, which is a state the solver never produces — when a value is forced, every sibling is invalid, because being the only one left is what forced means.
+
+So the dump carries four real agreements — empty, one with a choice applied, one priced, one seeded from the office-tower RFQ. `couplings.test.ts` reads four invariants off them (at most one decided value per variable; every sibling of a decided value invalid; a variable with nothing decided has something open; a recorded choice reads as chosen), asserts they hold of all four, and only then requires them of the fixtures. Asserting the invariants of the real agreements first is what keeps them from being invented: a rule the agent's own output breaks is a wrong rule, and it says so.
+
+`agreement()` now derives statuses from the choices handed to it, applying them over any statuses given explicitly, so the two cannot be passed in disagreeing. Verified by restoring the old `forcing()` and watching two checks fail.
+
 What this still does not catch: a semantic divergence behind identical output — a prompt rewritten to keep every fragment while changing what the agent does with it, or a builder that agrees on these inputs and disagrees on others. The conversation checks are the only thing that sees the first.
 
-## 5. The typecheck had nothing running it
+## 6. The typecheck had nothing running it
 
 `next.config.ts` sets `typescript.ignoreBuildErrors: true` for the Docker route override, so `next build` type-checks nothing. `npm run typecheck` is now the only thing that does, over the plain `tsconfig.json` — which also covers the new checks under `tests/`.
 
 Making it pass needed three type errors fixed, all in the dead starter code the repo still carries (CLAUDE.md's list): the A2UI `Title` renderer and the example bar chart, both React 19 migration leftovers. An excluding tsconfig was tried first and does not work — an excluded file is still compiled when an included one imports it, and `layout.tsx` imports the A2UI catalog. The fixes are type-level only and change no behavior; the standing instruction not to *extend* the starter files is untouched.
 
-## 6. CI runs both, and not the paid checks
+## 7. CI runs both, and not the paid checks
 
 `.github/workflows/checks.yml`, two jobs. The agent job runs the model validator and `uv run pytest`; the frontend job runs `npm run typecheck` and `npm test`. The conversation checks are absent by design — `pytest -m scenario` is opted into by a developer who means to spend the money, and their own spec puts CI wiring for them out of scope.
 
@@ -48,8 +56,8 @@ The frontend job installs both toolchains, because the coupling checks run the a
 
 ## Verification
 
-- `uv run pytest` in `agent/`: 248 passed, 5 deselected, ~34s (158 before this work).
-- `npm test`: 163 passed across 6 files, ~0.7s (there was no runner before).
+- `uv run pytest` in `agent/`: 249 passed, 5 deselected, ~34s (158 before this work).
+- `npm test`: 185 passed across 6 files, ~1.6s (there was no runner before).
 - `npm run typecheck`: clean.
 - `uv run python src/product_model/validate.py`: passes, and now also runs inside the suite.
 - Coverage of the agent package, measured with `uv run --with pytest-cov pytest --cov=src`, moved from 69% to 90% overall; `src/configuration.py` from 58% to 96% and `src/http_app.py` from 0% to complete. What remains uncovered is the dead starter modules, which the suite correctly ignores.
@@ -60,4 +68,3 @@ The frontend job installs both toolchains, because the coupling checks run the a
 - The prompt rule added for a control activation (decision 3) has not been run against the live agent: that needs the conversation checks, which need a provider key and cost money per run. It is a rule for a sentence the agent already handled, and the risk of the edit is that it is redundant rather than that it is wrong.
 - `npm test` now needs the agent environment, because the coupling checks run the agent's half. A frontend-only checkout fails those four checks with a message naming the command to fix it, rather than skipping them.
 - No check reaches a React component, a hook, or the hydration rules — by design, and it means the traps in `docs/specs/chat-surface/design.md` and `docs/specs/agreement-document/design.md` are still found only by running the app.
-- The frontend checks build their own `Configuration` fixtures. Their shape is asserted against the agent's declaration, but a fixture can still be valid in shape and impossible in fact — for instance statuses the solver would never produce together.
