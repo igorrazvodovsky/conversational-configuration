@@ -1,187 +1,220 @@
 /**
  * The couplings that cross the language boundary (docs/specs/offline-checks).
  *
- * Three things are mirrored by hand between the frontend and the agent, and
- * each is asserted in prose somewhere and by nothing executable: the structured
- * message grammar, which exists in three copies; the product model, which the
- * frontend addresses by name; and the shape of a configuration, declared as a
- * TypeScript interface here and as a TypedDict there.
+ * Three things are mirrored by hand between the frontend and the agent: the
+ * structured message grammar, which exists in three copies; the product model,
+ * which the frontend addresses by name; and the shape of a configuration,
+ * declared as a TypeScript interface here and as a TypedDict there.
  *
- * These checks read the Python as text rather than running it. That is weaker
- * than executing both sides, and it is what a check that must stay offline and
- * language-agnostic can do: it catches a sentence reworded on one side of the
- * boundary, which is the failure that actually happens.
+ * Two of the three copies of the grammar are code, so they are compared as
+ * code: `agent/tests/grammar_dump.py` builds every sentence from the agent's
+ * own helpers and prints them, and the same sentences are built here from the
+ * same inputs and compared string for string. The third copy is the system
+ * prompt, which is prose, and prose can only be read — those assertions are
+ * text, and say so.
  */
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
 import * as configurator from "@/lib/configurator";
+import type {
+  Configuration,
+  Requirement,
+  Source,
+} from "@/lib/configurator";
 import { layerOf, modelGroups, productModel, variablesByName } from "@/lib/configurator";
 import { GEOMETRY_VARIABLES } from "@/components/config-canvas/render/geometry";
 
-const read = (path: string) =>
-  readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf8");
+const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 /** One line, so a sentence the prompt wrapped still reads as the sentence. */
 const flat = (text: string) => text.replace(/\s+/g, " ");
 
-const PROMPT = flat(read("../agent/main.py"));
-const HARNESS = flat(read("../agent/tests/scenario_grammar.py"));
-const AGENT_STATE = read("../agent/src/configuration.py");
+const PROMPT = flat(readFileSync(at("../agent/main.py"), "utf8"));
 
 /**
- * Every element of the grammar, as the literal fragments its sentence is built
- * from. Fragments rather than whole sentences because most of these interpolate
- * a label the Python side interpolates too — what both sides must agree on is
- * the wording around the hole, and a fragment is exactly that.
+ * What the agent's own copies of these contracts produce, for the inputs it
+ * names. Running the agent is the point — comparing the two sources as text
+ * would pass on two files that hold the same words and build different
+ * sentences.
  *
- * Each fragment is asserted three times: against the sentence the frontend
- * builder actually produces, against the agent's system prompt, and against the
- * conversation checks' own copy. The first is what keeps the table honest — a
- * reworded builder fails here before anything else can drift.
- *
- * `inPrompt` is false for the one element the prompt has no rule of its own
- * for: a bare control activation, which reaches the agent as ordinary prose and
- * is covered by the `Canvas edit: ` rule when it comes off the sheet.
+ * `npm install` provisions the agent through its postinstall, so a checkout
+ * that can run the app can run this. When it cannot, the failure says which
+ * command is missing rather than skipping: a coupling check that quietly does
+ * not run is worse than none.
  */
-const GRAMMAR: {
-  export: string;
-  built: string;
-  fragments: string[];
-  inPrompt: boolean;
-}[] = [
-  {
-    export: "CANVAS_EDIT_PREFIX",
-    built: configurator.CANVAS_EDIT_PREFIX,
-    fragments: ["Canvas edit: "],
-    inPrompt: true,
-  },
-  {
-    export: "choiceMessage",
-    built: configurator.choiceMessage([
-      { variable: "region", value: "europe" },
-    ]),
-    fragments: ["Set ", " to "],
-    inPrompt: false,
-  },
-  {
-    export: "canvasEditMessage",
-    built: configurator.canvasEditMessage([
-      { variable: "region", value: "europe" },
-    ]),
-    fragments: ["Canvas edit: "],
-    inPrompt: true,
-  },
-  {
-    export: "repairMessage",
-    built: configurator.repairMessage(
-      [{ variable: "installation", value: "modernization" }],
-      [{ variable: "region", value: "europe" }],
-    ),
-    fragments: ["Apply repair: drop ", "set "],
-    inPrompt: true,
-  },
-  {
-    export: "abandonMessage",
-    built: configurator.abandonMessage,
-    fragments: ["Abandon the revision — keep the configuration as it is."],
-    inPrompt: true,
-  },
-  {
-    export: "acceptOfferedMessage",
-    built: configurator.acceptOfferedMessage("region", "europe"),
-    fragments: ["accept the offered "],
-    inPrompt: true,
-  },
-  {
-    export: "reviseRequirementMessage",
-    built: configurator.reviseRequirementMessage("region", "europe"),
-    fragments: ["change ", " to "],
-    inPrompt: true,
-  },
-  {
-    export: "leaveOpenMessage",
-    built: configurator.leaveOpenMessage("region"),
-    fragments: ["leave ", " open"],
-    inPrompt: true,
-  },
-  {
-    export: "forkDraftMessage",
-    built: configurator.forkDraftMessage,
-    fragments: ["Keep this draft and start another from it"],
-    inPrompt: true,
-  },
-  {
-    export: "switchDraftMessage",
-    built: configurator.switchDraftMessage("Premium"),
-    fragments: ['Switch to draft "'],
-    inPrompt: true,
-  },
-  {
-    export: "discardDraftMessage",
-    built: configurator.discardDraftMessage("Premium"),
-    fragments: ['Discard draft "'],
-    inPrompt: true,
-  },
-  {
-    export: "compareDraftMessage",
-    built: configurator.compareDraftMessage("Premium"),
-    fragments: ['Compare draft "', '" with the current one'],
-    inPrompt: true,
-  },
-  {
-    export: "undoMessage",
-    built: configurator.undoMessage,
-    fragments: ["Undo the last change"],
-    inPrompt: true,
-  },
-  {
-    export: "redoMessage",
-    built: configurator.redoMessage,
-    fragments: ["Redo the undone change"],
-    inPrompt: true,
-  },
-];
+interface AgentDump {
+  inputs: {
+    oneSelection: [string, string][];
+    twoSelections: [string, string][];
+    repairDrop: [string, string][];
+    repairChanges: [string, string][];
+    draftName: string;
+    variable: string;
+    value: string;
+    co2: number[];
+  };
+  grammar: Record<string, string>;
+  configurationKeys: string[];
+  emptyConfigurationKeys: string[];
+  sourceValues: string[];
+  reconciliationValues: string[];
+  co2: string[];
+}
 
-describe("the message grammar, in all three copies", () => {
-  it("covers every grammar element the frontend exports", () => {
+function agentDump(): AgentDump {
+  try {
+    return JSON.parse(
+      execFileSync("uv", ["run", "python", "tests/grammar_dump.py"], {
+        cwd: at("../agent"),
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 180_000,
+      }),
+    );
+  } catch (error) {
+    throw new Error(
+      "could not run the agent's half of the coupling check — " +
+        "`cd agent && uv run python tests/grammar_dump.py` has to work " +
+        "(`npm run install:agent` provisions it).\n" +
+        String((error as { stderr?: string }).stderr ?? error),
+    );
+  }
+}
+
+const AGENT = agentDump();
+
+/** The frontend's half, built from the inputs the agent named. */
+function frontendGrammar(inputs: AgentDump["inputs"]): Record<string, string> {
+  const selections = (pairs: [string, string][]) =>
+    pairs.map(([variable, value]) => ({ variable, value }));
+  return {
+    CANVAS_EDIT_PREFIX: configurator.CANVAS_EDIT_PREFIX,
+    choiceMessage: configurator.choiceMessage(selections(inputs.oneSelection)),
+    "choiceMessage/two": configurator.choiceMessage(
+      selections(inputs.twoSelections),
+    ),
+    canvasEditMessage: configurator.canvasEditMessage(
+      selections(inputs.oneSelection),
+    ),
+    repairMessage: configurator.repairMessage(
+      selections(inputs.repairDrop),
+      selections(inputs.repairChanges),
+    ),
+    "repairMessage/noDrop": configurator.repairMessage(
+      [],
+      selections(inputs.repairChanges),
+    ),
+    abandonMessage: configurator.abandonMessage,
+    acceptOfferedMessage: configurator.acceptOfferedMessage(
+      inputs.variable,
+      inputs.value,
+    ),
+    reviseRequirementMessage: configurator.reviseRequirementMessage(
+      inputs.variable,
+      inputs.value,
+    ),
+    leaveOpenMessage: configurator.leaveOpenMessage(inputs.variable),
+    forkDraftMessage: configurator.forkDraftMessage,
+    switchDraftMessage: configurator.switchDraftMessage(inputs.draftName),
+    discardDraftMessage: configurator.discardDraftMessage(inputs.draftName),
+    compareDraftMessage: configurator.compareDraftMessage(inputs.draftName),
+    undoMessage: configurator.undoMessage,
+    redoMessage: configurator.redoMessage,
+  };
+}
+
+const FRONTEND = frontendGrammar(AGENT.inputs);
+
+describe("the message grammar, built on both sides", () => {
+  it("names every grammar element the frontend exports", () => {
+    // A new element added on one side and not the other fails here before it
+    // can fail as a card that dispatches a sentence nothing recognises.
     const exported = Object.keys(configurator).filter(
       (name) => name.endsWith("Message") || name.endsWith("PREFIX"),
     );
-    expect(GRAMMAR.map((g) => g.export).sort()).toEqual(exported.sort());
+    const covered = new Set(
+      Object.keys(FRONTEND).map((key) => key.split("/")[0]),
+    );
+    expect([...covered].sort()).toEqual(exported.sort());
   });
 
-  it.each(GRAMMAR)("$export still says what this table says", ({ built, fragments }) => {
-    for (const fragment of fragments) expect(built).toContain(fragment);
+  it("builds the same sentence on both sides, for every element", () => {
+    expect(FRONTEND).toEqual(AGENT.grammar);
   });
 
-  it.each(GRAMMAR.filter((g) => g.inPrompt))(
-    "$export is a sentence the agent's prompt teaches",
-    ({ fragments }) => {
-      for (const fragment of fragments) expect(PROMPT).toContain(flat(fragment));
+  it.each(Object.keys(AGENT.grammar))("%s is identical, character for character", (key) => {
+    expect(FRONTEND[key]).toBe(AGENT.grammar[key]);
+  });
+
+  it("keeps a draft name with quotes in it intact on both sides", () => {
+    // The draft moves quote the name, so a name containing a quote is where
+    // the two sides would diverge first if either started escaping.
+    expect(AGENT.inputs.draftName).toContain('"');
+    expect(FRONTEND.switchDraftMessage).toContain(AGENT.inputs.draftName);
+  });
+});
+
+/**
+ * The prompt's copy, which is prose and can only be read as text. Each entry
+ * is the part of the sentence that does not vary, taken from the sentence the
+ * frontend actually builds — so rewording a builder fails here too.
+ */
+const PROMPT_FRAGMENTS: Record<string, string[]> = {
+  CANVAS_EDIT_PREFIX: ["Canvas edit: "],
+  choiceMessage: ["Set ", " to "],
+  canvasEditMessage: ["Canvas edit: "],
+  repairMessage: ["Apply repair: drop ", "set "],
+  abandonMessage: ["Abandon the revision — keep the configuration as it is."],
+  acceptOfferedMessage: ["accept the offered "],
+  reviseRequirementMessage: ["change ", " to "],
+  leaveOpenMessage: ["leave ", " open"],
+  forkDraftMessage: ["Keep this draft and start another from it"],
+  switchDraftMessage: ['Switch to draft "'],
+  discardDraftMessage: ['Discard draft "'],
+  compareDraftMessage: ['Compare draft "', '" with the current one'],
+  undoMessage: ["Undo the last change"],
+  redoMessage: ["Redo the undone change"],
+};
+
+describe("the grammar as the system prompt teaches it", () => {
+  it("has a rule for every element, none excepted", () => {
+    const built = new Set(Object.keys(FRONTEND).map((key) => key.split("/")[0]));
+    expect(Object.keys(PROMPT_FRAGMENTS).sort()).toEqual([...built].sort());
+  });
+
+  it.each(Object.entries(PROMPT_FRAGMENTS))(
+    "%s still says what this table says",
+    (key, fragments) => {
+      for (const fragment of fragments) {
+        expect(FRONTEND[key]).toContain(fragment);
+      }
     },
   );
 
-  it.each(GRAMMAR)(
-    "$export is the sentence the conversation checks dispatch",
-    ({ fragments }) => {
-      for (const fragment of fragments) expect(HARNESS).toContain(flat(fragment));
+  it.each(Object.entries(PROMPT_FRAGMENTS))(
+    "%s is a sentence the prompt names",
+    (_key, fragments) => {
+      for (const fragment of fragments) {
+        expect(PROMPT).toContain(flat(fragment));
+      }
     },
   );
 
   it("keeps the reconciliation prefix identical on all three sides", () => {
     const prefix = "Reconcile deviation: ";
-    for (const sentence of [
-      configurator.acceptOfferedMessage("region", "europe"),
-      configurator.reviseRequirementMessage("region", "europe"),
-      configurator.leaveOpenMessage("region"),
+    for (const key of [
+      "acceptOfferedMessage",
+      "reviseRequirementMessage",
+      "leaveOpenMessage",
     ]) {
-      expect(sentence.startsWith(prefix)).toBe(true);
+      expect(FRONTEND[key].startsWith(prefix)).toBe(true);
+      expect(AGENT.grammar[key].startsWith(prefix)).toBe(true);
     }
     expect(PROMPT).toContain(prefix);
-    expect(HARNESS).toContain(prefix);
   });
 
   it("maps each reconciliation move onto the move name the tool takes", () => {
@@ -190,6 +223,10 @@ describe("the message grammar, in all three copies", () => {
       expect(PROMPT).toContain(`move="${move}"`);
     }
   });
+
+  it("names the source a control activation is recorded under", () => {
+    expect(PROMPT).toContain('source="user"');
+  });
 });
 
 describe("what the customer is shown of a dispatched sentence", () => {
@@ -197,14 +234,15 @@ describe("what the customer is shown of a dispatched sentence", () => {
     // A sentence carrying `variable=value` that spokenText does not strip puts
     // the catalogue vocabulary in the customer's own bubble.
     const withCodes = [
-      configurator.choiceMessage([{ variable: "region", value: "europe" }]),
-      configurator.canvasEditMessage([{ variable: "region", value: "europe" }]),
-      configurator.repairMessage([], [{ variable: "region", value: "europe" }]),
-      configurator.acceptOfferedMessage("region", "europe"),
-      configurator.reviseRequirementMessage("region", "europe"),
-      configurator.leaveOpenMessage("region"),
+      "choiceMessage",
+      "canvasEditMessage",
+      "repairMessage/noDrop",
+      "acceptOfferedMessage",
+      "reviseRequirementMessage",
+      "leaveOpenMessage",
     ];
-    for (const sentence of withCodes) {
+    for (const key of withCodes) {
+      const sentence = FRONTEND[key];
       expect(sentence).toMatch(/[a-z_]+[=)]/);
       expect(configurator.spokenText(sentence), sentence).not.toMatch(
         /\([a-z_]+=[a-z0-9_]+\)/,
@@ -213,16 +251,16 @@ describe("what the customer is shown of a dispatched sentence", () => {
   });
 
   it("leaves the sentences that carry no code untouched", () => {
-    for (const sentence of [
-      configurator.forkDraftMessage,
-      configurator.switchDraftMessage("Premium"),
-      configurator.discardDraftMessage("Premium"),
-      configurator.compareDraftMessage("Premium"),
-      configurator.undoMessage,
-      configurator.redoMessage,
-      configurator.abandonMessage,
+    for (const key of [
+      "forkDraftMessage",
+      "switchDraftMessage",
+      "discardDraftMessage",
+      "compareDraftMessage",
+      "undoMessage",
+      "redoMessage",
+      "abandonMessage",
     ]) {
-      expect(configurator.spokenText(sentence)).toBe(sentence);
+      expect(configurator.spokenText(FRONTEND[key])).toBe(FRONTEND[key]);
     }
   });
 });
@@ -249,10 +287,10 @@ describe("the product model, as the frontend addresses it", () => {
   });
 
   it("reads the same model file the agent loads", () => {
-    expect(read("../agent/src/configuration.py")).toContain(
+    expect(readFileSync(at("../agent/src/configuration.py"), "utf8")).toContain(
       '"product_model" / "elevator.json"',
     );
-    expect(read("../src/lib/configurator.ts")).toContain(
+    expect(readFileSync(at("../src/lib/configurator.ts"), "utf8")).toContain(
       "agent/src/product_model/elevator.json",
     );
   });
@@ -268,82 +306,83 @@ describe("the product model, as the frontend addresses it", () => {
       ).toContain(term);
     }
   });
-});
 
-describe("the two declarations of a configuration", () => {
-  /** The field names of a TypedDict or an interface, in source order. The two
-   * languages indent by different amounts, and a Python block ends at its
-   * dedent where a TypeScript one ends at its closing brace. */
-  const fieldsOf = (source: string, header: RegExp, indent: number) => {
-    const body = source.slice(source.search(header));
-    const closes = indent === 2 ? body.indexOf("\n}") : body.indexOf("\n\n\n");
-    const fields = new RegExp(`^ {${indent}}(\\w+)\\??:`, "gm");
-    return [...body.slice(0, closes).matchAll(fields)].map((m) => m[1]);
-  };
-
-  it("declares the same keys on both sides of the boundary", () => {
-    const python = fieldsOf(AGENT_STATE, /^class Configuration\(TypedDict\):/m, 4);
-    const typescript = fieldsOf(
-      read("../src/lib/configurator.ts"),
-      /^export interface Configuration \{/m,
-      2,
-    );
-    expect(python.length).toBeGreaterThan(0);
-    expect(typescript.slice().sort()).toEqual(python.slice().sort());
-  });
-
-  it("declares the same provenance sources", () => {
-    const python = AGENT_STATE.match(/^Source = Literal\[(.+)\]$/m)![1];
-    const typescript = read("../src/lib/configurator.ts").match(
-      /^export type Source = (.+);$/m,
-    )![1];
-    const values = (declaration: string) =>
-      [...declaration.matchAll(/"(\w+)"/g)].map((m) => m[1]).sort();
-    expect(values(typescript)).toEqual(values(python));
-  });
-
-  it("declares the same reconciliation marks", () => {
-    const python = AGENT_STATE.match(/^ {4}reconciliation: Literal\[(.+)\]$/m)![1];
-    const typescript = read("../src/lib/configurator.ts").match(
-      /^ {2}reconciliation: (.+);$/m,
-    )![1];
-    const values = (declaration: string) =>
-      [...declaration.matchAll(/"(\w+)"/g)].map((m) => m[1]).sort();
-    expect(values(typescript)).toEqual(values(python));
-  });
-});
-
-describe("the one figure both languages format", () => {
-  /**
-   * `_format_co2` in the agent reimplements `formatCO2` in integer arithmetic
-   * because Python's own rounding goes half-to-even and this one goes half
-   * away from zero — the customer reads the lifetime total on the sheet and
-   * hears it in chat, and 1250 kg read 1.2 t beside 1.3 t. The table is the
-   * shared specification; `agent/tests/test_tools.py` asserts the same rows
-   * against the Python.
-   */
-  const ROWS: [number, string][] = [
-    [0, "0 kg CO₂e"],
-    [540, "540 kg CO₂e"],
-    [999, "999 kg CO₂e"],
-    [1000, "1.0 t CO₂e"],
-    [1250, "1.3 t CO₂e"],
-    [1350, "1.4 t CO₂e"],
-    [12400, "12.4 t CO₂e"],
-    [-1250, "-1.3 t CO₂e"],
-    [-540, "-540 kg CO₂e"],
-  ];
-
-  it.each(ROWS)("formats %i kg as %s", (kg, expected) => {
-    expect(configurator.formatCO2(kg)).toBe(expected);
-  });
-});
-
-describe("the model the frontend imports", () => {
   it("gives every variable a group the layer mapping can place", () => {
     for (const variable of productModel.variables) {
       expect(variable.group, `${variable.name} has no group`).toBeTruthy();
       expect(layerOf(variable.group)).toBeTruthy();
     }
+  });
+});
+
+/**
+ * The interface is erased at runtime, so these three witnesses stand in for it.
+ * `satisfies Record<keyof …, true>` makes the typecheck reject a witness that
+ * is missing a member or carries one the type does not have — which is what
+ * makes `Object.keys` below a list of the type's own members rather than a
+ * fourth hand-maintained copy.
+ */
+const CONFIGURATION_KEYS = {
+  choices: true,
+  statuses: true,
+  unavailable: true,
+  candidate: true,
+  rfq: true,
+} satisfies Record<keyof Required<Configuration>, true>;
+
+const SOURCE_VALUES = {
+  user: true,
+  agent: true,
+  document: true,
+} satisfies Record<Source, true>;
+
+const RECONCILIATION_VALUES = {
+  pending: true,
+  waived: true,
+  revised: true,
+} satisfies Record<Requirement["reconciliation"], true>;
+
+describe("the two declarations of a configuration", () => {
+  it("declares the same keys on both sides of the boundary", () => {
+    expect(Object.keys(CONFIGURATION_KEYS).sort()).toEqual(AGENT.configurationKeys);
+  });
+
+  it("carries every key an agreement the agent built actually has", () => {
+    // The declared set includes the optional fields; this is the subset a
+    // fresh agreement arrives with, and the frontend has to read both.
+    for (const key of AGENT.emptyConfigurationKeys) {
+      expect(Object.keys(CONFIGURATION_KEYS)).toContain(key);
+    }
+  });
+
+  it("declares the same provenance sources", () => {
+    expect(Object.keys(SOURCE_VALUES).sort()).toEqual(AGENT.sourceValues);
+  });
+
+  it("declares the same reconciliation marks", () => {
+    expect(Object.keys(RECONCILIATION_VALUES).sort()).toEqual(
+      AGENT.reconciliationValues,
+    );
+  });
+});
+
+describe("the one figure both languages format", () => {
+  /**
+   * The lifetime CO₂e total: the customer reads it on the sheet and hears it
+   * in chat. `_format_co2` reimplements `formatCO2` in integer arithmetic
+   * because Python rounds half to even and JavaScript rounds half away from
+   * zero, so 1250 kg once read 1.2 t beside 1.3 t. Compared against what the
+   * agent actually printed, not against a table copied from it.
+   */
+  it.each(AGENT.inputs.co2.map((kg, index) => [kg, AGENT.co2[index]]))(
+    "reads %i kg the same in chat as on the sheet",
+    (kg, agentSays) => {
+      expect(configurator.formatCO2(kg as number)).toBe(agentSays);
+    },
+  );
+
+  it("covers both sides of the rounding boundary", () => {
+    expect(AGENT.inputs.co2).toContain(1250);
+    expect(AGENT.inputs.co2.some((kg) => kg < 0)).toBe(true);
   });
 });

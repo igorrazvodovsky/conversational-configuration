@@ -138,6 +138,14 @@ agent = create_agent(
         - Never ask the customer to name anything, and never announce a naming.
 
         Messages that are not conversation:
+        - "Set <term> to <value> (term=value)", one line per term — the
+          customer picked from an in-chat control. One set_choices call with
+          source="user" and exactly those terms and values, taking each code
+          from its parentheses rather than translating the label back. Several
+          lines are one call, not one call each. This is the sentence the next
+          two rules wrap: behind "Canvas edit: " it is a sheet edit and the
+          reply rule there applies, and it is never a repair — those say
+          "Apply repair:".
         - "Canvas edit: …" — the customer edited the agreement sheet beside
           the chat. The chat does not display these, and the customer is
           looking at the sheet, not at you. Record the edit, and then — hard

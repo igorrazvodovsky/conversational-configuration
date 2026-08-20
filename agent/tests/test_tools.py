@@ -632,9 +632,9 @@ def test_the_catalog_carries_the_assessment_assumptions():
 # `_format_co2` reimplements `formatCO2` in `src/lib/configurator.ts` in
 # integer arithmetic, because Python's own rounding goes half-to-even and that
 # one goes half away from zero — the customer reads the lifetime total on the
-# sheet and hears it in chat, and 1250 kg read 1.2 t beside 1.3 t. This table
-# is the shared specification; `tests/couplings.test.ts` asserts the same rows
-# against the TypeScript.
+# sheet and hears it in chat, and 1250 kg read 1.2 t beside 1.3 t. This is the
+# Python side's own regression, needing no Node to run; that the two languages
+# still agree is checked by running both, in `tests/couplings.test.ts`.
 CO2_ROWS = [
     (0, "0 kg CO₂e"),
     (540, "540 kg CO₂e"),
@@ -658,3 +658,19 @@ def test_a_signed_footprint_delta_keeps_its_direction():
     assert configuration_module._signed_co2(-1250).startswith("−") or \
         configuration_module._signed_co2(-1250).startswith("-")
     assert "0" in configuration_module._signed_co2(0)
+
+
+def test_the_grammar_dump_still_builds():
+    """The frontend's coupling check runs `tests/grammar_dump.py` and compares
+    what it prints (docs/specs/offline-checks). Asserted here too, so a renamed
+    variable or a moved helper fails in the agent's own suite rather than only
+    in the frontend's."""
+    from tests import grammar_dump
+
+    dump = grammar_dump.dump()
+    # Round-tripped, because what the frontend reads is the JSON and not this
+    # dict — the input pairs come back as lists, and the sentences must not.
+    reloaded = json.loads(json.dumps(dump))
+    assert reloaded["grammar"] == dump["grammar"]
+    assert set(dump["grammar"]) and all(dump["grammar"].values())
+    assert dump["configurationKeys"] and dump["co2"]

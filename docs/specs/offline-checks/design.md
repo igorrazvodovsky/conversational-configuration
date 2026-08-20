@@ -14,23 +14,25 @@ Not checked: every component, every hook, and `card-dispatch.ts` — which is a 
 
 The failure mode the geometry checks exist for is specific: the scene is computed from millimetre codes, and a renamed code makes `carGeometry` return `null` rather than throw. The render then shows its empty state and reports nothing. So the check is not "these codes parse" but "every code the model currently has still parses", iterated over the live model — 540 combinations, and cheap.
 
-## 3. The message grammar is checked as fragments, not as sentences
+## 3. The message grammar is compared by building it on both sides
 
-The grammar exists three times: `src/lib/configurator.ts` mints it, `agent/main.py` teaches the agent to recognise it, and `agent/tests/scenario_grammar.py` mints it again for the conversation checks. Comparing whole sentences does not work, because two of the three sides interpolate a label into the same hole. So `tests/couplings.test.ts` holds a table of the literal fragments each sentence is built from, and asserts each fragment three times: against the sentence the real builder produces, against the prompt, and against the harness.
+The grammar exists three times: `src/lib/configurator.ts` mints it, `agent/tests/scenario_grammar.py` mints it again for the conversation checks, and `agent/main.py` teaches the agent to recognise it. Two of the three are code, and are compared as code.
 
-The first of those three is what keeps the table from going stale — reword a builder and the table fails before anything else can drift. A second guard covers the other direction: the table is asserted to name every export of `configurator.ts` ending in `Message` or `PREFIX`, so a new grammar element cannot be added without being placed in it.
+`agent/tests/grammar_dump.py` builds every sentence from the agent's own helpers, for a set of inputs it names itself, and prints the lot as JSON. `tests/couplings.test.ts` runs it, builds the same sentences from the same inputs — read out of the dump, so the two provably compared the same thing — and asserts the two objects equal. Comparing the two sources as text, which is what this check did first, passes on two files that hold the same words and build different sentences; this does not.
 
-The prompt is read whitespace-normalised, because it wraps sentences across lines mid-quote.
+The inputs include a draft name with quotes inside it, because the draft moves quote the name and escaping is where the two sides would diverge first.
 
-**One finding.** `choiceMessage` — a bare control activation, `Set Building type to Hospital (building_type=hospital)` — has no rule of its own in the system prompt. It is the only element of the grammar that does not, and the table records it as `inPrompt: false` rather than passing silently. The sentence is plain enough that the agent maps it onto `set_choices` anyway, and it is covered by the `Canvas edit: ` rule whenever it comes off the sheet, so this is recorded rather than fixed: a prompt edit is measurable only by the conversation checks, which cost money, and nothing observed suggests the gap is live.
+The prompt is the third copy and is prose, so it can only be read as text. `PROMPT_FRAGMENTS` holds the part of each sentence that does not vary, asserted both against the prompt and against the sentence the frontend actually builds — so rewording a builder fails there too, and the table cannot go quietly stale. A separate assertion requires the table to name every element, so no element can be exempted from having a prompt rule.
 
-## 4. Cross-language couplings are read as text
+## 4. The rest of the boundary is compared the same way
 
-`tests/couplings.test.ts` reads `agent/main.py`, `agent/tests/scenario_grammar.py` and `agent/src/configuration.py` as strings. This is weaker than executing both sides, and it is what a check that must stay offline and single-language can do. It catches the failure that actually happens — a sentence reworded on one side of the boundary — and it does not catch a semantic divergence behind identical wording.
+The same dump carries what the agent declares a configuration to be, its provenance sources, its reconciliation marks, and what `_format_co2` prints for ten inputs. Each is compared against the frontend's own answer rather than against a copy of the agent's.
 
-The `Configuration` shape is compared by parsing the field names out of the TypeScript interface and the Python `TypedDict`, along with the `Source` and `reconciliation` literal unions. Field *types* are not compared; the names are where drift shows.
+The TypeScript interface is erased at runtime, so three witness objects stand in for it — `{choices: true, statuses: true, …} satisfies Record<keyof Required<Configuration>, true>` and two like it. The `satisfies` makes the typecheck reject a witness missing a member or carrying one the type does not have, so `Object.keys` over it is a list of the type's own members and not a fourth hand-maintained copy. The dump gives both the keys the agent *declares* and the keys an agreement it actually built carries; the second is a subset, because two fields are optional, and the frontend has to read both.
 
-The one piece of arithmetic both languages perform — the lifetime CO₂e total, which the customer reads on the sheet and hears in chat — is checked by a shared table of nine rows, asserted against `formatCO2` in `tests/couplings.test.ts` and against `_format_co2` in `agent/tests/test_tools.py`. Two tables rather than one shared fixture, because a fixture readable from both languages would be a third artifact to keep true; here each side's own check fails on its own drift, and the two tables are each other's specification.
+The CO₂ rows are compared against what the agent printed, not against a table copied from it. `agent/tests/test_tools.py` keeps a table of its own, which is the Python side's regression when Node is not around; that the two languages still agree is this check's job.
+
+What this still does not catch: a semantic divergence behind identical output — a prompt rewritten to keep every fragment while changing what the agent does with it, or a builder that agrees on these inputs and disagrees on others. The conversation checks are the only thing that sees the first.
 
 ## 5. The typecheck had nothing running it
 
@@ -42,7 +44,7 @@ Making it pass needed three type errors fixed, all in the dead starter code the 
 
 `.github/workflows/checks.yml`, two jobs. The agent job runs the model validator and `uv run pytest`; the frontend job runs `npm run typecheck` and `npm test`. The conversation checks are absent by design — `pytest -m scenario` is opted into by a developer who means to spend the money, and their own spec puts CI wiring for them out of scope.
 
-The frontend job installs with `--ignore-scripts`, because the repo's `postinstall` provisions the Python agent and that job does not need it.
+The frontend job installs both toolchains, because the coupling checks run the agent's half of the shared contracts. It installs them in two explicit steps rather than through the repo's `postinstall`, so a failure names which half broke.
 
 ## Verification
 
@@ -54,7 +56,8 @@ The frontend job installs with `--ignore-scripts`, because the repo's `postinsta
 
 ## Known gaps
 
-- The couplings are checked as text, not as behavior (decision 4). A rewritten prompt that keeps every fragment while changing what the agent does with it passes here and is caught only by the conversation checks.
-- `choiceMessage` has no prompt rule of its own (decision 3), recorded rather than fixed.
+- The couplings are compared on the inputs the dump names, not exhaustively; and the prompt, being prose, is still only read as text (decision 4). A prompt rewritten to keep every fragment while changing what the agent does with it passes here, and only the conversation checks see it.
+- The prompt rule added for a control activation (decision 3) has not been run against the live agent: that needs the conversation checks, which need a provider key and cost money per run. It is a rule for a sentence the agent already handled, and the risk of the edit is that it is redundant rather than that it is wrong.
+- `npm test` now needs the agent environment, because the coupling checks run the agent's half. A frontend-only checkout fails those four checks with a message naming the command to fix it, rather than skipping them.
 - No check reaches a React component, a hook, or the hydration rules — by design, and it means the traps in `docs/specs/chat-surface/design.md` and `docs/specs/agreement-document/design.md` are still found only by running the app.
 - The frontend checks build their own `Configuration` fixtures. Their shape is asserted against the agent's declaration, but a fixture can still be valid in shape and impossible in fact — for instance statuses the solver would never produce together.

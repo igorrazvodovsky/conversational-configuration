@@ -37,10 +37,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # --ignore-scripts skips the postinstall that provisions the Python
-      # agent; this job only needs the frontend's own dependencies.
-      - name: Install
+      # The coupling checks run the agent's half of the shared contracts and
+      # compare what it builds, so this job needs both toolchains
+      # (docs/specs/offline-checks design, decision 4).
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      # --ignore-scripts skips the postinstall that provisions the agent; the
+      # step below does it explicitly, so a failure names which half broke.
+      - name: Install the frontend
         run: npm ci --ignore-scripts
+      - name: Install the agent
+        run: uv sync --dev
+        working-directory: agent
       - name: Typecheck
         run: npm run typecheck
       - name: Tests
