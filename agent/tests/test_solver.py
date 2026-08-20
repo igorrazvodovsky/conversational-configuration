@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from src.solver import ConfigSolver, ConflictError, ModelError, load_model
+from tests.rfq_fixtures import OFFICE_TOWER, RESIDENTIAL, pairs
 
 MODEL_PATH = Path(__file__).parent.parent / "src" / "product_model" / "elevator.json"
 
@@ -468,22 +469,10 @@ def test_complete_co2_monthly_tiebreak(tmp_path):
 # -- seed (docs/specs/rfq-reconciliation) ---------------------------------
 
 # The two authored fixtures in agent/fixtures/rfq/, as the requirement sets an
-# extraction should produce from them.
-FIXTURE_A = [  # residential-new-build.txt — jointly satisfiable
-    ("building_type", "residential"), ("region", "europe"),
-    ("installation", "new_build"), ("travel", "mid_15_30"),
-    ("usage_profile", "medium"), ("rated_load", "kg1000"),
-    ("rated_speed", "mps1_6"), ("accessibility", "en81_70"),
-    ("service_level", "standard"),
-]
-FIXTURE_B = [  # office-tower-modernization.txt — over-constrained
-    ("building_type", "office"), ("region", "europe"),
-    ("installation", "modernization"), ("travel", "tower_75_100"),
-    ("stops", "s13_24"), ("usage_profile", "heavy"),
-    ("rated_speed", "mps3_0"), ("rated_load", "kg1600"),
-    ("accessibility", "en81_70"), ("connectivity_package", "connected"),
-    ("service_level", "premium"), ("contract_term", "y15"),
-]
+# extraction should produce from them — transcribed once in `rfq_fixtures.py`
+# and checked against the documents themselves by `test_rfq_fixtures.py`.
+FIXTURE_A = pairs(RESIDENTIAL)   # residential-new-build.txt — jointly satisfiable
+FIXTURE_B = pairs(OFFICE_TOWER)  # office-tower-modernization.txt — over-constrained
 
 
 def test_seed_satisfiable_keeps_everything(solver):

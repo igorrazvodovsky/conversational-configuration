@@ -21,6 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from src.product_model.reference import REFERENCE
 from src.solver import ConfigSolver, load_model
 
 MODEL_PATH = Path(__file__).parent / "elevator.json"
@@ -46,7 +47,8 @@ def check_statuses(solver, title, choices, var, expect):
     return ok
 
 
-def main():
+def main() -> int:
+    """Run every check, printing as it goes; returns the process exit code."""
     model = load_model(MODEL_PATH)
     solver = ConfigSolver(model)
 
@@ -57,7 +59,7 @@ def main():
     print("1. Global satisfiability:", end=" ")
     if not solver.check({}):
         print("UNSAT — model is broken")
-        sys.exit(1)
+        return 1
     print("sat")
 
     print("2. Dead option check:")
@@ -237,22 +239,7 @@ def main():
 
     # Calibration: the 630 kg / 12 m reference configuration reconciles to the
     # ~8.5 t A1–A3 EPD anchor (embodied-carbon.md §2) within ±25%.
-    reference = {
-        "service_level": "basic", "contract_term": "y10", "usage_profile": "low",
-        "connectivity_package": "none", "building_type": "residential",
-        "region": "europe", "installation": "new_build", "accessibility": "none",
-        "rated_load": "kg630", "rated_speed": "mps1_0", "travel": "low_0_15",
-        "stops": "s2_6", "platform": "mrl_m500", "drive": "gearless_mrl",
-        "energy_package": "standard", "energy_class": "c",
-        "car_size": "c1100x1400", "car_height": "ch2200",
-        "shaft": "t1_1800x1700", "pit_depth": "p1100",
-        "headroom": "h3400", "door_type": "telescopic_2", "door_width": "d800",
-        "door_finish": "painted", "fire_rating": "none",
-        "wall_finish": "painted_steel", "floor": "rubber", "cop": "standard",
-        "mirror": "none", "handrail": "none", "lead_time": "standard",
-        "dispatch_control": "collective", "rescue_operation": "ard",
-        "firefighters_operation": "none", "access_control": "none",
-    }
+    reference = REFERENCE
     missing = set(model.variables) - set(reference)
     ok = not missing
     print(f"  [{'ok' if ok else 'FAIL'}] the reference configuration is complete"
@@ -269,9 +256,10 @@ def main():
 
     if dead or failures:
         print(f"\nvalidation FAILED ({len(dead)} dead options, {failures} scenario failures)")
-        sys.exit(1)
+        return 1
     print("\nvalidation passed")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

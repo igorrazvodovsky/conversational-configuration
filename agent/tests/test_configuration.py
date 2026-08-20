@@ -23,7 +23,9 @@ from src.configuration import (
     snapshot,
     withdraw_choices,
 )
+from src.product_model.reference import REFERENCE
 from src.solver import ConflictError
+from tests.rfq_fixtures import OFFICE_TOWER
 
 
 @pytest.fixture()
@@ -474,22 +476,7 @@ def test_completion_message_no_teaser_when_objectives_agree(empty):
     """A fully-specified configuration completes identically under both
     objectives — no teaser line."""
     from src.configuration import _chosen_values, completion_message
-    full = {
-        "service_level": "basic", "contract_term": "y10", "usage_profile": "low",
-        "connectivity_package": "none", "building_type": "residential",
-        "region": "europe", "installation": "new_build", "accessibility": "none",
-        "rated_load": "kg630", "rated_speed": "mps1_0", "travel": "low_0_15",
-        "stops": "s2_6", "platform": "mrl_m500", "drive": "gearless_mrl",
-        "energy_package": "standard", "energy_class": "c",
-        "car_size": "c1100x1400", "car_height": "ch2200",
-        "shaft": "t1_1800x1700", "pit_depth": "p1100",
-        "headroom": "h3400", "door_type": "telescopic_2", "door_width": "d800",
-        "door_finish": "painted", "fire_rating": "none",
-        "wall_finish": "painted_steel", "floor": "rubber", "cop": "standard",
-        "mirror": "none", "handrail": "none", "lead_time": "standard",
-        "dispatch_control": "collective", "rescue_operation": "ard",
-        "firefighters_operation": "none", "access_control": "none",
-    }
+    full = REFERENCE
     config, _ = apply_choices(empty, full, "user")
     config = make_candidate(config)
     other_assignment, other_price = SOLVER.complete(_chosen_values(config), "co2")
@@ -501,33 +488,9 @@ def test_completion_message_no_teaser_when_objectives_agree(empty):
 
 # The over-constrained fixture (agent/fixtures/rfq/office-tower-modernization.txt)
 # as an extraction should produce it: clause 3.1's 3.0 m/s cannot hold with
-# clause 1.2's modernization.
-FIXTURE_B = [
-    {"variable": "building_type", "value": "office", "clause": "2.1",
-     "quote": "Kranhaus Nord is a commercial office building"},
-    {"variable": "region", "value": "europe", "clause": "2.2",
-     "quote": "The building is in Frankfurt am Main, Germany"},
-    {"variable": "installation", "value": "modernization", "clause": "1.2",
-     "quote": "The works are a modernization within the existing shaft"},
-    {"variable": "travel", "value": "tower_75_100", "clause": "2.3",
-     "quote": "Car no. 3 travels 92 metres"},
-    {"variable": "stops", "value": "s13_24", "clause": "2.4",
-     "quote": "The car serves 18 landings"},
-    {"variable": "usage_profile", "value": "heavy", "clause": "2.5",
-     "quote": "in near-constant demand from 07:00"},
-    {"variable": "rated_speed", "value": "mps3_0", "clause": "3.1",
-     "quote": "Rated speed shall be 3.0 m/s"},
-    {"variable": "rated_load", "value": "kg1600", "clause": "3.2",
-     "quote": "Rated load shall be 1600 kg"},
-    {"variable": "accessibility", "value": "en81_70", "clause": "3.3",
-     "quote": "accessible in accordance with EN 81-70"},
-    {"variable": "connectivity_package", "value": "connected", "clause": "5.1",
-     "quote": "24/7 call-out cover with remote monitoring"},
-    {"variable": "service_level", "value": "premium", "clause": "5.2",
-     "quote": "availability shall be no less than 99.9 %"},
-    {"variable": "contract_term", "value": "y15", "clause": "5.5",
-     "quote": "The contract term shall be 15 years"},
-]
+# clause 1.2's modernization. Transcribed once in `rfq_fixtures.py` and checked
+# against the document itself by `test_rfq_fixtures.py`.
+FIXTURE_B = OFFICE_TOWER
 
 
 @pytest.fixture()
