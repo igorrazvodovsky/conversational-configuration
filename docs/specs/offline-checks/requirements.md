@@ -34,4 +34,4 @@ Serves discovery principle [the canvas holds the state and the chat explains it]
 
 ## Out of scope
 
-Component and DOM tests, browser automation, and visual regression: UI behavior stays verified by running the app, and constitution #9 keeps it there. Coverage thresholds. Testing the CopilotKit packages or the dead starter code the repo still carries.
+Component and DOM tests, and visual regression: UI behavior stays verified by running the app, and constitution #9 keeps it there. Browser automation was out of scope here too, and one narrow use of it has since been taken back — the [hydration checks](../hydration-checks/requirements.md) load the app's own pages to catch a mismatch nobody can see, which is not UI behavior and is not asserted here. Coverage thresholds. Testing the CopilotKit packages or the dead starter code the repo still carries.

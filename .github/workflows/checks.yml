@@ -1,7 +1,8 @@
-# The offline checks (docs/specs/offline-checks): everything that runs without
-# a provider key. The conversation checks are deliberately absent — they drive
-# the live agent, cost money per run, and are opted into with `pytest -m
-# scenario` (docs/specs/conversation-checks).
+# The checks that run without a provider key: the offline ones
+# (docs/specs/offline-checks) and the hydration ones
+# (docs/specs/hydration-checks). The conversation checks are deliberately
+# absent — they drive the live agent, cost money per run, and are opted into
+# with `pytest -m scenario` (docs/specs/conversation-checks).
 name: checks
 
 on:
@@ -54,3 +55,23 @@ jobs:
         run: npm run typecheck
       - name: Tests
         run: npm test
+
+  # Its own job, on the same argument the frontend job splits its two installs:
+  # a failure should name which thing broke. This one needs a browser and no
+  # agent — the tree it measures is drawn before any fetch resolves
+  # (docs/specs/hydration-checks design 3).
+  hydration:
+    name: hydration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install the frontend
+        run: npm ci --ignore-scripts
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+      - name: Hydration
+        run: npm run test:hydration
