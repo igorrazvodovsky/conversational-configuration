@@ -1,12 +1,12 @@
-Answers *where does initiative sit, and what is the agent allowed to do unasked?* — including the delegation boundary — and decides the initiative default left open in [problem-framing.md](../problem-framing.md) §5.
+This answers *where does initiative sit, and what is the agent allowed to do unasked?*, including the delegation boundary, and it decides the initiative default left open in [problem framing](../problem-framing.md), under *Open questions the framing does not settle*.
 
 ## 1. The board and the pieces
 
-A move is an event on the shared document. The user's edits and the agent's actions are the same kind of event, applied to the same object, equally visible and equally undoable ([direction.md](../direction.md) §1). The transcript carries the *argument* about moves; the document carries their *result* ([the canvas holds the state and the chat explains it](../principles/canvas-holds-state-chat-explains.md)).
+A move is an event on the shared document. The user's edits and the agent's actions are the same kind of event, applied to the same object, equally visible and equally undoable ([direction](../direction.md), *Concept*). The transcript carries the *argument* about moves, and the document carries their *result* ([the canvas holds the state and the chat explains it](../principles/canvas-holds-state-chat-explains.md)).
 
-That split is a ruling about surfaces, with concrete consequences. The artifacts moves produce — a pending question, a proposed repair set, a comparison — are document-side objects: they appear, evolve and retire on the canvas, and chat carries their narration. Their per-artifact form is canvas anatomy's question (§7); *where they live* is settled here.
+That split is a ruling about surfaces, with concrete consequences. The artifacts moves produce — a pending question, a proposed repair set, a comparison — are document-side objects. They appear, evolve and retire on the canvas, and chat carries their narration. Their per-artifact form is canvas anatomy's question, and *where they live* is settled here.
 
-Every value on the document carries a provenance tag — the mechanism that resolves the standing tension between [always show a valid whole](../principles/always-show-a-valid-whole.md) and [the agent proposes and the user decides](../principles/agent-proposes-user-decides.md):
+Every value on the document carries a provenance tag, which is the mechanism that resolves the standing tension between [always show a valid whole](../principles/always-show-a-valid-whole.md) and [the agent proposes and the user decides](../principles/agent-proposes-user-decides.md).
 
 | Provenance | Meaning | Who can change it |
 |---|---|---|
@@ -15,64 +15,64 @@ Every value on the document carries a provenance tag — the mechanism that reso
 | *solver-forced* | Entailed by constraints given everything else; not a choice | Nobody, until an upstream value moves |
 | *derived* | Computed hardware beneath the outcome terms ([outcome-level elicitation works](../assertions/outcome-level-elicitation.md)) | Nobody directly; editable on demand per constitution #4 |
 
-The test for [the agent proposes and the user decides](../principles/agent-proposes-user-decides.md) — *can the user always tell who chose a value, and undo it in one move?* — is answered by this tag being visible on the canvas, not recorded in the transcript.
+The test for [the agent proposes and the user decides](../principles/agent-proposes-user-decides.md) — *can the user always tell who chose a value, and undo it in one move?* — is answered by this tag being visible on the canvas rather than recorded in the transcript.
 
-A fifth provenance is approved but unbuilt: *document* — a value seeded from the customer's own inbound RFQ, carrying its clause ([rfq-reconciliation](../../specs/rfq-reconciliation/requirements.md)). In this table's terms it sits beside *user-chosen*: the user's organization chose it, upstream of the conversation, and the agent may change it only by proposing — through the reconciliation moves that spec defines.
+A fifth provenance is approved but unbuilt: *document*, a value seeded from the customer's own inbound RFQ, carrying its clause ([RFQ reconciliation](../../specs/rfq-reconciliation/requirements.md)). In this table's terms it sits beside *user-chosen*: the user's organization chose it, upstream of the conversation, and the agent may change it only by proposing, through the reconciliation moves that spec defines.
 
 ## 2. User moves
 
-All user moves are legal at all times ([configuration can start from any variable, in any order](../principles/start-from-any-variable.md)). No move is refused because of when it is made; a move may be *answered* with a no, which always carries its core ([every refusal names the rules that caused it](../principles/refusals-name-their-rules.md)).
+All user moves are legal at all times ([configuration can start from any variable, in any order](../principles/start-from-any-variable.md)). No move is refused because of when it is made, and a move may be *answered* with a no, which always carries its core ([every refusal names the rules that caused it](../principles/refusals-name-their-rules.md)).
 
 | Move | Example | Effect on the document |
 |---|---|---|
-| Describe the situation | "300-bed hospital, eight floors" | Agent translates into outcome terms; nothing is set without becoming visible |
+| Describe the situation | "300-bed hospital, eight floors" | The agent translates it into outcome terms, and nothing is set without becoming visible |
 | Hand over a document | Pastes or attaches the RFQ | The document's requirements land as recorded commitments carrying their clause, *document*-sourced; what the rules cannot meet becomes a named deviation ([rfq-reconciliation](../../specs/rfq-reconciliation/requirements.md)). The situation description in document form, and the limiting case of [configuration can start from any variable, in any order](../principles/start-from-any-variable.md) |
 | Reconcile a deviation | "we'll take what you can do" · "make it 1.2 then" · "leave it open" | One of three answers to a departure from the customer's own document: the requirement is waived and stays listed, or it is changed and re-solved, or it is left open. Answering a clause of one's own document is negotiation, so it dispatches its own sentence rather than an edit |
-| Set a value | "Uptime 99.5%" · edits a canvas field | Value set, *user-chosen*; solver revalidates |
-| Withdraw a choice | "forget the drive type" | The recorded choice is removed and the variable returns to the solver's disposal. Distinct from undo, which reverses a batch whatever it contained, and from §5's *revoke*, which leaves the value in place and changes its standing |
-| Constrain without choosing | "Shaft can't exceed 1800 mm" · "under €2k/month" | Domain narrowed; solver may force or grey out values downstream |
-| Ask why | "Why can't I have the glass cab?" | No document change; explanation from the named core |
-| Revise by intent | "Make it cheaper" · "lower the carbon" | Agent proposes candidate changes as a ripple; nothing applies until accepted ([revision is an ordinary move, not a restart](../principles/revision-is-an-ordinary-move.md)) |
+| Set a value | "Uptime 99.5%" · edits a canvas field | The value is set, *user-chosen*, and the solver revalidates |
+| Withdraw a choice | "forget the drive type" | The recorded choice is removed and the variable returns to the solver's disposal. Distinct from undo, which reverses a batch whatever it contained, and from the delegation move *revoke*, which leaves the value in place and changes its standing |
+| Constrain without choosing | "Shaft can't exceed 1800 mm" · "under €2k/month" | The domain narrows, and the solver may force or grey out values downstream |
+| Ask why | "Why can't I have the glass cab?" | No document change, and the explanation comes from the named core |
+| Revise by intent | "Make it cheaper" · "lower the carbon" | The agent proposes candidate changes as a ripple, and nothing applies until accepted ([revision is an ordinary move, not a restart](../principles/revision-is-an-ordinary-move.md)) |
 | Decline a proposal | "leave it as it is" · "forget that one" | Nothing at all, by construction: the tool answering an abandoned revision holds no configuration in its update, so declining cannot move the agreement whatever the model intends by it ([nonlinear-interaction](../../specs/nonlinear-interaction/design.md)). It answers a change that never happened, where undo reverses one that did |
-| Fork and compare | "Show me both" | A second *draft* of the agreement held beside the first — a whole document with its own provenance and history, not a snapshot — with the differing variables named ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md), [parallel-drafts](../../specs/parallel-drafts/requirements.md)). One draft is current at a time; switching between them re-attributes nothing |
-| Discard a draft | "we're done with the premium one" | The draft leaves the workspace and does not come back. Only a draft that is not the current one can go, and no history is touched ([parallel-drafts](../../specs/parallel-drafts/requirements.md)) |
+| Fork and compare | "Show me both" | A second *draft* of the agreement held beside the first — a whole document with its own provenance and history, rather than a snapshot — with the differing variables named ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md), [parallel drafts](../../specs/parallel-drafts/requirements.md)). One draft is current at a time, and switching between them re-attributes nothing |
+| Discard a draft | "we're done with the premium one" | The draft leaves the workspace and doesn't come back. Only a draft that isn't the current one can go, and no history is touched ([parallel drafts](../../specs/parallel-drafts/requirements.md)) |
 | Undo | "Undo that" · the control on the document | Reverses any move, the agent's included, one applied batch at a time, and reverses itself through redo ([undo spec](../../specs/undo/requirements.md)). The history belongs to the agreement, so a move made in another conversation reverses from this one |
-| Delegate a scope | "You handle the interior" | Grants a mandate — see §5 |
-| Review the agent's work | Filters canvas to *agent-chosen* | No change; a review pass — see §5. Unbuilt: the canvas carries a provenance badge per value and no filter, so the agent's fills can be checked one row at a time and never gathered as a set |
-| Accept | "Yes" | The current candidate becomes the agreement — unbuilt: nothing in state distinguishes a candidate from one the customer has taken, so acceptance is conversational only. Always possible in principle, because what is shown is always valid ([always show a valid whole](../principles/always-show-a-valid-whole.md)) |
+| Delegate a scope | "You handle the interior" | Grants a mandate, as *Delegation moves* describes |
+| Review the agent's work | Filters canvas to *agent-chosen* | No change. It is a review pass, described under *Delegation moves*, and it is unbuilt: the canvas carries a provenance badge per value and no filter, so the agent's fills can be checked one row at a time and never gathered as a set |
+| Accept | "Yes" | The current candidate becomes the agreement. It is unbuilt: nothing in state distinguishes a candidate from one the customer has taken, so acceptance is conversational only. It is always possible in principle, because what is shown is always valid ([always show a valid whole](../principles/always-show-a-valid-whole.md)) |
 
 ## 3. Agent moves
 
-The column that matters is *unasked?* — what the agent may do without being invited to. Grounding: [the agent proposes and the user decides](../principles/agent-proposes-user-decides.md) permits filling forced values, proposing completions and flagging dead ends unasked, and forbids silent discretionary choice.
+The column that matters is *unasked?*, meaning what the agent may do without being invited to. The grounding is [the agent proposes and the user decides](../principles/agent-proposes-user-decides.md), which permits filling forced values, proposing completions and flagging dead ends unasked, and forbids silent discretionary choice.
 
 | Move | Unasked? | Effect on the document |
 |---|---|---|
 | Translate situation → outcome terms | Yes | Populates outcome layer from the user's description, visibly |
 | Derive hardware | Yes, by design ([outcome-level elicitation works](../assertions/outcome-level-elicitation.md)) | Fills the derived layer beneath the outcome terms |
-| Fill forced values | Yes | Sets values the solver entails, tagged *solver-forced*; chat narrates the *why* (the rule that forced it), never the *what* — the canvas already shows the value ([the canvas holds the state and the chat explains it](../principles/canvas-holds-state-chat-explains.md)) |
-| Apply conventional defaults | Yes, tagged | Sets low-stakes discretionary values, tagged *agent-chosen* with a reason (§5) |
-| Propose a complete candidate | Yes, once anchored (§6) | Puts a whole valid draft on the canvas for reaction ([always show a valid whole](../principles/always-show-a-valid-whole.md), [showing a candidate works better than asking a sequence of questions](../assertions/candidate-works-better-than-questions.md)) |
-| Propose repairs on a ripple | Yes to propose; applies only on acceptance | Shows what a revision breaks and how to fix it, atomically ([revision is an ordinary move, not a restart](../principles/revision-is-an-ordinary-move.md)) |
-| Flag a dead end or conflict | Yes | No change; the named rules that caused it, from the core ([every refusal names the rules that caused it](../principles/refusals-name-their-rules.md)) |
-| Reveal a change it just made | Yes | None beyond visibility: the document scrolls to and transiently marks the values this turn changed — bounded to that turn's changes, derived from them rather than chosen ([shared-attention](../../specs/shared-attention/requirements.md)) |
-| Ask a question | Only when a discretionary value has no defensible default | Critique over interrogation (constitution #5): a question is the fallback move, not the default move |
+| Fill forced values | Yes | Sets values the solver entails, tagged *solver-forced*. The chat narrates the *why*, meaning the rule that forced it, and never the *what*, because the canvas already shows the value ([the canvas holds the state and the chat explains it](../principles/canvas-holds-state-chat-explains.md)) |
+| Apply conventional defaults | Yes, tagged | Sets low-stakes discretionary values, tagged *agent-chosen* with a reason, as *Delegation moves* describes |
+| Propose a complete candidate | Yes, once anchored, as *The initiative default* sets out | Puts a whole valid draft on the canvas for reaction ([always show a valid whole](../principles/always-show-a-valid-whole.md), [showing a candidate works better than asking a sequence of questions](../assertions/candidate-works-better-than-questions.md)) |
+| Propose repairs on a ripple | Yes to propose, and applies only on acceptance | Shows what a revision breaks and how to fix it, atomically ([revision is an ordinary move, not a restart](../principles/revision-is-an-ordinary-move.md)) |
+| Flag a dead end or conflict | Yes | No change, and the named rules that caused it come from the core ([every refusal names the rules that caused it](../principles/refusals-name-their-rules.md)) |
+| Reveal a change it just made | Yes | Nothing beyond visibility: the document scrolls to and transiently marks the values this turn changed, bounded to that turn's changes and derived from them rather than chosen ([shared attention](../../specs/shared-attention/requirements.md)) |
+| Ask a question | Only when a discretionary value has no defensible default | Critique over interrogation (constitution #5): a question is the fallback move rather than the default move |
 | Explain | On request, and with every no | No change |
-| Escalate a delegated decision | Yes — obligatory when triggered (§5) | Returns a decision to the user with the options laid out |
+| Escalate a delegated decision | Yes, and obligatory when triggered, as *Delegation moves* sets out | Returns a decision to the user with the options laid out |
 
 *Never-moves*, regardless of mandate:
 
-- Resolve the cost/footprint trade-off on the user's behalf — that would silently apply the weighting [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md) exists to keep visible. This is the irreducible user decision.
+- Resolve the cost-and-footprint trade-off on the user's behalf, which would silently apply the weighting [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md) exists to keep visible. That is the irreducible user decision.
 - Change a *user-chosen* value by any means other than a proposal.
 - Assert feasibility or validity on its own authority (constitution #1).
 - Restate in chat what the canvas already shows ([the canvas holds the state and the chat explains it](../principles/canvas-holds-state-chat-explains.md)).
 
 ## 4. Solver moves
 
-The solver moves involuntarily on every event, whoever caused it: validate the draft, force what is entailed (`consequences`), grey out what is unreachable, and produce a named core for every no. It initiates nothing and is never idle. The agent narrates solver moves; it does not make them.
+The solver moves involuntarily on every event, whoever caused it: validate the draft, force what is entailed through `consequences`, grey out what is unreachable, and produce a named core for every no. It initiates nothing and is never idle. The agent narrates solver moves rather than making them.
 
 ## 5. Delegation moves
 
-Delegation is not one question but a boundary through the provenance strata:
+Delegation isn't one question but a boundary through the provenance strata.
 
 | Stratum | Who decides | Delegable? |
 |---|---|---|
@@ -80,44 +80,46 @@ Delegation is not one question but a boundary through the provenance strata:
 | Derived hardware | Agent + solver, by design | Already delegated; that is what [outcome-level elicitation](../assertions/outcome-level-elicitation.md) claims |
 | Conventional defaults | Agent, unasked | Yes — the default mandate everyone starts with |
 | Preference-sensitive choices | User | Only by explicit mandate |
-| The cost/footprint trade-off | User | Never ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md)) |
+| The cost-and-footprint trade-off | User | Never ([trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md)) |
 
-So *everything beneath the outcome terms is delegable; the trade-off between them is not.* The moves that manage the boundary:
+So *everything beneath the outcome terms is delegable, and the trade-off between them isn't.* Four moves manage the boundary.
 
 *Delegate.* The user grants a mandate over a named scope ("you pick the interior", "optimize for carbon within the budget"). A mandate widens what the agent may set *agent-chosen* without asking; it never crosses the [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md) line — "optimize for carbon within the budget" is legal because the user has just made the trade-off themselves and delegated only its execution.
 
 *Fill.* Within a mandate the agent sets values tagged *agent-chosen*, each with a reason. Discretionary choices have no unsat core to ground their reasons, so the same discipline as [every refusal names the rules that caused it](../principles/refusals-name-their-rules.md) needs a different mechanism: default heuristics live in the product model as named rules (D-ids beside the R-ids — declarative data per constitution #2, admissible grounds per #6 as amended; not yet in the model — the gap is recorded in the [product-model design](../../specs/product-model/design.md)), and the agent verbalizes them rather than composing a justification. A reason that cannot be traced to a D-rule is a reason the agent may not give.
 
-*Escalate.* The obligatory inverse of delegation. Triggers: the agent encounters a choice inside its mandate that moves the cost/footprint pair in opposite directions; no D-rule covers the choice; or the mandate leads into a dead end. Escalation returns the decision with the options and both deltas laid out — it is the fixed-rule approximation of Horvitz's confidence-conditional initiative (§6).
+*Escalate.* The obligatory inverse of delegation. Three things trigger it: the agent meets a choice inside its mandate that moves the cost-and-footprint pair in opposite directions, no D-rule covers the choice, or the mandate leads into a dead end. Escalation returns the decision with the options and both deltas laid out, and it is the fixed-rule approximation of Horvitz's confidence-conditional initiative, which *The initiative default* takes up.
 
-*Review.* Reviewing delegated work reuses the ripple machinery: the agent's fills are a diff on the document, presented as a set with consequences, which is what [showing the ripple at the moment of revision makes nonlinear change workable](../assertions/ripple-at-the-moment-of-revision.md) builds for the user's own revisions. Reviewed on the canvas via the *agent-chosen* filter, rather than by reading the transcript ([the canvas is the durable locus of state](../assertions/canvas-is-the-durable-state.md)). Per-action confirmation dialogs are rejected: they reintroduce the wizard one confirmation at a time.
+*Review.* Reviewing delegated work reuses the ripple machinery. The agent's fills are a diff on the document, presented as a set with consequences, which is what [showing the ripple at the moment of revision makes nonlinear change workable](../assertions/ripple-at-the-moment-of-revision.md) builds for the user's own revisions. It is reviewed on the canvas through the *agent-chosen* filter rather than by reading the transcript ([the canvas is the durable locus of state](../assertions/canvas-is-the-durable-state.md)). Per-action confirmation dialogs are rejected, because they reintroduce the wizard one confirmation at a time.
 
-*Revoke.* The user withdraws a mandate or takes back a single decision. Values already filled stay on the document — the draft must remain a valid whole ([always show a valid whole](../principles/always-show-a-valid-whole.md)) — but revocation converts them from settled defaults into standing proposals the user is invited to react to. Unbuilt, and deliberately not what undo does: undo restores a prior state of the whole agreement, where revoking changes the standing of one value and leaves it in place. The [undo spec](../../specs/undo/requirements.md) puts it out of scope as a delegation move rather than a history one; nothing else has claimed it.
+*Revoke.* The user withdraws a mandate or takes back a single decision. Values already filled stay on the document, because the draft has to remain a valid whole ([always show a valid whole](../principles/always-show-a-valid-whole.md)), but revocation converts them from settled defaults into standing proposals the user is invited to react to. It is unbuilt, and deliberately not what undo does: undo restores a prior state of the whole agreement, where revoking changes the standing of one value and leaves it in place. The [undo spec](../../specs/undo/requirements.md) puts it out of scope as a delegation move rather than a history one, and nothing else has claimed it.
 
 ## 6. The initiative default — decided
 
 Three options were on the table:
 
-1. *Wait until asked.* The agent answers, fills forced values, and otherwise holds back. Rejected: it recreates the interrogation pattern, gives the user nothing to critique, and abandons the central claim that [showing a candidate works better than asking a sequence of questions](../assertions/candidate-works-better-than-questions.md) without testing it.
+1. *Wait until asked.* The agent answers, fills forced values, and otherwise holds back. Rejected, because it recreates the interrogation pattern, gives the user nothing to critique, and abandons the central claim of [showing a candidate works better than asking a sequence of questions](../assertions/candidate-works-better-than-questions.md) without testing it.
 2. *Propose first, once anchored.* Chosen. As soon as the situation description grounds a candidate — roughly, building type plus scale — the agent proposes a *complete, valid, provenance-marked* draft and negotiation proceeds by critique. This is propose-check-repair given a conversational surface, and the only default under which the demo can exercise [showing a candidate works better than asking a sequence of questions](../assertions/candidate-works-better-than-questions.md) and [always show a valid whole](../principles/always-show-a-valid-whole.md) at all.
-3. *Confidence-conditional (Horvitz).* Right in principle, but not implementable with no interaction data to condition on. The escalation triggers in §5 are its fixed-rule stand-in.
+3. *Confidence-conditional, after Horvitz.* Right in principle, but not implementable with no interaction data to condition on. The escalation triggers under *Delegation moves* are its fixed-rule stand-in.
 
-*Standing tension, settled for now by disclosure.* A complete candidate must be completed against *some* objective, and the first never-move (§3) forbids the agent from resolving the cost/footprint weighting itself. The two collide at the first proposal, which arrives at the moment of highest anchoring risk. The interim settlement, made with the [footprint spec](../../specs/environmental-footprint/design.md): the completion defaults to cheapest, but every proposal also solves the other objective and, when the two assignments differ, discloses how many variables differ and both deltas, which makes the default disclosed rather than silent. Two stronger settlements stay on the table for when the comparison model is drawn: the first proposal arrives as a *pair* — one cost-leaning, one footprint-leaning — making [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md) the opening move rather than a later feature; or *anchored* is redefined to include an expressed budget-or-carbon leaning, so the weighting is user-supplied before any completion runs. Whether disclosure is enough is a walkthrough question: if the disclosed alternative is never taken up, the default was doing the weighting after all, and this reopens toward one of the two.
+*Standing tension, settled for now by disclosure.* A complete candidate has to be completed against *some* objective, and the first never-move forbids the agent from resolving the cost-and-footprint weighting itself. The two collide at the first proposal, which arrives at the moment of highest anchoring risk. The interim settlement, made with the [footprint spec](../../specs/environmental-footprint/design.md), is that the completion defaults to cheapest, but every proposal also solves the other objective and, when the two assignments differ, discloses how many variables differ and both deltas. That makes the default disclosed rather than silent.
 
-Failure signals to watch in the walkthrough: the early proposal anchors the user into accepting agent defaults they should have contested — the stated failure mode of [showing a candidate works better than asking a sequence of questions](../assertions/candidate-works-better-than-questions.md), or the first proposal arrives before the situation supports it and reads as presumptuous. Either would reopen this decision toward a later anchor point, not toward waiting.
+Two stronger settlements stay on the table for when the comparison model is drawn. The first proposal could arrive as a *pair*, one cost-leaning and one footprint-leaning, making [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md) the opening move rather than a later feature. Or *anchored* could be redefined to include an expressed budget or carbon leaning, so the weighting is user-supplied before any completion runs. Whether disclosure is enough is a walkthrough question: if the disclosed alternative is never taken up, the default was doing the weighting after all, and this reopens toward one of the two.
+
+Two failure signals are worth watching in the walkthrough. The early proposal anchors the user into accepting agent defaults they should have contested, which is the stated failure mode of [showing a candidate works better than asking a sequence of questions](../assertions/candidate-works-better-than-questions.md). Or the first proposal arrives before the situation supports it, and reads as presumptuous. Either would reopen this decision toward a later anchor point rather than toward waiting.
 
 ## 7. Edges this model does not settle
 
-- How a mandate is *afforded* — a canvas control on a section, a chat utterance, or both. Canvas anatomy territory, as is the per-artifact canvas form of the document-side artifacts named in §1.
-- Whether delegation should deepen for the returning operator (the primary persona). Session-map territory. The read half of the [shared-attention](../../specs/shared-attention/requirements.md) channel — what the operator has open, and whether the transcript is stale — is the first signal a session map has to work with.
+- How a mandate is *afforded*: a canvas control on a section, a chat utterance, or both. That is canvas anatomy territory, as is the per-artifact canvas form of the document-side artifacts named under *The board and the pieces*.
+- Whether delegation should deepen for the returning operator, who is the primary persona. That is session-map territory. The read half of the [shared-attention](../../specs/shared-attention/requirements.md) channel — what the operator has open, and whether the transcript is stale — is the first signal a session map has to work with.
 - The accountability framing: an *agent-chosen* term in a signed service agreement carries a weight the provenance tag alone may not discharge.
-- Whether a *move* has to be an event on the document, as §1 defines it. Two surfaces serve a customer's job and change nothing: the render of the configured car ([visual-configuration](../../specs/visual-configuration/design.md)), and the comparison mode the [Comparison view](Comparison%20view.md) decided on. Both are pure projections of state, so neither is a move under the definition, and neither has a place in these tables — while the jobs they answer are as real as the ones the tables serve ([micro-job-stories](../jtbd/micro-job-stories.md)).
-- Unit of revision and ripple disclosure (both in [problem-framing.md](../problem-framing.md) §5) — the ripple storyboard's job, though §5's review move constrains it: whatever disclosure level is chosen must also work for reviewing delegated work.
+- Whether a *move* has to be an event on the document, as *The board and the pieces* defines it. Two surfaces serve a customer's job and change nothing: the render of the configured car ([visual configuration](../../specs/visual-configuration/design.md)), and the comparison mode [Comparison view](Comparison%20view.md) decided on. Both are pure projections of state, so neither is a move under the definition and neither has a place in these tables, while the jobs they answer are as real as the ones the tables serve ([micro-job stories](../jtbd/micro-job-stories.md)).
+- The unit of revision and ripple disclosure, both open questions in [problem framing](../problem-framing.md). That is the ripple storyboard's job, though the *review* delegation move constrains it: whatever disclosure level is chosen also has to work for reviewing delegated work.
 
 ## Related
 
-- [surface-architecture.md](Surface%20architecture.md) — the pattern and form inside which §1's placement ruling sits
+- [The pattern and form inside which the placement ruling sits](Surface%20architecture.md)
 - [the agent proposes and the user decides](../principles/agent-proposes-user-decides.md) — the principle this model operationalizes; it also enacts [always show a valid whole](../principles/always-show-a-valid-whole.md), [the canvas holds the state and the chat explains it](../principles/canvas-holds-state-chat-explains.md), [every refusal names the rules that caused it](../principles/refusals-name-their-rules.md), [configuration can start from any variable, in any order](../principles/start-from-any-variable.md) and [trade-offs shown as a pair](../principles/trade-offs-shown-as-a-pair.md)
-- [../direction.md](../direction.md) §3 — the model index
-- [../problem-framing.md](../problem-framing.md) §5 — the initiative question is decided here; the others are not
-- [../phase-plan.md](../phase-plan.md) — what discovery still has open
+- [The model index](../direction.md)
+- [The open questions](../problem-framing.md) — where the initiative question is decided here and the others aren't
+- [What discovery still has open](../phase-plan.md)

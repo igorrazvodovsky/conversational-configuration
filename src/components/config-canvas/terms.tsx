@@ -2,9 +2,9 @@
 
 /**
  * Operative terms — the commitments (docs/specs/agreement-document; canvas
- * anatomy §3). The `agreement` group and the headline performance outcomes as
- * numbered clauses, above the consideration: monthly price and modelled
- * lifetime footprint.
+ * anatomy, *The anatomy*). The `agreement` group and the headline performance
+ * outcomes as numbered clauses, above the consideration: monthly price and
+ * modelled lifetime footprint.
  *
  * This is the negotiation surface. Provenance and the deviation register's
  * marks sit in the margin, beside the clause they qualify, which is where the

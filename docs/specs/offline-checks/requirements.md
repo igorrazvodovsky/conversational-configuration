@@ -1,10 +1,12 @@
 # Offline checks: what runs without a provider key
 
-Status: approved and built 2026-08-20. Every criterion below is met. The two findings the first pass recorded are closed: the grammar is now compared by building it on both sides rather than by reading source text, and the system prompt has a rule for every element of it — that prompt edit is the one thing here not verified against the live agent, which needs the conversation checks (see [design.md](design.md)).
+Status: approved and built 2026-08-20. Every criterion here is met. The two findings the first pass recorded are closed: the grammar is compared by building it on both sides rather than by reading source text, and the system prompt has a rule for every element of it. That prompt edit is the one thing here not verified against the live agent, which needs the conversation checks ([design.md](design.md)).
 
-The counterpart to the [conversation checks](../conversation-checks/requirements.md). Those drive the live agent and cost money; these run offline, in seconds, over everything the agent's behavior rests on. Constitution #9 assigned solver and model logic to automated checks and everything else to running the app, and the second half has been carrying more than it can: the frontend now holds the message grammar that turns a click into a tool call, the value resolution and formatting the agreement document renders from, and the geometry the car is drawn from — none of it UI, all of it invisible to every check in the repo.
+These are the counterpart to the [conversation checks](../conversation-checks/requirements.md). Those drive the live agent and cost money; these run offline, in seconds, over everything the agent's behavior rests on.
 
-Serves discovery principle [the canvas holds the state and the chat explains it](../../discovery/principles/canvas-holds-state-chat-explains.md): the canvas can only hold the state if what it renders is what the agreement says and what it dispatches is what the agent hears, and both are computed by code no check reads. The dispatch half also serves [revision is an ordinary move, not a restart](../../discovery/principles/revision-is-an-ordinary-move.md) — a revision is ordinary only while the sentence a card mints is a sentence the agent maps onto one tool call.
+Constitution #9 assigned solver and model logic to automated checks and everything else to running the app, and the second half has been carrying more than it can. The frontend holds the message grammar that turns a click into a tool call, the value resolution and formatting the agreement document renders from, and the geometry the car is drawn from. None of it is UI, and all of it is invisible to every other check in the repo.
+
+Serves discovery principle [the canvas holds the state and the chat explains it](../../discovery/principles/canvas-holds-state-chat-explains.md): the canvas can only hold the state if what it renders is what the agreement says and what it dispatches is what the agent hears, and both are computed by code no check reads. The dispatch half also serves [revision is an ordinary move, not a restart](../../discovery/principles/revision-is-an-ordinary-move.md), because a revision is ordinary only while the sentence a card mints is a sentence the agent maps onto one tool call.
 
 ## Stories
 
@@ -23,9 +25,9 @@ Serves discovery principle [the canvas holds the state and the chat explains it]
 ### The couplings that cross the boundary
 
 - GIVEN the structured message grammar, WHEN the checks run, THEN the frontend and the agent build every sentence from the same inputs and the two are asserted equal string for string, so a rewording on either side fails rather than degrading a card.
-- GIVEN the system prompt, which is prose and can only be read, WHEN the checks run, THEN every element of the grammar is asserted to have a rule there — none exempted — and each rule's wording is asserted against the sentence the frontend actually builds.
+- GIVEN the system prompt, which is prose and can only be read, WHEN the checks run, THEN every element of the grammar is asserted to have a rule there, none exempted, and each rule's wording is asserted against the sentence the frontend actually builds.
 - GIVEN the product model, WHEN the checks run, THEN every variable, option code and group the frontend addresses by name is asserted to exist in it, and every option code the render parses is asserted to still parse.
-- GIVEN the two hand-maintained declarations of the configuration shape — a TypeScript interface and a Python `TypedDict` — WHEN the checks run, THEN the frontend's members are asserted against what the agent declares and against the keys of an agreement the agent actually built.
+- GIVEN the two hand-maintained declarations of the configuration shape, a TypeScript interface and a Python `TypedDict`, WHEN the checks run, THEN the frontend's members are asserted against what the agent declares and against the keys of an agreement the agent actually built.
 
 ### Running them
 
@@ -34,4 +36,4 @@ Serves discovery principle [the canvas holds the state and the chat explains it]
 
 ## Out of scope
 
-Component and DOM tests, browser automation, and visual regression: UI behavior stays verified by running the app, and constitution #9 keeps it there. Coverage thresholds. Testing the CopilotKit packages or the dead starter code the repo still carries.
+Component and DOM tests, browser automation, and visual regression: UI behavior stays verified by running the app, and constitution #9 keeps it there. Coverage thresholds. Testing the CopilotKit packages, or the dead starter code the repo still carries.

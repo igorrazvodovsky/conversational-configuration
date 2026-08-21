@@ -2,9 +2,9 @@
 
 /**
  * Recitals — the change in the world (docs/specs/agreement-document; canvas
- * anatomy §3). The site, the situation, and what will happen: installed thus,
- * operating so, for the term — in the building's language, so the record
- * answers in the vocabulary elicitation speaks.
+ * anatomy, *The anatomy*). The site, the situation, and what will happen:
+ * installed thus, operating so, for the term — in the building's language, so
+ * the record answers in the vocabulary elicitation speaks.
  *
  * Every sentence here is a deterministic template over agent state and model
  * data. The agent never composes this prose: model-written text in the record

@@ -399,7 +399,8 @@ export function ConfigCanvas({
               clause — but it is also the number the operator consults most, and
               burying it under the recitals would both cost them the glance and
               manufacture the scroll-past this surface exists to measure
-              (canvas anatomy §5). So it is repeated here, compactly. */}
+              (canvas anatomy, *Failure signals*). So it is repeated here,
+              compactly. */}
           {config.candidate && (
             <p className="mt-1 text-sm">
               <span className="font-semibold tabular-nums">

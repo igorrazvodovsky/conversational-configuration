@@ -194,9 +194,9 @@ const TOKEN_STYLE: Record<ValueKind, string> = {
 
 /**
  * A configurable value rendered inside running text, editable in place: the
- * document's editable island (canvas anatomy §4). It opens the same option
- * editor a schedule row does and dispatches through the same routed handler —
- * the document genre costs no revision access.
+ * document's editable island (canvas anatomy, *Editability*). It opens the
+ * same option editor a schedule row does, and dispatches through the same
+ * routed handler — the document genre costs no revision access.
  *
  * A rule-forced value is not editable, exactly as on the sheet: it is a
  * consequence of other choices, and the chat explains it.
@@ -271,7 +271,7 @@ export function ValueToken({
 
 /** The situational gloss for whatever value is currently shown, when the model
  * carries one — sense-making attached to the thing being explained, and never
- * composed at render time (canvas anatomy §3). */
+ * composed at render time (canvas anatomy, *The anatomy*). */
 export function Gloss({
   variable,
   doc,

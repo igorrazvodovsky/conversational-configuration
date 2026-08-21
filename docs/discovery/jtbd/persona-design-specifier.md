@@ -1,16 +1,16 @@
 # Persona — the design specifier
 
-Status: desk-research hypothesis. Play: *Create Goal-Based Personas* — defined by goals and circumstances, not demographics.
+Status: desk-research hypothesis. Play: *Create Goal-Based Personas*, defined by goals and circumstances rather than demographics.
 
-The architect. An influencer who specifies, not the job performer ([domain.md](domain.md)).
+The architect. They are an influencer who specifies, rather than the job performer ([domain.md](domain.md)).
 
 *Goals.* Spatial fit, design intent, code compliance.
 
-*Circumstances.* Early phase, incomplete information, iterates constantly.
+*Circumstances.* Early phase, incomplete information, constant iteration.
 
-*Frustrations.* Speaks building language — beds, floors, lobbies — never part nomenclature. This persona embodies the articulation barrier ([../../research/interaction-literature.md](../../research/interaction-literature.md), thread D), and the reason for [elicitation uses the building's vocabulary](../principles/elicit-in-the-buildings-vocabulary.md).
+*Frustrations.* They speak building language — beds, floors, lobbies — and never part nomenclature. This persona embodies the articulation barrier ([interaction literature](../../research/interaction-literature.md), thread D), and is the reason for [elicitation uses the building's vocabulary](../principles/elicit-in-the-buildings-vocabulary.md).
 
 ## Related
 
-- [persona-delivery-lead.md](persona-delivery-lead.md) — receives and pays for this persona's iterations
-- [job-stories.md](job-stories.md) — story 1 is this persona's story
+- [Who receives and pays for this persona's iterations](persona-delivery-lead.md)
+- [Story 1, which is this persona's](job-stories.md)

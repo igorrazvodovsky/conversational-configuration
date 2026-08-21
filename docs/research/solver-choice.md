@@ -1,23 +1,37 @@
 # Solver choice — why Z3
 
-Status: technology evaluation, decided and implemented (the [solver service](../specs/solver-service/design.md)). Split from the former `docs/research-and-outline.md` §3. The one place in this folder where the research produced a settled decision rather than a standing hypothesis.
+Status: technology evaluation, decided and implemented in the [solver service](../specs/solver-service/design.md).
 
-Requirements for interactive configuration (not one-shot solving): fast incremental re-solve after each choice; *consequence propagation* (which remaining values are still valid, to grey out options); *conflict explanation* (minimal unsat core → "X conflicts with Y because rule R"); optimization as a plus.
+Interactive configuration, rather than one-shot solving, sets the requirements:
 
-Recommendation: *Z3 (python bindings)* — the only candidate covering all three defining operations natively in one persistent solver session:
+- Fast incremental re-solve after each choice.
+- *Consequence propagation* — which remaining values are still valid, so the interface can grey out the rest.
+- *Conflict explanation* — a minimal unsat core, so the agent can say "X conflicts with Y because rule R".
+- Optimization, as a plus.
 
-- Assumption-based `check()` — sub-millisecond incremental re-solves; nothing retracted, learned clauses kept.
-- `Solver.consequences(assumptions, terms)` — one call returns every option value forced true/false under current choices. Exactly the "grey out invalid options" operation; no other solver has it as a built-in.
-- `unsat_core()` over named assumptions (`assert_and_track`) — cores cite business-rule names the agent can verbalize; a simple deletion loop shrinks to a true MUS.
-- `Optimize` for cheapest valid completion. MIT license, single pip wheel, and an officially maintained WASM/TypeScript twin (`z3-solver` on npm) if solving ever moves client-side.
+Verdict: *Z3, through its Python bindings*. It is the only candidate that covers all three defining operations natively, in one persistent solver session.
 
-Runners-up: OR-Tools CP-SAT (best optimizer, but stateless per solve — valid-domain computation needs N re-solves; cores not guaranteed minimal); clingo/ASP (elegant brave-consequences propagation, weak explanation story, ASP learning curve); CPMpy (Apache 2.0 modeling layer targeting both CP-SAT and Z3, ships MUS/QuickXplain tools — worth knowing if hand-rolling MUS ever feels tedious); flamapy/BDD (the Configit-style industrial pattern; overkill at prototype scale). MiniZinc and python-constraint fail the interactivity requirements.
+- Assumption-based `check()` re-solves incrementally in under a millisecond. Nothing is retracted, and learned clauses are kept.
+- `Solver.consequences(assumptions, terms)` returns, in one call, every option value forced true or false under the current choices. That is exactly the grey-out operation, and no other solver has it built in.
+- `unsat_core()` over named assumptions (`assert_and_track`) returns cores that cite business-rule names the agent can verbalize. A simple deletion loop shrinks a core to a true minimal unsatisfiable subset (MUS).
+- `Optimize` finds the cheapest valid completion.
 
-Reference: Programming Z3 §4.6 (consequences, cores) — https://z3prover.github.io/papers/programmingz3.html
+Z3 also carries an MIT license, installs as a single pip wheel, and has an officially maintained WebAssembly and TypeScript twin (`z3-solver` on npm) should solving ever move to the client.
 
-Interaction consequence: the three operations above are what the interface may lean on and the ceiling on what it may claim ([../discovery/problem-framing.md](../discovery/problem-framing.md) §3, *Technology*; [every refusal names the rules that caused it](../discovery/principles/refusals-name-their-rules.md)).
+Runners-up:
+
+- *OR-Tools CP-SAT* has the best optimizer of the set, but it is stateless per solve. Computing valid domains costs N re-solves, and its cores aren't guaranteed minimal.
+- *clingo and ASP* propagate brave consequences elegantly, but the explanation story is weak and the learning curve is steep.
+- *CPMpy* is an Apache 2.0 modeling layer targeting both CP-SAT and Z3, shipping MUS and QuickXplain tools. Worth knowing about if hand-rolling MUS ever becomes tedious.
+- *flamapy and BDD* are the Configit-style industrial pattern, and overkill at prototype scale.
+
+MiniZinc and python-constraint fail the interactivity requirements.
+
+Reference: [Programming Z3 §4.6, on consequences and cores](https://z3prover.github.io/papers/programmingz3.html).
+
+Interaction consequence: those three operations are what the interface may lean on, and the ceiling on what it may claim ([problem framing](../discovery/problem-framing.md), *Contextual statements*, *Technology*; [every refusal names the rules that caused it](../discovery/principles/refusals-name-their-rules.md)).
 
 ## Related
 
-- [configuration-field.md](configuration-field.md) — the CSP formulation Z3 is solving
-- [sustainability-prior-art.md](footprint/sustainability-prior-art.md) — green value-ordering, an unexploited Z3-level idea
+- [The CSP formulation Z3 is solving](configuration-field.md)
+- [Green value-ordering, an unexploited Z3-level idea](footprint/sustainability-prior-art.md)

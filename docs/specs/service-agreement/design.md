@@ -1,10 +1,10 @@
 # Elevator as a service — design
 
-The service frame is almost entirely model data plus pricing arithmetic. The solver encoding, the tool surface, the card-dispatch machinery and thread resumption carry no service-specific logic; what the frame determines is what the variables mean, what a price is, and how the agent talks.
+The service frame is almost entirely model data plus pricing arithmetic. The solver encoding, the tool surface, the card-dispatch machinery and thread resumption carry no service-specific logic. What the frame determines is what the variables mean, what a price is, and how the agent talks.
 
 ## Service variables are ordinary variables in the leading group
 
-The `agreement` group opens `elevator.json`. The [canvas](../agreement-document/design.md) maps that group onto the operative terms and the hardware groups onto the schedules, and renders in model order within each layer, so outcome terms stand above the derived hardware spec — the requirements' grouping criterion falls out of the data plus that one mapping, with no per-variable layout decision.
+The `agreement` group opens `elevator.json`. The [canvas](../agreement-document/design.md) maps that group onto the operative terms and the hardware groups onto the schedules, and renders in model order within each layer, so outcome terms stand above the derived hardware spec. The requirements' grouping criterion falls out of the data plus that one mapping, with no per-variable layout decision.
 
 | Variable | Options | Priced |
 |---|---|---|
@@ -13,65 +13,65 @@ The `agreement` group opens `elevator.json`. The [canvas](../agreement-document/
 | `usage_profile` | low / medium / heavy — labels in traffic terms ("a few trips an hour") | EUR/month |
 | `connectivity_package` | none / connected | EUR/month |
 
-Coupling constraints continue the R-series:
+Coupling constraints continue the R-series.
 
-- *R31* — premium service level requires the connectivity package: the uptime promise depends on remote monitoring.
-- *R32* — heavy usage excludes the hydraulic drive (the light-duty platform), the requirements' second worked example.
-- *R33* — building type bounds plausible usage profiles (table): residential low–medium, hotel medium, office medium–heavy, retail medium–heavy, hospital heavy. The mapping approximates the ISO 25745 usage categories in the [footprint spec](../environmental-footprint/requirements.md) decision 5, and reconciles exactly when that spec introduces its energy tables — `usage_profile` is the shared variable, introduced here.
-- *R34* — hospitals require at least the standard service level.
+- *R31*: a premium service level requires the connectivity package, because the uptime promise depends on remote monitoring.
+- *R32*: heavy usage excludes the hydraulic drive, the light-duty platform, which is the requirements' second worked example.
+- *R33*: building type bounds plausible usage profiles, as a table — residential low to medium, hotel medium, office medium to heavy, retail medium to heavy, hospital heavy. The mapping approximates the ISO 25745 usage categories in decision 5 of the [footprint spec](../environmental-footprint/requirements.md), and reconciles exactly when that spec introduces its energy tables. `usage_profile` is the shared variable, introduced here.
+- *R34*: hospitals require at least the standard service level.
 
-To the solver these are enum variables like any other: `valid_options`, `explain`, `repairs` and the draft machinery works over them unchanged, which is what the requirements' ripple-across-terms-and-hardware criterion relies on.
+To the solver these are enum variables like any other, so `valid_options`, `explain`, `repairs` and the draft machinery work over them unchanged, which is what the requirements' ripple-across-terms-and-hardware criterion relies on.
 
 ## Pricing: cost basis amortized to a monthly fee
 
-Hardware options carry a `price` scalar meaning *cost basis* (EUR) — an input to the monthly derivation, never customer-facing. Agreement options carry `monthly_price` (EUR/month); the loader rejects an option with both. A top-level `pricing` block holds `financing_factor`, `term_months` (map over `contract_term` values), and `default_term`.
+Hardware options carry a `price` scalar meaning *cost basis* in EUR, an input to the monthly derivation and never customer-facing. Agreement options carry `monthly_price` in EUR per month, and the loader rejects an option with both. A top-level `pricing` block holds `financing_factor`, `term_months` as a map over `contract_term` values, and `default_term`.
 
-Every customer-facing figure — candidate totals, drafts, comparisons, option deltas — is EUR/month. The option-level cost basis stays in the data because the fee is derived by amortizing hardware over the term:
+Every customer-facing figure — candidate totals, drafts, comparisons, option deltas — is EUR per month. The option-level cost basis stays in the data because the fee is derived by amortizing hardware over the term:
 
 ```
 monthly(assignment) = round(Σ hardware price × financing_factor / months(contract_term))
                     + Σ monthly_price(service_level, usage_profile, connectivity_package)
 ```
 
-`financing_factor` (illustrative, ~1.25) stands in for installation, financing and margin — one named number in the model data, not in code. All numbers stay illustrative per the requirements' out-of-scope list.
+`financing_factor`, illustrative at about 1.25, stands in for installation, financing and margin — one named number in the model data rather than in code. All numbers stay illustrative, per the requirements' out-of-scope list.
 
-*Rejected alternative:* authoring monthly prices directly on hardware options. It breaks amortization — changing the contract term would not change the fee — and fails the acceptance criterion that derives the fee from term, service level and usage.
+*Rejected alternative:* authoring monthly prices directly on hardware options. It breaks amortization, because changing the contract term wouldn't change the fee, and it fails the acceptance criterion that derives the fee from term, service level and usage.
 
 ## Solver: monthly objective by per-term iteration
 
-`complete()` returns `(assignment, monthly)`. For a *fixed* term, minimizing the monthly fee is equivalent to minimizing `Σ hardware price × financing_factor + months × Σ monthly_price` — separable per option, so it is the existing If-sum objective with different weights. When the term is unchosen, the term options the solver hasn't ruled out are iterated (≤ 3 `Optimize` solves), keeping the lowest monthly; ties go to the shorter term (less commitment).
+`complete()` returns `(assignment, monthly)`. For a *fixed* term, minimizing the monthly fee is equivalent to minimizing `Σ hardware price × financing_factor + months × Σ monthly_price`, which is separable per option, so it is the existing If-sum objective with different weights. When the term is unchosen, the term options the solver hasn't ruled out are iterated, at most three `Optimize` solves, keeping the lowest monthly, with ties going to the shorter term, which is less commitment.
 
 *Rejected alternative:* one `Optimize` objective containing the division. Z3 integer division makes the objective nonlinear and harder to trust, for no benefit at three term options.
 
-The completion objective is "cheapest", meaning cheapest-monthly. Per the requirements this is the disclosed known violation of [trade-offs are shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md) until footprint lands — so every surface that shows the candidate names its objective (see Frontend) rather than presenting it as neutral.
+The completion objective is "cheapest", meaning cheapest monthly. Per the requirements this is the disclosed known violation of [trade-offs are shown as a pair](../../discovery/principles/trade-offs-shown-as-a-pair.md) until footprint lands, so every surface that shows the candidate names its objective, as *Frontend* describes, rather than presenting it as neutral.
 
 ## State and tools
 
-The tool surface carries no service-specific shape, per the requirements. Semantics in `agent/src/configuration.py`:
+The tool surface carries no service-specific shape, per the requirements. The semantics live in `agent/src/configuration.py`.
 
-- `Candidate.price` and `Frame.price` mean EUR/month. The key names predate the service frame and are deliberately kept: renaming would break threads persisted by [thread resumption](../nonlinear-interaction/design.md). A thread saved under the earlier capex frame shows its stale figure until its next completion, which is accepted as appropriate for a prototype.
-- `draft_comparison` (`frame_comparison` until [parallel-drafts](../parallel-drafts/design.md)): per-side option deltas are monthly deltas computed at *each side's own term* (two agreements may differ in term); `priceDelta` is a monthly delta. This keeps the requirements' comparison criterion correct when the term itself is a difference.
-- `build_ask_payload` option prices are monthly deltas at the term in effect (chosen, else the candidate's, else `default_term`).
-- `describe_product` prints agreement options with their /month prices and hardware options as monthly deltas at `default_term`, marked as such — the LLM never sees a capex figure it could leak.
+- `Candidate.price` and `Frame.price` mean EUR per month. The key names predate the service frame and are deliberately kept, because renaming would break threads persisted by [thread resumption](../nonlinear-interaction/design.md). A thread saved under the earlier capex frame shows its stale figure until its next completion, which is accepted as appropriate for a prototype.
+- `draft_comparison`, which was `frame_comparison` until [parallel-drafts](../parallel-drafts/design.md), computes per-side option deltas as monthly deltas at *each side's own term*, because two agreements may differ in term, and `priceDelta` is a monthly delta. This keeps the requirements' comparison criterion correct when the term itself is a difference.
+- `build_ask_payload` option prices are monthly deltas at the term in effect: chosen, else the candidate's, else `default_term`.
+- `describe_product` prints agreement options with their per-month prices and hardware options as monthly deltas at `default_term`, marked as such, so the LLM never sees a capex figure it could leak.
 
 ## System prompt
 
-Framed around the service offering: elicitation targets the building and its outcomes (building type, floors/traffic, budget *per month*, uptime expectation, how long they want to commit); proposals are presented as service agreements ("€X/month over the 10-year term"); mid-contract changes go through `revise_choices` like any other revision. One explicit prohibition mirrors the acceptance criterion: never quote a one-off capex figure. Card copy and prompt wording stay coupled (`card-dispatch.ts` contract).
+The prompt is framed around the service offering. Elicitation targets the building and its outcomes: building type, floors and traffic, budget *per month*, uptime expectation, and how long they want to commit. Proposals are presented as service agreements, "€X/month over the 10-year term". Mid-contract changes go through `revise_choices` like any other revision. One explicit prohibition mirrors the acceptance criterion: never quote a one-off capex figure. Card copy and prompt wording stay coupled, under the `card-dispatch.ts` contract.
 
 ## Frontend
 
-- `src/lib/configurator.ts`: types for the `pricing` block; `formatMonthly()`; `monthlyDelta(option, termMonths)` — the single place the frontend re-derives money, from the same imported JSON the agent reads.
-- Canvas (`config-canvas/index.tsx`): no per-variable layout logic — the group-to-layer mapping does it. The header is the agreement header: monthly figure with its objective named ("cheapest completion"), title "Service agreement". The existing provenance badges (you/agent/auto/proposed) carry the requirements' provenance clause. They carry three of the four provenance strata in [the conversation move inventory](../../discovery/models/Conversation%20moves.md) §1 — you/agent/auto for user-chosen, agent-chosen and solver-forced; *proposed* marks the candidate's suggestion on an open row, which is not a stratum, and the model's fourth stratum, *derived*, has no badge of its own — derived hardware renders as forced or proposed depending on how it was computed.
-- `draft-comparison.tsx`, `ask-choices.tsx`: render /month values from the payloads; no structural difference from other cards.
+- `src/lib/configurator.ts` holds types for the `pricing` block, `formatMonthly()`, and `monthlyDelta(option, termMonths)`, which is the single place the frontend re-derives money, from the same imported JSON the agent reads.
+- The canvas, in `config-canvas/index.tsx`, has no per-variable layout logic, because the group-to-layer mapping does it. The header is the agreement header: the monthly figure with its objective named, "cheapest completion", under the title "Service agreement". The existing provenance badges — you, agent, auto, proposed — carry the requirements' provenance clause. They carry three of the four provenance strata in [the conversation move inventory](../../discovery/models/Conversation%20moves.md), *The board and the pieces*: you, agent and auto, for user-chosen, agent-chosen and solver-forced. *Proposed* marks the candidate's suggestion on an open row, which isn't a stratum, and the model's fourth stratum, *derived*, has no badge of its own, because derived hardware renders as forced or proposed depending on how it was computed.
+- `draft-comparison.tsx` and `ask-choices.tsx` render per-month values from the payloads, with no structural difference from other cards.
 
 ## Validation and tests
 
-- `agent/src/solver/model.py`: parses `monthly_price` and the `pricing` block; loader errors when `term_months` does not cover the `contract_term` domain exactly, or when an option carries both `price` and `monthly_price`. The monthly arithmetic (`ProductModel.monthly`, `monthly_option_delta`) lives here too, with *half-up* rounding rather than Python's banker's rounding — the frontend re-derives deltas with `Math.round`, and the two must agree on ties.
-- `validate.py`: the agreement variables ride the existing satisfiability and dead-option checks automatically (the requirements' first criterion). Scenarios: premium forces connectivity (R31); heavy usage + hydraulic drive is unsat with R32 in the explanation; hospital + basic service is unsat (R34); pricing sanity — for identical choices the longest term yields the lowest monthly.
-- pytest: `complete()` term iteration and tie-break; monthly arithmetic; draft comparison across two different terms; ask-payload monthly deltas; loader pricing errors.
-- Conversation and UI behavior: browser pass via `npm run dev` (constitution #9) — fresh outcome-first conversation to a monthly proposal, a mid-contract revision rippling across service and hardware, a two-agreement comparison.
+- `agent/src/solver/model.py` parses `monthly_price` and the `pricing` block, and the loader errors when `term_months` doesn't cover the `contract_term` domain exactly, or when an option carries both `price` and `monthly_price`. The monthly arithmetic, `ProductModel.monthly` and `monthly_option_delta`, lives here too, with *half-up* rounding rather than Python's banker's rounding, because the frontend re-derives deltas with `Math.round` and the two have to agree on ties.
+- `validate.py`: the agreement variables ride the existing satisfiability and dead-option checks automatically, which is the requirements' first criterion. The scenarios are premium forcing connectivity (R31); heavy usage plus the hydraulic drive being unsat with R32 in the explanation; hospital plus basic service being unsat (R34); and a pricing check, that for identical choices the longest term yields the lowest monthly.
+- pytest covers `complete()` term iteration and tie-break, the monthly arithmetic, a draft comparison across two different terms, ask-payload monthly deltas, and the loader pricing errors.
+- Conversation and UI behavior get a browser pass through `npm run dev` (constitution #9): a fresh outcome-first conversation to a monthly proposal, a mid-contract revision rippling across service and hardware, and a two-agreement comparison.
 
 ## Notes from implementation
 
-- States persisted under the earlier capex frame lack the agreement variables entirely, not just a stale price; the comparison renders a missing side as "—" at delta 0 instead of crashing, and `months_of` falls back to the default term when an assignment has no `contract_term`.
-- Browser pass (office → hospital conversion scenario): the R33 repair card carried the ripple across usage profile, accessibility, and platform in one card; applying it moved the agreement from €1,365/month to €1,883/month atomically, and the frame comparison priced each side's hardware at its own term with a correct €518/month delta. The agent kept every quoted figure monthly, unprompted.
+- States persisted under the earlier capex frame lack the agreement variables entirely, not only a stale price. The comparison renders a missing side as "—" at delta 0 instead of crashing, and `months_of` falls back to the default term when an assignment has no `contract_term`.
+- Browser pass, on the office-to-hospital conversion scenario: the R33 repair card carried the ripple across usage profile, accessibility and platform in one card. Applying it moved the agreement from €1,365/month to €1,883/month atomically, and the frame comparison priced each side's hardware at its own term with a correct €518/month delta. The agent kept every quoted figure monthly, unprompted.

@@ -1,13 +1,13 @@
 # The consensus architecture — what the literature and the repo agree on
 
-Status: synthesis, 2026-08, and the shape the prototype was built to (every [implemented spec](../specs/README.md)). Split from the former `docs/research-and-outline.md` §4. Kept as a note because it is the one drawing of how the layers fit; the design principles that accompanied it were decisions, and they now live in [../discovery/direction.md](../discovery/direction.md) §2 as interaction principles with tests.
+Status: synthesis, 2026-08, and the shape the prototype was built to, across every [implemented spec](../specs/README.md). It is kept as a note because it is the one drawing of how the layers fit. The design principles that accompanied it were decisions, and they live in [direction](../discovery/direction.md), *Principles*, as interaction principles with tests.
 
 The consensus from both the research and the repo's existing pattern:
 
 ```
 ┌───────────────────────────── Next.js ─────────────────────────────┐
 │  Chat (elicitation, explanation,        Canvas (configuration      │
-│  generated in-chat controls via A2UI)   spec sheet, direct edit)   │
+│  generated in-chat controls, A2UI)      spec sheet, direct edit)   │
 └──────────────────────┬────────────────────────┬───────────────────┘
                        │   shared agent state (CopilotKit v2)
 ┌──────────────────────┴────────────────────────┴───────────────────┐
@@ -21,9 +21,9 @@ The consensus from both the research and the repo's existing pattern:
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-Each layer traces to a thread: the split of validity from language is the settled position of the configuration literature ([interaction-literature.md](interaction-literature.md), thread C); chat-plus-canvas rather than chat-only comes from the hybrid-UI evidence (thread D); the solver operations the agent's tools expose are the ones Z3 supports natively ([solver-choice.md](solver-choice.md)).
+Each layer traces to a thread. The split of validity from language is the settled position of the configuration literature ([interaction literature](interaction-literature.md), thread C). Chat plus canvas, rather than chat alone, comes from the hybrid-UI evidence in thread D. And the solver operations the agent's tools expose are the ones Z3 supports natively ([solver choice](solver-choice.md)).
 
 ## Related
 
-- [../discovery/direction.md](../discovery/direction.md) §2 — the principles this sketch used to carry, restated and expanded
-- [../specs/README.md](../specs/README.md) — the same architecture as built, spec by spec
+- [The principles this sketch used to carry, restated and expanded](../discovery/direction.md)
+- [The same architecture as built, spec by spec](../specs/README.md)

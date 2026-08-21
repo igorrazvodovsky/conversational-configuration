@@ -2,8 +2,9 @@
 
 /**
  * Schedules — the derived hardware (docs/specs/agreement-document; canvas
- * anatomy §3). The remaining groups as the sheet they have always been, one
- * row per variable, demoted to collapsible annexes and collapsed by default.
+ * anatomy, *The anatomy*). The remaining groups as the sheet they have always
+ * been, one row per variable, demoted to collapsible annexes and collapsed by
+ * default.
  *
  * This is where the genre wins the scale argument the flat sheet loses: a real
  * platform's parameters cannot fit one screen, but annexes collapse. It is also

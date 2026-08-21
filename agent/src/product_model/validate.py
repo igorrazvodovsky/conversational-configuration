@@ -238,7 +238,7 @@ def main() -> int:
     failures += not ok
 
     # Calibration: the 630 kg / 12 m reference configuration reconciles to the
-    # ~8.5 t A1–A3 EPD anchor (embodied-carbon.md §2) within ±25%.
+    # ~8.5 t A1–A3 EPD anchor (embodied-carbon.md, the calibration step) within ±25%.
     reference = REFERENCE
     missing = set(model.variables) - set(reference)
     ok = not missing
