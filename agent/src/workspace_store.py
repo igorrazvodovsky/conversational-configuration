@@ -14,6 +14,7 @@ import copy
 import json
 import os
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -143,6 +144,23 @@ def _write(record: dict) -> None:
     _path(record["id"]).write_text(json.dumps(record, indent=2))
 
 
+@contextmanager
+def _mutating(workspace_id: str, thread_id: str | None = None):
+    """Read a workspace, yield it to be changed, then stamp and persist it.
+
+    Every write below goes through here, so "a change touches the record and
+    lands on disk" is structural rather than six repetitions of the same three
+    lines. A body that raises writes nothing — the store refuses a move before
+    the record is touched (an unknown draft name, an empty one), and a refusal
+    that had already stamped the record would report activity that never
+    happened.
+    """
+    record = get_workspace(workspace_id)
+    yield record
+    _stamp(record, thread_id)
+    _write(record)
+
+
 def snapshot(configuration: dict) -> dict:
     """A configuration as history keeps it (docs/specs/undo): everything except
     `statuses`, which the solver re-derives on restore. Dropping the derived
@@ -196,10 +214,8 @@ def rename_workspace(workspace_id: str, name: str) -> dict:
     name = name.strip()
     if not name:
         raise ValueError("workspace needs a non-empty name")
-    record = get_workspace(workspace_id)
-    record["name"] = name
-    record["updatedAt"] = _now()
-    _write(record)
+    with _mutating(workspace_id) as record:
+        record["name"] = name
     return record
 
 
@@ -241,18 +257,16 @@ def save_configuration(
     routing a switch through here would burn an undo slot and let a later undo
     walk backwards into a state belonging to another document.
     """
-    record = get_workspace(workspace_id)
-    draft = current_draft(record)
-    history = _history(record)
-    if configuration != draft["configuration"]:
-        history = {
-            "past": (history["past"] + [snapshot(draft["configuration"])])[-HISTORY_DEPTH:],
-            "future": [],
-        }
-    draft["history"] = history
-    draft["configuration"] = configuration
-    _stamp(record, thread_id)
-    _write(record)
+    with _mutating(workspace_id, thread_id) as record:
+        draft = current_draft(record)
+        history = _history(record)
+        if configuration != draft["configuration"]:
+            history = {
+                "past": (history["past"] + [snapshot(draft["configuration"])])[-HISTORY_DEPTH:],
+                "future": [],
+            }
+        draft["history"] = history
+        draft["configuration"] = configuration
     return record
 
 
@@ -272,19 +286,17 @@ def commit_restore(
     solver by the caller; the store stays out of that. The history walked is
     the current draft's own.
     """
-    record = get_workspace(workspace_id)
-    draft = current_draft(record)
-    history = _history(record)
-    consumed, kept = ("past", "future") if direction == "undo" else ("future", "past")
-    if not history[consumed]:
-        raise ValueError(f"nothing to {direction}")
-    draft["history"] = {
-        consumed: history[consumed][:-1],
-        kept: history[kept] + [snapshot(draft["configuration"])],
-    }
-    draft["configuration"] = configuration
-    _stamp(record, thread_id)
-    _write(record)
+    with _mutating(workspace_id, thread_id) as record:
+        draft = current_draft(record)
+        history = _history(record)
+        consumed, kept = ("past", "future") if direction == "undo" else ("future", "past")
+        if not history[consumed]:
+            raise ValueError(f"nothing to {direction}")
+        draft["history"] = {
+            consumed: history[consumed][:-1],
+            kept: history[kept] + [snapshot(draft["configuration"])],
+        }
+        draft["configuration"] = configuration
     return record
 
 
@@ -307,29 +319,25 @@ def fork_draft(workspace_id: str, name: str, thread_id: str | None = None) -> di
     name = name.strip()
     if not name:
         raise ValueError("a draft needs a non-empty name")
-    record = get_workspace(workspace_id)
-    if find_draft(record, name) is not None:
-        raise ValueError(
-            f"this elevator already has a draft named {name!r} — pick another name"
+    with _mutating(workspace_id, thread_id) as record:
+        if find_draft(record, name) is not None:
+            raise ValueError(
+                f"this elevator already has a draft named {name!r} — pick another name"
+            )
+        source = current_draft(record)
+        draft = _new_draft(
+            name, copy.deepcopy(source["configuration"]), forked_from=source["id"]
         )
-    source = current_draft(record)
-    draft = _new_draft(
-        name, copy.deepcopy(source["configuration"]), forked_from=source["id"]
-    )
-    record["drafts"].append(draft)
-    record["currentDraftId"] = draft["id"]
-    _stamp(record, thread_id)
-    _write(record)
+        record["drafts"].append(draft)
+        record["currentDraftId"] = draft["id"]
     return record
 
 
 def switch_draft(workspace_id: str, name: str, thread_id: str | None = None) -> dict:
     """Make another draft the current one. Nothing is written into any
     configuration, so no value is re-attributed by the move."""
-    record = get_workspace(workspace_id)
-    record["currentDraftId"] = draft_named(record, name)["id"]
-    _stamp(record, thread_id)
-    _write(record)
+    with _mutating(workspace_id, thread_id) as record:
+        record["currentDraftId"] = draft_named(record, name)["id"]
     return record
 
 
@@ -337,20 +345,18 @@ def discard_draft(workspace_id: str, name: str, thread_id: str | None = None) ->
     """Remove a draft that is not the current one. The only draft of a
     workspace is always the current one, so the last draft is refused by the
     same check that refuses the one being worked on."""
-    record = get_workspace(workspace_id)
-    draft = draft_named(record, name)
-    if draft["id"] == record["currentDraftId"]:
-        raise ValueError(
-            f"{draft['name']!r} is the draft being worked on"
-            + (
-                " and the only one this elevator has"
-                if len(record["drafts"]) == 1
-                else " — switch to another draft before discarding this one"
+    with _mutating(workspace_id, thread_id) as record:
+        draft = draft_named(record, name)
+        if draft["id"] == record["currentDraftId"]:
+            raise ValueError(
+                f"{draft['name']!r} is the draft being worked on"
+                + (
+                    " and the only one this elevator has"
+                    if len(record["drafts"]) == 1
+                    else " — switch to another draft before discarding this one"
+                )
             )
-        )
-    record["drafts"] = [d for d in record["drafts"] if d["id"] != draft["id"]]
-    _stamp(record, thread_id)
-    _write(record)
+        record["drafts"] = [d for d in record["drafts"] if d["id"] != draft["id"]]
     return record
 
 
@@ -359,10 +365,8 @@ def attach_rfq(workspace_id: str, document_text: str) -> dict:
     (docs/specs/rfq-reconciliation). The raw text is reference material, not
     working state: it never enters the shared configuration, and deleting
     every conversation leaves it untouched."""
-    record = get_workspace(workspace_id)
-    record["rfq_document"] = {"text": document_text, "ingestedAt": _now()}
-    record["updatedAt"] = _now()
-    _write(record)
+    with _mutating(workspace_id) as record:
+        record["rfq_document"] = {"text": document_text, "ingestedAt": _now()}
     return record
 
 

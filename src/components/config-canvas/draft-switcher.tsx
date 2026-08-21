@@ -18,7 +18,6 @@
  * a second subscription.
  */
 
-import { useEffect, useState } from "react";
 import { ChevronDownIcon, Columns2, CopyPlus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { DraftSummary, formatMonthly } from "@/lib/configurator";
 
 export function DraftSwitcher({
@@ -51,8 +51,7 @@ export function DraftSwitcher({
   onCompare: (name: string) => void;
   onDiscard: (name: string) => void;
 }) {
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
+  const hydrated = useHydrated();
 
   const current =
     drafts.find((d) => d.id === currentDraftId) ?? drafts[0] ?? null;

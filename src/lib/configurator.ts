@@ -137,6 +137,27 @@ export interface ResolvedValue {
   kind: ValueKind;
 }
 
+/** An agreement with nothing in it — what the canvas renders before agent
+ * state arrives. The agent's own `empty_configuration()` is the authority on
+ * the shape; this is its frontend counterpart. */
+export function emptyConfiguration(): Configuration {
+  return { choices: {}, statuses: {}, candidate: null };
+}
+
+/**
+ * Whether the agreement says anything yet: nothing recorded and nothing
+ * proposed is untouched. One test, because two surfaces turn on it — the
+ * canvas shows its empty-document notice, and the suggestion strip decides
+ * between entry prompts and moves on this agreement — and they may not
+ * disagree about what an untouched agreement is.
+ *
+ * A document-seeded agreement is not untouched: its requirements are choices,
+ * made upstream of the conversation (docs/specs/rfq-reconciliation).
+ */
+export function hasAnything(config: Configuration): boolean {
+  return Object.keys(config.choices).length > 0 || config.candidate !== null;
+}
+
 /**
  * What the agreement currently says for a variable, and on whose authority:
  * the recorded choice, else the value the rules force, else the candidate's.
@@ -267,6 +288,13 @@ export function optionLabel(variable: string, value: string): string {
   return modelOption(variable, value)?.label ?? value;
 }
 
+/** A variable's display label, falling back to its name — so a model that
+ * grows a variable the interface has not been told about still reads as
+ * something rather than as nothing. */
+export function variableLabel(variable: string): string {
+  return variablesByName.get(variable)?.label ?? variable;
+}
+
 /** The situational gloss for a value, if the model carries one. */
 export function optionNote(variable: string, value: string): string | undefined {
   return modelOption(variable, value)?.note;
@@ -359,7 +387,7 @@ export function choiceMessage(
   selections: { variable: string; value: string }[],
 ): string {
   const lines = selections.map(({ variable, value }) => {
-    const varLabel = variablesByName.get(variable)?.label ?? variable;
+    const varLabel = variableLabel(variable);
     return `Set ${varLabel} to ${optionLabel(variable, value)} (${variable}=${value})`;
   });
   return lines.join("\n");
@@ -395,7 +423,7 @@ export function repairMessage(
   const changePart = changes
     .map(
       ({ variable, value }) =>
-        `set ${variablesByName.get(variable)?.label ?? variable} to ${optionLabel(variable, value)} (${variable}=${value})`,
+        `set ${variableLabel(variable)} to ${optionLabel(variable, value)} (${variable}=${value})`,
     )
     .join("; ");
   return dropPart
@@ -419,7 +447,7 @@ export function acceptOfferedMessage(
   variable: string,
   offered: string,
 ): string {
-  const label = variablesByName.get(variable)?.label ?? variable;
+  const label = variableLabel(variable);
   return `${RECONCILE_PREFIX}accept the offered ${label}, ${optionLabel(variable, offered)} (${variable}=${offered})`;
 }
 
@@ -427,12 +455,12 @@ export function reviseRequirementMessage(
   variable: string,
   value: string,
 ): string {
-  const label = variablesByName.get(variable)?.label ?? variable;
+  const label = variableLabel(variable);
   return `${RECONCILE_PREFIX}change ${label} to ${optionLabel(variable, value)} (${variable}=${value})`;
 }
 
 export function leaveOpenMessage(variable: string): string {
-  const label = variablesByName.get(variable)?.label ?? variable;
+  const label = variableLabel(variable);
   return `${RECONCILE_PREFIX}leave ${label} (${variable}) open`;
 }
 
@@ -509,7 +537,7 @@ export function spokenText(content: string): string {
       /([a-z_]+)=([a-z0-9_]+)/g,
       (whole, variable: string, value: string) =>
         variablesByName.has(variable)
-          ? `${variablesByName.get(variable)!.label} = ${optionLabel(variable, value)}`
+          ? `${variableLabel(variable)} = ${optionLabel(variable, value)}`
           : whole,
     );
 }

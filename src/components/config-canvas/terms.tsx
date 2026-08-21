@@ -20,7 +20,7 @@ import {
   formatMonthly,
   layerVariables,
   optionLabel,
-  variablesByName,
+  variableLabel,
 } from "@/lib/configurator";
 import {
   Popover,
@@ -35,7 +35,6 @@ import {
   LAYER_HEADING,
   ProvenanceBadge,
   ValueToken,
-  displayOf,
   unmetFor,
 } from "./document-parts";
 
@@ -51,7 +50,7 @@ function TermClause({
   index: number;
 }) {
   const unmet = unmetFor(doc, variable);
-  const label = variablesByName.get(variable)?.label ?? variable;
+  const label = variableLabel(variable);
 
   return (
     <Clause

@@ -16,6 +16,7 @@
  */
 import {
   Configuration,
+  hasAnything,
   optionLabel,
   productModel,
   registerEntries,
@@ -84,16 +85,6 @@ type MoveFamily = (
   config: Configuration,
   asked: ReadonlySet<string>,
 ) => SuggestedMove[] | null;
-
-/**
- * The same test the canvas applies: an agreement is untouched when nothing has
- * been recorded and nothing has been proposed. A document-seeded agreement is
- * not untouched — its requirements are choices, made upstream of the
- * conversation (docs/specs/rfq-reconciliation).
- */
-function hasAnything(config: Configuration): boolean {
-  return Object.keys(config.choices).length > 0 || config.candidate !== null;
-}
 
 /**
  * The customer's own document, still unanswered on one of its clauses. First in

@@ -26,7 +26,7 @@ import {
   Configuration,
   liveValue,
   optionLabel,
-  variablesByName,
+  variableLabel,
 } from "@/lib/configurator";
 import {
   CarGeometry,
@@ -78,7 +78,7 @@ function CameraRig({
  * drawn from defaults would be a picture of an agreement nobody made. */
 function MissingValues({ config }: { config: Configuration }) {
   const missing = GEOMETRY_VARIABLES.filter((v) => !liveValue(config, v)).map(
-    (v) => (variablesByName.get(v)?.label ?? v).toLowerCase(),
+    (v) => variableLabel(v).toLowerCase(),
   );
   return (
     <Empty className="h-full">

@@ -31,8 +31,9 @@ Serves discovery principle [the canvas holds the state and the chat explains it]
 
 ### Running them
 
-- GIVEN the repo, WHEN a developer runs `npm test`, THEN the frontend checks run; WHEN they run `npm run typecheck`, THEN the configurator's TypeScript is checked.
-- GIVEN a push or a pull request, WHEN CI runs, THEN it runs the Python suite, the model validator, the frontend checks and the typecheck — and not the conversation checks, which need a provider key and cost money.
+- GIVEN the repo, WHEN a developer runs `npm test`, THEN the frontend checks run; WHEN they run `npm run typecheck`, THEN the configurator's TypeScript is checked; WHEN they run `npm run lint`, THEN what the typecheck cannot see is checked — an unused binding above all.
+- GIVEN a linter over code whose specs rule *for* patterns a default config forbids, WHEN it runs, THEN it reports nothing on them, so a clean run means something and a finding is always worth fixing.
+- GIVEN a push or a pull request, WHEN CI runs, THEN it runs the Python suite, the model validator, the frontend checks, the typecheck and the lint — and not the conversation checks, which need a provider key and cost money.
 
 ## Out of scope
 

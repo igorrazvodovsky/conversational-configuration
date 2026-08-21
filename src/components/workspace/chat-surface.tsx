@@ -28,6 +28,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useHydrated } from "@/hooks/use-hydrated";
 import type { WorkspaceRecord } from "@/lib/workspaces";
 import { ConversationMenu } from "./conversation-menu";
 
@@ -136,6 +137,8 @@ export function ChatSurfaceHeader({
   onSelectConversation: (threadId: string) => void;
   onNewConversation: () => void;
 }) {
+  // Both menus in this header mount a tick after hydration, for the reason
+  // `useHydrated` records.
   const hydrated = useHydrated();
 
   return (
@@ -211,22 +214,6 @@ function ChatModeControls({
       </Button>
     </div>
   );
-}
-
-/**
- * Both menus in this header are mounted after hydration, and this is not a
- * styling nicety.
- * A Radix menu present during the hydration pass shifts the `useId` values of
- * the *whole* page — every canvas disclosure comes back with a different id
- * than the server sent, and React reports a mismatch on every load. This is the
- * same hazard `workspace-split.tsx` documents, and the same answer: keep the
- * hydrated tree off `useId`. The server and the first client render agree on a
- * plain button; the menu takes over a tick later, before anyone can click it.
- */
-function useHydrated() {
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
-  return hydrated;
 }
 
 /** The only affordance left when the chat is away. */

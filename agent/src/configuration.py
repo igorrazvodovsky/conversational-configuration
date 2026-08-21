@@ -974,6 +974,13 @@ def _current_thread_id() -> str | None:
         return None
 
 
+def _draft_price(draft: dict) -> int | None:
+    """A draft's monthly fee, or None when it has no priced candidate — routine,
+    since `_keep_candidate` drops the candidate as soon as a choice diverges
+    from it, so a draft edited since its last completion has no price."""
+    return (draft["configuration"].get("candidate") or {}).get("price")
+
+
 def _mirrors(record: dict) -> dict:
     """The chrome the canvas renders from, read off the record that was just
     written: how far the current draft's history reaches, which draft is
@@ -988,7 +995,7 @@ def _mirrors(record: dict) -> dict:
             {
                 "id": d["id"],
                 "name": d["name"],
-                "price": (d["configuration"].get("candidate") or {}).get("price"),
+                "price": _draft_price(d),
             }
             for d in record["drafts"]
         ],
@@ -1216,6 +1223,25 @@ def _no_drafts(runtime: ToolRuntime) -> Command:
                            "so it has no drafts.")
 
 
+def _moved(runtime: ToolRuntime, move, name: str) -> dict | Command:
+    """Apply one structural move to the attached workspace.
+
+    Returns the record the move wrote, or — when there is no workspace to move,
+    or the store refuses the move — the Command that answers for it, which the
+    caller returns as its own. The three moves differ only in what they say
+    afterwards, and each says it at the top level of its own tool, where the
+    sentence stays visible: tool wording is coupled to the agent prompt and has
+    no automated check over it.
+    """
+    workspace_id = runtime.state.get("workspace_id")
+    if not workspace_id:
+        return _no_drafts(runtime)
+    try:
+        return move(workspace_id, name, _current_thread_id())
+    except (KeyError, ValueError) as e:
+        return _error(runtime, e)
+
+
 @tool("fork_draft")
 def fork_draft_tool(name: str, runtime: ToolRuntime) -> Command:
     """Keep the agreement as it stands and start a second draft of it to work
@@ -1229,13 +1255,9 @@ def fork_draft_tool(name: str, runtime: ToolRuntime) -> Command:
     descriptive of what this draft is for ("Premium service", "Without the
     modernization"). Never ask the customer to name it.
     """
-    workspace_id = runtime.state.get("workspace_id")
-    if not workspace_id:
-        return _no_drafts(runtime)
-    try:
-        record = workspace_store.fork_draft(workspace_id, name, _current_thread_id())
-    except (KeyError, ValueError) as e:
-        return _error(runtime, e)
+    record = _moved(runtime, workspace_store.fork_draft, name)
+    if isinstance(record, Command):
+        return record
     draft = workspace_store.current_draft(record)
     source = next(
         (d["name"] for d in record["drafts"] if d["id"] == draft["forkedFrom"]), None
@@ -1256,15 +1278,11 @@ def switch_draft_tool(name: str, runtime: ToolRuntime) -> Command:
     change, the candidate, undo — applies to that draft, and the one being left
     keeps its choices and their sources exactly as they are. Nothing is
     replaced and nothing is re-attributed."""
-    workspace_id = runtime.state.get("workspace_id")
-    if not workspace_id:
-        return _no_drafts(runtime)
-    try:
-        record = workspace_store.switch_draft(workspace_id, name, _current_thread_id())
-    except (KeyError, ValueError) as e:
-        return _error(runtime, e)
+    record = _moved(runtime, workspace_store.switch_draft, name)
+    if isinstance(record, Command):
+        return record
     draft = workspace_store.current_draft(record)
-    price = (draft["configuration"].get("candidate") or {}).get("price")
+    price = _draft_price(draft)
     return _reply(
         runtime,
         f"Now working on draft {draft['name']!r}"
@@ -1283,13 +1301,9 @@ def discard_draft_tool(name: str, runtime: ToolRuntime) -> Command:
     not the one being worked on can go, and it does not come back — offer it
     when they say they are done with an alternative, never on your own
     initiative."""
-    workspace_id = runtime.state.get("workspace_id")
-    if not workspace_id:
-        return _no_drafts(runtime)
-    try:
-        record = workspace_store.discard_draft(workspace_id, name, _current_thread_id())
-    except (KeyError, ValueError) as e:
-        return _error(runtime, e)
+    record = _moved(runtime, workspace_store.discard_draft, name)
+    if isinstance(record, Command):
+        return record
     return _reply(
         runtime,
         f"Discarded the draft {name.strip()!r}. Remaining: "
@@ -1668,8 +1682,7 @@ def get_configuration(runtime: ToolRuntime) -> str:
                 drafts_line = "Drafts: " + ", ".join(
                     f"{d['name']}"
                     + (" (this one)" if d["id"] == current["id"] else "")
-                    + (f" {price} EUR/month" if (price := (
-                        d["configuration"].get("candidate") or {}).get("price"))
+                    + (f" {price} EUR/month" if (price := _draft_price(d))
                        else "")
                     for d in record["drafts"]
                 )

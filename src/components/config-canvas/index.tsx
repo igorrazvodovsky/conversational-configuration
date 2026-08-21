@@ -41,8 +41,10 @@ import {
   compareDraftMessage,
   completionLabel,
   discardDraftMessage,
+  emptyConfiguration,
   forkDraftMessage,
   formatMonthly,
+  hasAnything,
   layerOf,
   liveValue,
   productModel,
@@ -62,12 +64,6 @@ import { Recitals } from "./recitals";
 import { Schedules } from "./schedules";
 import { OperativeTerms } from "./terms";
 
-const EMPTY: Configuration = {
-  choices: {},
-  statuses: {},
-  candidate: null,
-};
-
 /**
  * The render, loaded only when the mode is entered
  * (docs/specs/visual-configuration). `ssr: false` is doing two jobs: a WebGL
@@ -75,6 +71,10 @@ const EMPTY: Configuration = {
  * page a workspace opens on — a canvas showing the document costs nothing.
  */
 const CarViewer = dynamic(() => import("./render"), { ssr: false });
+
+/** Rendered until agent state arrives. A module constant, not a call per
+ * render: the reveal baseline below holds a configuration by reference. */
+const EMPTY_CONFIG: Configuration = emptyConfiguration();
 
 /** How long a reveal mark stays before the shell drops it and the highlight
  * transitions out (docs/specs/shared-attention). Long enough to be found on
@@ -93,7 +93,7 @@ export function ConfigCanvas({
 }) {
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
-  const config: Configuration = agent.state?.configuration ?? EMPTY;
+  const config: Configuration = agent.state?.configuration ?? EMPTY_CONFIG;
   const isRunning = agent.isRunning;
   // Which draft this configuration belongs to and what else exists beside it
   // (docs/specs/parallel-drafts) — mirrors of the store, seeded on attach and
@@ -108,8 +108,6 @@ export function ConfigCanvas({
   // never the reversal itself.
   const history = (agent.state as { history?: { undo: number; redo: number } })
     ?.history ?? { undo: 0, redo: 0 };
-  const hasAnything =
-    Object.keys(config.choices).length > 0 || config.candidate !== null;
 
   // Optimistic overlay: the clicked value shows immediately — on its row, or in
   // the middle of a recital's sentence — and is discarded wholesale when the run
@@ -178,6 +176,12 @@ export function ConfigCanvas({
   const baseline = useRef<Configuration>(config);
   const configRef = useRef(config);
   configRef.current = config;
+  // No dependency array, deliberately: the baseline has to advance on *every*
+  // idle render, and a `[isRunning]` array would skip the renders in between —
+  // seeds and hydration would then land inside the diff and be revealed as
+  // though a run had changed them. The setState below is guarded by
+  // `wasRunning`, so it fires once per run boundary rather than per render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isRunning) {
       wasRunning.current = true;
@@ -429,7 +433,7 @@ export function ConfigCanvas({
         {/* Empty, the document still renders — the same three layers with their
             values blank. The shape of the agreement is itself the skeleton, and
             it tells the operator what the conversation is for. */}
-        {!hasAnything && (
+        {!hasAnything(config) && (
           <Empty className="mb-6 border p-4 md:p-4">
             <EmptyDescription>
               Nothing decided yet. Describe your project in the chat — building,

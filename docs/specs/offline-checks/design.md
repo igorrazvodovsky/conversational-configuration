@@ -48,9 +48,17 @@ What this still doesn't catch is a semantic divergence behind identical output: 
 
 Making it pass needed three type errors fixed, all in the dead starter code the repo still carries, listed in CLAUDE.md: the A2UI `Title` renderer and the example bar chart, both React 19 migration leftovers. An excluding tsconfig was tried first and doesn't work, because an excluded file is still compiled when an included one imports it, and `layout.tsx` imports the A2UI catalog. The fixes are type-level only and change no behavior, and the standing instruction not to *extend* the starter files is untouched.
 
-## 7. CI runs both, and not the paid checks
+## 7. The lint tier catches what neither the typecheck nor a test can
 
-`.github/workflows/checks.yml` holds two jobs. The agent job runs the model validator and `uv run pytest`, and the frontend job runs `npm run typecheck` and `npm test`. The conversation checks are absent by design: `pytest -m scenario` is opted into by a developer who means to spend the money, and their own spec puts CI wiring for them out of scope.
+`tsconfig.json` leaves `noUnusedLocals` off, so an import that lost its call site was invisible to every check in the repo, and several had accumulated — one of them in `config-canvas/terms.tsx`, importing a helper the file no longer used. `npm run lint` is the answer, over `eslint.config.mjs` on top of `eslint-config-next`, with `@typescript-eslint/no-unused-vars` promoted to an error.
+
+Two exclusions keep it from becoming output nobody reads. It does not lint the dead starter code, which is kept as CopilotKit reference and is not to be extended, so a finding in one of those files would name work nobody should do. And two `react-hooks` rules are off — `refs` and `set-state-in-effect` — because this codebase uses both patterns on purpose: a ref assigned during render is how `use-workspace-attachment.ts` reads the configuration of the render it resumes in, and an effect that sets state once on mount is the hydration flag every menu on the workspace page mounts behind (`docs/specs/chat-surface/design.md`). One `exhaustive-deps` warning is silenced at its line, in the canvas's reveal effect, whose missing dependency array is what makes the baseline advance per render.
+
+ESLint is pinned to 9: `eslint-config-next` bundles an `eslint-plugin-react` that throws on 10.
+
+## 8. CI runs both, and not the paid checks
+
+`.github/workflows/checks.yml` holds two jobs. The agent job runs the model validator and `uv run pytest`, and the frontend job runs `npm run typecheck`, `npm run lint` and `npm test`. The conversation checks are absent by design: `pytest -m scenario` is opted into by a developer who means to spend the money, and their own spec puts CI wiring for them out of scope.
 
 The frontend job installs both toolchains, because the coupling checks run the agent's half of the shared contracts. It installs them in two explicit steps rather than through the repo's `postinstall`, so a failure names which half broke.
 
@@ -59,6 +67,7 @@ The frontend job installs both toolchains, because the coupling checks run the a
 - `uv run pytest` in `agent/`: 249 passed, 5 deselected, about 34s, against 158 before this work.
 - `npm test`, this tier, with `--project offline`: 187 passed across 6 files in about 2s, where there was no runner before. This record said 185 until 2026-08-20, because the two invariant checks added when the fixtures were held against the agent's own agreements were never counted here.
 - `npm run typecheck`: clean.
+- `npm run lint`: clean, where there was no linter before. It found one unused import on its first run, since removed.
 - `uv run python src/product_model/validate.py`: passes, and also runs inside the suite.
 - Coverage of the agent package, measured with `uv run --with pytest-cov pytest --cov=src`, moved from 69% to 90% overall, `src/configuration.py` from 58% to 96%, and `src/http_app.py` from 0% to complete. What remains uncovered is the dead starter modules, which the suite correctly ignores.
 
