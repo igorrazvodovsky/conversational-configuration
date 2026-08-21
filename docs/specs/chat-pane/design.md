@@ -1,5 +1,7 @@
 # Chat pane — design
 
+Rules what the chat is made of: composition from `CopilotChat`'s slots, the replaced scroll view and the composer clearance it owns, the landing position after hydration, and row grouping by element key. Read it before changing the transcript scroller, a message row, the composer or the attachment strip. The pane's *geometry* is the [chat-surface design](../chat-surface/design.md), and which messages it hides the [agreement-document design](../agreement-document/design.md).
+
 The pane lives in `src/components/chat/`. It is built from the primitives of the [component library](../ui-component-library/design.md) and inherits its identity and its rules: zinc, the Lyra style, and zero radius by token *and* by stripping literal `rounded-*` at the call sites.
 
 ## Decision 1: the pane is composed from slots, not overridden

@@ -1,5 +1,7 @@
 # Agreement workspace — design
 
+Rules the durable workspace: the store on the agent side, write-through, the HTTP surface, and the attachment hook's hydration and precedence. Read it before touching `src/hooks/use-workspace-attachment.ts` or anything that seeds configuration on entry.
+
 ## Store (agent side)
 
 `agent/src/workspace_store.py` writes one JSON file per workspace under `agent/data/workspaces/`, which is gitignored: `{id, name, configuration, threads: [{id, createdAt, updatedAt}], updatedAt}`. `configuration` became `drafts` plus a `currentDraftId` under [parallel-drafts](../parallel-drafts/design.md), which owns that shape and its read-time adapter. `name` is `null` until the agent names the workspace through `rename_workspace(id, name)`, and creation takes no name.

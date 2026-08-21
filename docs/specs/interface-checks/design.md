@@ -1,5 +1,7 @@
 # Interface checks — design
 
+Rules the jsdom tier: the mocked AG-UI stream, the two vitest projects and why they disagree about the DOM, where the payloads come from, and what each check asserts. Read it before adding an interface check or changing the vitest projects.
+
 ## 1. jsdom is enough, and that was checked before anything was built
 
 CopilotKit reads the AG-UI stream with `fetch` and `Accept: text/event-stream`

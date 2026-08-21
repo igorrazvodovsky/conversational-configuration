@@ -1,5 +1,7 @@
 # Nonlinear interaction — design
 
+Rules revision with ripple and resumption: repair computation in the solver, the repair tools and their cards, and what abandoning a repair may not do. Read it before changing repair or revision behaviour.
+
 ## Solver: repair computation
 
 This evolves the [solver service](../solver-service/design.md); reconcile its spec when this lands.

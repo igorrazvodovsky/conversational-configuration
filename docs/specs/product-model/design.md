@@ -1,5 +1,7 @@
 # Product model — design
 
+Rules the model file: one JSON file with no code in it, the D-rule gap, and the validator. Read it before adding a variable, an option or a rule to `elevator.json`.
+
 ## Decisions
 
 - *A single JSON file*, `agent/src/product_model/elevator.json`, with no code in the model. Under constitution #2, adding a variant means editing data only.

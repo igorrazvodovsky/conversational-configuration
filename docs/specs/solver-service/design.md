@@ -1,5 +1,7 @@
 # Solver service — design
 
+Rules the Z3 service: its shape, the encoding, and the operations the rest of the system may ask for — `check`, `valid_options`, `explain`, `complete`, `repairs` and `seed`. Read it before changing solver behaviour or what a refusal is allowed to say.
+
 ## Shape
 
 The `agent/src/solver/` package holds two modules.

@@ -1,5 +1,7 @@
 # Offline checks — design
 
+Rules the tier that needs no provider key: two runners for two languages, what is checked and what deliberately is not, the message grammar compared by building it on both sides, and what CI runs. Read it before adding an offline check or changing anything that crosses the language boundary.
+
 ## 1. Two runners, because there are two languages
 
 `uv run pytest` in `agent/` and `vitest` at the root. Each owns its own language, and neither is driven from the other, with one deliberate exception: the coupling checks run the agent's half as a subprocess and compare what it builds, because a contract spanning the boundary can't be checked from one side (decisions 3 and 4). That exception is confined to `tests/couplings.test.ts`, so the rest of the frontend checks stay a Node-only, sub-second run.

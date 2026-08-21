@@ -1,5 +1,7 @@
 # Chat surface — design
 
+Rules the chat's geometry and the workspace page's tree: one mount and four geometries switched by class, the mode control, the conversation switcher, and the standing rule that nothing minting a React id may join the hydrated tree. Read it before adding any component to the workspace page.
+
 ## Decision 1: the mode is React view state, and nothing else
 
 `ChatSurfaceMode = "sidebar" | "floating" | "fullscreen" | "hidden"` lives in `useState` on the workspace page and is passed down. It isn't agent state: constitution #3 puts *shared configuration* in the agent, and how wide a pane is drawn isn't configuration. The agent must not be able to read it, and nothing the agent returns may change it, which the requirements forbid outright. It isn't URL state either, because a link to a workspace names the agreement, not a layout.

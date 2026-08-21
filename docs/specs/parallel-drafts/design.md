@@ -1,6 +1,8 @@
 # Parallel drafts — design
 
-Implemented 2026-08-17, against [requirements.md](requirements.md).
+Rules drafts: the store shape and its read-time adapter, the one door into history, the tools and state mirrors that move the workspace, and the canvas switcher. Read it before touching any path that changes which draft is current.
+
+Status: implemented, against [requirements.md](requirements.md). One known gap is in *Open, deliberately*.
 
 ## Vocabulary
 
@@ -24,9 +26,9 @@ Draft names are addresses, so they are unique and resolved case-insensitively: t
 
 *A record with no `drafts` key is adapted on read*, in `_read`, so every path — `get_workspace`, `list_workspaces`, the HTTP routes, the frontend — sees one shape. Its `configuration` becomes a single draft named "Original", carrying its `history` and no parent, and its `frames` are dropped. This is a read-time adapter rather than a migration script: `agent/data/workspaces/` is gitignored local data, and the [agreement-workspace](../agreement-workspace/requirements.md) precedent for pre-feature records is to let them lapse rather than convert them. Frames can't be converted honestly anyway, because synthesizing the missing provenance would re-source every value to `user`, which is the defect this feature removes.
 
-## The write path, and the trap in it
+## The write path, and what a switch must not touch
 
-`save_configuration` pushed onto `past` whenever `configuration != record["configuration"]`. Under drafts it compares against the *current draft's* configuration and pushes onto that draft's history. The trap is that a switch also changes what the workspace's current configuration is, so routing a switch through the same function would burn an undo slot and let a subsequent undo walk backwards into a state belonging to a different document.
+`save_configuration` pushed onto `past` whenever `configuration != record["configuration"]`. Under drafts it compares against the *current draft's* configuration and pushes onto that draft's history. A switch also changes what the workspace's current configuration is, so routing a switch through the same function would burn an undo slot and let a subsequent undo walk backwards into a state belonging to a different document.
 
 The separation is structural rather than a flag. `fork_draft`, `switch_draft` and `discard_draft` are their own store functions that rearrange drafts and move `currentDraftId` without ever calling `save_configuration`. Content changes reach history through exactly one door, as they always did, and structural moves don't reach it at all. `HISTORY_DEPTH` stays 10, now per draft.
 

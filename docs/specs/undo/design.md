@@ -1,5 +1,7 @@
 # Undo — design
 
+Rules one-move reversal: history as a stack pair beside the configuration it belongs to, what a snapshot holds and what it must never hold, restore as a validated transition, the two tools and their two sentences, and the depth mirror the canvas controls render from. Read it before changing what writes history or what a reversal restores.
+
 Status: implemented and verified by running the app. One known gap is recorded in *Verification*: a click in the first seconds of a freshly switched conversation can be swallowed by the attachment hook.
 
 ## Decision 1: history is a stack pair beside the configuration it belongs to, written at the store's single write point

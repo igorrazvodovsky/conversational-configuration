@@ -1,6 +1,8 @@
 # Visual configuration — design
 
-Implemented 2026-08-19 against [requirements.md](requirements.md).
+Rules the canvas's second mode and the switch into it: three.js through react-three-fiber, the mode as classes over one tree with the render never an ancestor of the document, the scene as a parts list each naming its variable, materials, viewpoints, and mounting only while showing. Read it before changing either canvas mode.
+
+Status: implemented, against [requirements.md](requirements.md). The known gaps are in *Known gaps*.
 
 ## Decision 1: three.js through react-three-fiber, and nothing else new
 

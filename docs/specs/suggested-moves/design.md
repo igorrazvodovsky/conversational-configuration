@@ -1,5 +1,7 @@
 # Suggested moves — design
 
+Rules the suggestion pills: templated rather than model-generated, the move catalogue as the conversation move inventory filtered by state, dispatch through the plain path with no structured grammar, and when the strip is evaluated and reloaded. Read it before changing what a pill says or when one is offered.
+
 Status: implemented.
 
 ## Decision 1: templated pills over model-generated ones

@@ -1,5 +1,7 @@
 # RFQ reconciliation — design
 
+Rules RFQ ingestion: the paste entrance with no new surface, the solver's `seed`, the third choice source and the frozen reference, the derived deviation register, and the fixtures. Read it before changing what a document ingests or what the register holds; where the canvas draws that register is the [agreement-document design](../agreement-document/design.md).
+
 ## Entry: paste into chat, no new surface
 
 The document arrives as a message in a fresh workspace's conversation: no upload UI, no new endpoint. Freshness is enforced, because `ingest_rfq` refuses an agreement that already has recorded choices. A dedicated paste target on workspace creation was considered and rejected, since it would add a second entry path for one gesture, and the conversation is the surface under test.

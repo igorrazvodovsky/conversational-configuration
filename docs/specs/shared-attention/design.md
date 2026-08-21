@@ -1,5 +1,7 @@
 # Shared attention — design
 
+Rules the two transient channels between the operator's attention and the agent's: the read channel as CopilotKit app context rather than agent state, the two-entry payload, the reveal derived from the state diff, and the prompt rules that make the agent honour both. Read it before adding anything to the App Context block or changing what a card dispatch runs through.
+
 Status: implemented and verified against the running app on 2026-08-14. The verification record and the measured gaps are in *Verification record* and *Known gaps*.
 
 ## Decision 1: the read channel is CopilotKit's app context, not agent state

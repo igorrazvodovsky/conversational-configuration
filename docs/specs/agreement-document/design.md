@@ -1,5 +1,7 @@
 # Agreement document canvas — design
 
+Rules the canvas as a document: the layer mapping, the prose templates, the `Canvas edit:` round trip, the option editor and its optimistic overlay, the margin marks, and the in-chat `ask_choices` controls that share the same edit grammar. Read it before changing anything the canvas renders or any value that edits through it.
+
 ## Projection, not store
 
 The document is rendered from `agent.state.configuration` plus the model display JSON. That JSON is a static copy of the model's variables, groups, labels, prices and `pricing` block, imported into `src/lib/configurator.ts` straight from `agent/src/product_model/elevator.json`, so there is one source of truth and the canvas needs no backend call to render a label. The solver statuses in state remain the only source of validity.

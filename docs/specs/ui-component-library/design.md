@@ -1,5 +1,7 @@
 # UI component library — design
 
+Rules the component vocabulary: shadcn installed rather than hand-written, the palette in oklch, the Lyra style, and the primitive mapping. Read it before editing `src/app/globals.css` or relaxing an upstream default at a call site; both have reasons recorded here.
+
 ## Decision 1: shadcn is the component vocabulary, installed rather than copied
 
 Components come from `npx shadcn@latest add`, never hand-written. That is what makes `src/components/ui/` current upstream source rather than a set of approximations that drift, and it is why adding a surface should start by reaching for a primitive.

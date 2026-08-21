@@ -1,5 +1,7 @@
 # Elevator as a service — design
 
+Rules elevator-as-a-service: service variables as ordinary variables in the leading group, the cost basis amortized to a monthly fee, and the monthly objective solved by per-term iteration. Read it before changing pricing or a service term.
+
 The service frame is almost entirely model data plus pricing arithmetic. The solver encoding, the tool surface, the card-dispatch machinery and thread resumption carry no service-specific logic. What the frame determines is what the variables mean, what a price is, and how the agent talks.
 
 ## Service variables are ordinary variables in the leading group

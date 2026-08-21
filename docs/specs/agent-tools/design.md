@@ -1,5 +1,7 @@
 # Agent tools — design
 
+Rules the agent's tool surface: the state schema in `agent/src/configuration.py`, what each tool may mutate, and how state streams to the UI. It also holds the one-home-per-instruction rule, so read it before adding or changing a tool, and before deciding where a new instruction to the agent belongs.
+
 ## Shape
 
 `agent/src/configuration.py`:

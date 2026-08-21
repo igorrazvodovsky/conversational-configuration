@@ -1,5 +1,7 @@
 # Chat pane — requirements
 
+Status: implemented ([design](design.md)).
+
 This spec covers what the chat pane is *made of*: the transcript scroller, the message rows, the composer, the attachment strip and the file rows in a sent message, the suggestions and the welcome screen, recomposed from the slots `CopilotChat` already exposes so the pane carries the project's own vocabulary. Its geometry — sidebar, floating, full screen, hidden — is a separate concern, owned by the [chat surface spec](../chat-surface/requirements.md).
 
 The pane arrived as the CopilotKit starter's and looked it: rounded bubbles, a 16px prose size, and a button vocabulary and palette that were the library's rather than the app's, on the other side of a divider from a canvas that was none of those things.

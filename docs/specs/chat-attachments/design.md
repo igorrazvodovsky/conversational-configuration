@@ -1,6 +1,8 @@
 # Chat attachments — design
 
-Executes the [chat-attachments requirements](requirements.md).
+Rules how an attached file becomes text the model can read: the agent-side middleware at the model call, the filename carried in the MIME type, and what the composer accepts. Read it before changing attachment handling on either side.
+
+Status: implemented, executing the [chat-attachments requirements](requirements.md).
 
 ## The mechanism that breaks
 

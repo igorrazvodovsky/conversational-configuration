@@ -1,5 +1,7 @@
 # UI component library — requirements
 
+Status: implemented ([design](design.md)).
+
 The prototype's screens were hand-rolled markup: every button, chip, row and popover a `<button>` with a bespoke `className` string of arbitrary-value Tailwind, such as `bg-[var(--primary)]` and `border-[var(--border)]`. The seven files in `src/components/ui/` were shadcn-shaped by hand but never installed, so they drifted from upstream and almost nothing used them. The same idea — a selectable option, a status tag, an unavailable choice — was spelled differently on each surface.
 
 This spec adopts [shadcn/ui](https://ui.shadcn.com) as the component vocabulary for the whole configurator UI: installed components, a real token mapping, and call sites refactored onto them. It also settles the prototype's visual identity, which until now was the CopilotKit starter's branding carried along by inertia: shadcn's zinc palette in oklch, and the [Lyra style](https://www.shadcnblocks.com/blog/shadcn-component-styles-vega-nova-maia-lyra-mira) — square, dense, sharp.

@@ -1,5 +1,7 @@
 # Environmental footprint — design
 
+Rules the footprint dimension end to end: the `co2` field and `footprint` block in the model, the variables and rules it adds, the second solver objective, the arithmetic, and the frontend figures. Read it before changing a footprint number or the assumptions behind one; what may honestly be *said* about those numbers is ruled by [claims and vocabulary](../../research/footprint/claims-and-vocabulary.md).
+
 Almost everything here is model data plus lookup arithmetic. The schema gains one option field, two variables, six rules and one data block. The solver gains a second objective, the tool surface gains one parameter and no new tools, and the frontend gains a header figure, an assumptions panel and a comparison delta. There are no new card kinds and no new state machinery.
 
 ## Model data: the `co2` field

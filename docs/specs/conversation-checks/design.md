@@ -1,5 +1,7 @@
 # Conversation checks — design
 
+Rules the paid scenario harness: what runs what, robustness against model nondeterminism, per-call isolation, comparison mode, and the pytest wiring. Read it before adding or changing a scenario check, or before running `compare_refs.py`. The scenarios themselves are discovery notes, in [docs/discovery/scenarios/](../../discovery/scenarios/).
+
 ## What runs what
 
 The five scenarios are discovery notes in [docs/discovery/scenarios/](../../discovery/scenarios/). Each becomes two things, and this spec owns one of them.
@@ -86,7 +88,7 @@ Verified 2026-08-19: `uv run pytest` passes the unit suite and deselects the sce
 
 Known gaps. Nothing here covers a whole conversation's arc: every assertion is about a single move, so an agent that grew vaguer or more repetitive over twenty turns would pass. That remains a reading job against the presenter document.
 
-A second gap the task 6 walkthrough exposed on 2026-08-20, since closed: the assertions read recorded choices where the customer sees the whole document. `abandon_changes_nothing` compared `chosen(turn)`, which is `configuration["choices"]` alone, so the failure it should have caught passed — abandon answered with `undo_change`, every choice intact, the candidate and its 35 assigned values gone with the price. It now compares `agreement(turn)`, choices and priced candidate together, and a second assertion checks that the abandon turn called no state-changing tool at all. The general form of the blind spot is worth keeping in mind when writing new assertions: a regression that drops or replaces the candidate while leaving the recorded choices alone is invisible to anything that reads only `choices`, and that is most of what a customer would notice.
+A second gap the task 6 walkthrough exposed on 2026-08-20, since closed: the assertions read recorded choices where the customer sees the whole document. `abandon_changes_nothing` compared `chosen(turn)`, which is `configuration["choices"]` alone, so the failure it should have caught passed — abandon answered with `undo_change`, every choice intact, the candidate and its 35 assigned values gone with the price. It now compares `agreement(turn)`, choices and priced candidate together, and a second assertion checks that the abandon turn called no state-changing tool at all. The suite has not been billed since that widening, so the green run recorded above predates it. The general form of the blind spot is worth keeping in mind when writing new assertions: a regression that drops or replaces the candidate while leaving the recorded choices alone is invisible to anything that reads only `choices`, and that is most of what a customer would notice.
 
 A third: a conflicting `set_choices` on a variable the conversation hadn't yet decided is refused with its rules rather than answered with repair options. That is correct against the tool contract, a dead end in the conversation, and the thing the renewal scenario's 630 kg car steps around rather than papers over.
 
