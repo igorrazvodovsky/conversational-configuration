@@ -86,7 +86,7 @@ export function RepairOptions({ toolCallId, status, result }: CardProps) {
             </div>
           )}
           {/* The rule labels behind a repair are what constitution #6 exists to
-              surface, and they were set at 10px (docs/specs/accessible-surface). */}
+              surface, and they were set at 10px (constitution #16). */}
           {option.rules.length > 0 && (
             <div className="mt-0.5 text-xs text-muted-foreground">
               {option.rules.map((r) => r.label).join("; ")}
@@ -116,8 +116,8 @@ export function RepairOptions({ toolCallId, status, result }: CardProps) {
  *
  * That argument used to be about compounding — the card faded too, and two
  * fades over one string left the line barely readable. The card no longer
- * fades anything (`card-shell.tsx`, and docs/specs/accessible-surface decision
- * 2, which generalises exactly this reasoning), so nothing compounds and the
+ * fades anything (`card-shell.tsx`, and constitution #16, which
+ * generalises exactly this reasoning), so nothing compounds and the
  * override now carries the argument alone. It is kept for the half that was
  * never about compounding. What says the card is spent is its dashed edge and
  * the controls being genuinely `disabled`.

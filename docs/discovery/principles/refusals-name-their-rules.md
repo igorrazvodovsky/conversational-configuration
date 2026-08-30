@@ -6,7 +6,7 @@ Unavailability, forcing and conflict are always accompanied by the named rules t
 
 *Rules out* greyed-out options with no explanation, and any justification the LLM composed rather than verbalized.
 
-*Test.* Does the reason survive being checked against the model file?
+*Test.* Does the reason survive being checked against the model file, and does it reach someone who is not holding a mouse?
 
 *What the walkthrough of 2026-08-20 found.* The reasons that were shown survived the check, and most refusals showed no reason at all.
 
@@ -17,6 +17,8 @@ Every other refusal in the walkthrough named nothing. An option ruled out in the
 The mechanism wasn't the constraint. `SolverService.explain` returns a named core and `Conflict.describe` formats it. Rule labels reached the agent in only two payloads, repairs and RFQ deviations, so when the customer asked why a forced value was there, the agent composed the answer from current state. Asked "Why this accessibility package?" it gave an account that checks out against the model — hospital, new public building, Europe, so R17, R18 and R12 — and quoted no rule and verbalized no core, which is the composed justification this principle rules out.
 
 It was repaired the same day. State carries the named rules behind every option that can't be taken, so the editor, the in-chat cards, the deviation mark on the sheet and the agent's own answer all quote the model's labels ([agent-tools](../../specs/agent-tools/design.md), [agreement-document](../../specs/agreement-document/design.md)). What the principle still lacks a mechanism for is unchanged: discretionary defaults have no rule to cite, and the D-rules that would give them one are specified and unbuilt.
+
+*The other half of that walkthrough took until 2026-08-30.* The repair above moved the rules into state; it did not move them out of the `title` they arrived on. Three of the four controls that refuse an option kept them there, so for four months the named cores were reaching the browser correctly and stopping one hop short of anyone using a keyboard or a touch screen — the defect this note recorded in those words and did not close. They now render as visible text under the control that refuses, with the disabled control pointing at that line, and a check asserts it for all three controls. Constitution #16 is the engineering statement of that half, as #6 is of the first. The lesson is about the principle's own test: *does the reason survive being checked against the model file* asks whether the reason is true, and a second question was doing quiet work beside it — whether the reason arrives at all. A rule named to nobody is not named.
 
 *Where it needs a second mechanism.* Discretionary agent choices have no unsat core to ground them, so the same discipline runs through named default heuristics, the D-rules, in the product model rather than through cores ([Conversation moves](../models/Conversation%20moves.md), *Delegation moves*). These are specified but not yet in the model, and the gap is recorded in the [product-model design](../../specs/product-model/design.md).
 

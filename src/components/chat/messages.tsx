@@ -55,7 +55,7 @@ const TOOLBAR_OVERLAY =
   "group-hover/message:pointer-events-auto group-hover/message:opacity-100 " +
   // The copy button stays in the tab order while the toolbar is hidden, so
   // without this a keyboard user tabs onto an invisible control
-  // (docs/specs/accessible-surface, decision 7).
+  // (constitution #16).
   "focus-within:pointer-events-auto focus-within:opacity-100";
 
 /* Important, because the library's own size is a `cpk:`-prefixed utility of
@@ -110,7 +110,7 @@ function AssistantMessage(
               14px, not the 12px this originally set. It was aiming to match
               "a 12px canvas" and the canvas's reading matter — its clauses,
               recitals and schedule rows — is and was `text-sm`. 12px is this
-              app's size for chrome (docs/specs/accessible-surface, decision 4).
+              app's size for chrome (constitution #16).
             */}
             {spoke && (
               <div className="cpk:prose cpk:max-w-full cpk:break-words cpk:dark:prose-invert text-sm! leading-relaxed!">

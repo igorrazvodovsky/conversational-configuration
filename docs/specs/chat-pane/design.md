@@ -54,7 +54,7 @@ It floats over the transcript, so mid-scroll the rows pass behind it. CopilotKit
 
 The markdown keeps CopilotKit's prose, at this app's size. Their renderer sets 16px, which next to the agreement reads as a different product. Prose sizes everything else in em, so overriding the root is enough — with `!`, because both are utilities and stylesheet order would otherwise decide.
 
-The size is 14px. It was 12px, on the reasoning that the canvas is 12px, and the canvas's *reading matter* — its clauses, recitals and schedule rows — is and always was `text-sm`; 12px is this app's size for chrome. The [accessible surface](../accessible-surface/design.md) states that split and puts a floor under it.
+The size is 14px. It was 12px, on the reasoning that the canvas is 12px, and the canvas's *reading matter* — its clauses, recitals and schedule rows — is and always was `text-sm`; 12px is this app's size for chrome. The [component library](../ui-component-library/design.md) decision 3 states that split, and constitution #16 puts the floor under it.
 
 ## Decision 6: attachments get the shadcn vocabulary in both places
 
@@ -73,7 +73,7 @@ Everything else `chat-attachments` added to this surface already follows the voc
 
 *The hover toolbar.* Every row carries a toolbar — copy, and the user's edit and branch navigation where they are bound — which is hidden until the row is hovered. In flow it took its height anyway: 36px, plus `MessageContent`'s `gap-2`, under every message, with nothing on screen to account for it. Measured on the mid-contract revision transcript, a user turn and the repair card answering it stood 72px apart where the design says 24. `MessageFooter` is therefore positioned out of flow, at `top-full` on the row's own `relative` box, and appears over the gap on hover with its pointer events restored at the same moment.
 
-The reveal has two triggers, not one. The copy button stays in the tab order while the toolbar is hidden, so with hover alone a keyboard user tabbed onto an invisible control; `focus-within` sits beside `group-hover/message` and lifts the same opacity and pointer events ([accessible surface](../accessible-surface/design.md), decision 7). Nothing about the out-of-flow position changes, and the toolbar still takes no vertical space.
+The reveal has two triggers, not one. The copy button stays in the tab order while the toolbar is hidden, so with hover alone a keyboard user tabbed onto an invisible control; `focus-within` sits beside `group-hover/message` and lifts the same opacity and pointer events, because constitution #16 does not let hover be the only route to a control. Nothing about the out-of-flow position changes, and the toolbar still takes no vertical space.
 
 That fixes the size of its buttons. The row below starts at the top of its own bubble or card, so a toolbar taller than the 24px gap would cover it; `copyButton` takes a class through the slot it has and comes down to 24px, which is what the gap holds. The class carries `!` for the reason decision 5 gives about the prose size — the library's own `cpk:h-8` is a utility of equal weight, and stylesheet order would otherwise decide.
 

@@ -1,6 +1,6 @@
 /**
  * A refusal reaches somebody who is not holding a mouse
- * (docs/specs/accessible-surface, decision 3).
+ * (constitution #16).
  *
  * The named rules behind a ruled-out option used to live only on a `title`,
  * on a control that is `disabled` and therefore outside the tab order — no

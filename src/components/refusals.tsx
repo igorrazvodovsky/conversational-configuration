@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Where a refusal is read (docs/specs/accessible-surface, decision 3).
+ * Where a refusal is read (constitution #16, and docs/specs/ui-component-library decision 5).
  *
  * Every control that draws a ruled-out option draws this underneath it: one
  * line per unavailable option, naming the option and the rules that rule it

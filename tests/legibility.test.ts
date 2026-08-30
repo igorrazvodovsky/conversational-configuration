@@ -1,5 +1,5 @@
 /**
- * The two legibility rules a check can see (docs/specs/accessible-surface).
+ * The two legibility rules a check can see (constitution #16).
  *
  * Colour, layout and focus are in the tier constitution #9 says no check
  * reaches, and most of that spec is verified by running the app. Two of its

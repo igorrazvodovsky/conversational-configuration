@@ -63,7 +63,8 @@ export function CardPending({ children }: { children: ReactNode }) {
  * its price at 0.7 — and put the staleness sentence at 2.3:1 in light theme.
  * Raising the fade does not fix it: `--muted-foreground` on white is 4.83:1
  * to begin with, so any card opacity at all takes the text below 4.5
- * (docs/specs/accessible-surface, decision 2). A spent card is still the
+ * (constitution #16, worked through in
+ * docs/specs/ui-component-library decision 8). A spent card is still the
  * record of the turn it belongs to, and a record has to be readable.
  *
  * What says "inert" instead was already here and was being drowned by the

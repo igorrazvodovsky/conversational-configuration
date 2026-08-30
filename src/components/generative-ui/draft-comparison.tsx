@@ -79,7 +79,7 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
           <tr className="text-left">
             {/* Scoped, so a cell announces the variable and the draft it
                 belongs to — which is the whole content of a comparison
-                (docs/specs/accessible-surface, decision 8). */}
+                (constitution #16). */}
             <th scope="col" className="pb-2 font-normal text-xs text-muted-foreground">
               {payload.differences.length} difference
               {payload.differences.length === 1 ? "" : "s"}
@@ -158,7 +158,7 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
               /* A spent card says so with its dashed edge and with this
                  button being `disabled`; fading the draft's name on top of
                  that would only make the record harder to read
-                 (docs/specs/accessible-surface, decision 2). */
+                 (constitution #16). */
               className="disabled:opacity-100"
               disabled={inert}
               onClick={() => dispatch(switchDraftMessage(s.name))}

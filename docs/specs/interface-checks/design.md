@@ -151,8 +151,7 @@ served from memory:
   the draft it was working on and the current one, character for character.
 
 `tests/interface/refusals.test.tsx`, against a rendered `AskChoices`, for each
-of the three controls a payload can ask for ([accessible
-surface](../accessible-surface/design.md)):
+of the three controls a payload can ask for (constitution #16):
 
 - The rules behind a ruled-out option are text in the document, reachable with
   no hover and no focus. This is the assertion that would have failed for two

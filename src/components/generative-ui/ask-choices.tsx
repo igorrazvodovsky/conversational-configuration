@@ -6,7 +6,7 @@
  * The payload is computed server-side from solver state — valid options only
  * are selectable; invalid values render struck through in place, with the rules
  * that ruled them out listed underneath where every input device reaches them
- * (docs/specs/accessible-surface). Option prices are
+ * (constitution #16). Option prices are
  * monthly deltas at the term in effect (docs/specs/service-agreement). Controls go
  * inert once the conversation moves past them or after submission.
  */
@@ -147,7 +147,7 @@ function optionState(o: PayloadOption, selected?: string) {
 
 /** The ruled-out options of one variable, in the shape the shared list wants.
  * The list is what a keyboard or touch user reads; `title` is a convenience
- * for the mouse on top of it (docs/specs/accessible-surface, decision 3). */
+ * for the mouse on top of it (constitution #16). */
 function refusalsOf(variable: PayloadVariable, selected?: string): Refusal[] {
   return variable.options
     .filter((o) => optionState(o, selected).disabled)
@@ -157,7 +157,7 @@ function refusalsOf(variable: PayloadVariable, selected?: string): Refusal[] {
 /**
  * Unavailability is a muted foreground and a strike, never an opacity: the
  * card above may carry a state of its own, and two opacities over one string
- * multiply (docs/specs/accessible-surface, decision 2).
+ * multiply (constitution #16).
  */
 const UNAVAILABLE = `cursor-not-allowed text-muted-foreground line-through ${KEEP_TITLE}`;
 
@@ -249,7 +249,7 @@ function ScaleControl({ variable, selected, inert, onSelect, scope }: ControlPro
               // A segment outside the valid range is told apart by the same
               // vocabulary the chips use — muted, struck, dashed edge — and
               // not by a background tint: no tint reaches 3:1 against the card
-              // (docs/specs/accessible-surface, decision 3).
+              // (constitution #16).
               className={`h-auto min-w-0 flex-1 px-1 py-1.5 text-xs leading-tight whitespace-normal data-[state=on]:bg-primary data-[state=on]:text-primary-foreground ${
                 disabled ? `border-dashed ${UNAVAILABLE}` : ""
               }`}

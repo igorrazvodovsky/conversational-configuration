@@ -37,7 +37,8 @@
   /* zinc-500, a step darker than stock zinc's --ring. At zinc-400 the focus
      indicator is 2.63:1 against white and there was no conforming one anywhere
      in light theme; this is 4.83:1, and it is still a zinc step rather than a
-     palette deviation (docs/specs/accessible-surface, decision 5). */
+     palette deviation (constitution #16, worked through in
+     docs/specs/ui-component-library decision 8). */
   --ring: oklch(0.552 0.016 285.938);
 
   --chart-1: oklch(0.646 0.222 41.116);
@@ -88,7 +89,7 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   /* zinc-400, matching the light theme's step on its own side: 6.74:1 against
-     a card, 7.56:1 against the page (docs/specs/accessible-surface). */
+     a card, 7.56:1 against the page (constitution #16). */
   --ring: oklch(0.705 0.015 286.067);
 
   --chart-1: oklch(0.488 0.243 264.376);
@@ -146,7 +147,7 @@
   * {
     /* The default outline colour is the ring at full strength: at 50% it is
        2:1 against either surface, which is a blur rather than an indicator
-       (docs/specs/accessible-surface, decision 5). */
+       (constitution #16). */
     @apply border-border outline-ring;
   }
   body {
@@ -161,8 +162,8 @@ html {
 }
 
 /*
- * One focus indicator for the whole app (docs/specs/accessible-surface,
- * decision 5).
+ * One focus indicator for the whole app (constitution #16, worked through in
+ * docs/specs/ui-component-library decision 8).
  *
  * The primitives mark focus with `focus-visible:border-ring`, which is 4.83:1
  * against a card and conforms — until the control is filled. On a selected

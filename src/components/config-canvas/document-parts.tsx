@@ -121,7 +121,7 @@ export const KIND_BADGE: Partial<
  * The option list behind every editable value, wherever it is opened from.
  * Invalid options are unclickable and say why *on the page* rather than only
  * in a `title` a disabled control never raises for a keyboard or touch user
- * (docs/specs/accessible-surface, decision 3); deltas are monthly at the term
+ * (constitution #16); deltas are monthly at the term
  * in effect; a value's situational gloss rides along as its title, so the
  * choice can be made in the building's language rather than the catalogue's.
  */
@@ -192,7 +192,7 @@ export function OptionEditor({
               invalid
                 ? // Muted and struck, never faded: the popover or clause above
                   // may carry a state of its own and two opacities over one
-                  // string multiply (docs/specs/accessible-surface, decision 2).
+                  // string multiply (constitution #16).
                   `cursor-not-allowed text-muted-foreground line-through ${KEEP_TITLE}`
                 : isCurrent
                   ? ""
@@ -223,7 +223,7 @@ export function OptionEditor({
  * were identical apart from an `opacity-90`, while `proposed` and `open` split
  * on dotted against dashed at 40% alpha, which at this size is not a
  * difference anyone perceives. The sheet was claiming six distinctions and
- * drawing at most three (docs/specs/accessible-surface, decision 6).
+ * drawing at most three (constitution #16).
  *
  * Who chose a value is not dropped; it moves entirely to `ProvenanceBadge`,
  * which carries an icon and a word, and to the `sr-only` sentence every token
@@ -297,7 +297,7 @@ export function ValueToken({
   // here it would interpolate into every sentence of a document whose whole
   // premise is that it reads as a contract, and the margin's provenance badge
   // already answers it in the place this design puts attribution
-  // (docs/specs/accessible-surface, decision 6).
+  // (constitution #16).
   if (display.kind === "forced" || doc.disabled) {
     return (
       <span className={style} title={KIND_TITLE[display.kind]} data-reveal={variable}>

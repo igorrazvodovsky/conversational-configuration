@@ -157,8 +157,8 @@ export default function CarViewer({
             What the picture is, and where its equivalent is. The render is a
             projection of values the agreement already states, so the agreement
             mode is its text alternative rather than a described geometry — a
-            fact the markup never declared (docs/specs/accessible-surface,
-            decision 8).
+            fact the markup never declared (constitution #16, and
+            docs/specs/visual-configuration decision 10).
 
             The role goes on a wrapper around the canvas alone rather than on
             the panel: `role="img"` makes its whole subtree presentational, and
