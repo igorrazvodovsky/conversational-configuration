@@ -77,14 +77,17 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left">
-            <th className="pb-2 font-normal text-xs text-muted-foreground">
+            {/* Scoped, so a cell announces the variable and the draft it
+                belongs to — which is the whole content of a comparison
+                (docs/specs/accessible-surface, decision 8). */}
+            <th scope="col" className="pb-2 font-normal text-xs text-muted-foreground">
               {payload.differences.length} difference
               {payload.differences.length === 1 ? "" : "s"}
             </th>
             {/* Each side is named by its draft — one of them may be the one
                 being worked on, which is a fact about it and not its name. */}
             {sides.map((s) => (
-              <th key={s.key} className="pb-2 font-medium">
+              <th key={s.key} scope="col" className="pb-2 font-medium">
                 {s.name}
                 {s.isCurrent && (
                   <span className="ml-1 text-xs font-normal text-muted-foreground">
@@ -98,9 +101,12 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
         <tbody className="align-top">
           {payload.differences.map((d) => (
             <tr key={d.variable} className="border-t">
-              <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+              <th
+                scope="row"
+                className="py-1.5 pr-2 text-left text-xs font-normal text-muted-foreground"
+              >
                 {d.label}
-              </td>
+              </th>
               {(["a", "b"] as const).map((k) => (
                 <td key={k} className="py-1.5 pr-2">
                   {d[k].label}
@@ -114,9 +120,9 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
             </tr>
           ))}
           <tr className="border-t font-medium">
-            <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+            <th scope="row" className="py-1.5 pr-2 text-left text-xs font-normal text-muted-foreground">
               total
-            </td>
+            </th>
             {sides.map((s) => (
               <td key={s.key} className="py-1.5 pr-2 tabular-nums">
                 {formatMonthly(s.price)}
@@ -124,9 +130,9 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
             ))}
           </tr>
           <tr className="border-t">
-            <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+            <th scope="row" className="py-1.5 pr-2 text-left text-xs font-normal text-muted-foreground">
               footprint (modelled)
-            </td>
+            </th>
             {sides.map((s) => (
               <td key={s.key} className="py-1.5 pr-2 tabular-nums">
                 {s.footprint ? formatCO2(s.footprint.total) : "—"}
@@ -149,6 +155,11 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
             <Button
               key={s.key}
               size="sm"
+              /* A spent card says so with its dashed edge and with this
+                 button being `disabled`; fading the draft's name on top of
+                 that would only make the record harder to read
+                 (docs/specs/accessible-surface, decision 2). */
+              className="disabled:opacity-100"
               disabled={inert}
               onClick={() => dispatch(switchDraftMessage(s.name))}
             >

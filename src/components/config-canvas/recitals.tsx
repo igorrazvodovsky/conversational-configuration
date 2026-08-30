@@ -106,7 +106,9 @@ export function Recitals({
     <section className="mb-8">
       <h2 className={LAYER_HEADING}>Recitals</h2>
       <div className="divide-y">
-        <Clause margin={<Marks doc={doc} variables={["building_type", "region"]} />}>
+        <Clause
+          margin={<Marks doc={doc} variables={["building_type", "region"]} />}
+        >
           <p className="text-sm leading-7">
             This agreement covers one elevator at{" "}
             <span className="font-medium">
@@ -114,6 +116,7 @@ export function Recitals({
             </span>
             ,{" "}
             <ValueToken
+              scope="recital"
               variable="building_type"
               doc={doc}
               phrasing={BUILDING}
@@ -121,6 +124,7 @@ export function Recitals({
             />{" "}
             built to the{" "}
             <ValueToken
+              scope="recital"
               variable="region"
               doc={doc}
               phrasing={REGIME}
@@ -131,11 +135,14 @@ export function Recitals({
         </Clause>
 
         <Clause
-          margin={<Marks doc={doc} variables={["installation", "accessibility"]} />}
+          margin={
+            <Marks doc={doc} variables={["installation", "accessibility"]} />
+          }
         >
           <p className="text-sm leading-7">
             The unit will be installed{" "}
             <ValueToken
+              scope="recital"
               variable="installation"
               doc={doc}
               phrasing={WORKS}
@@ -143,6 +150,7 @@ export function Recitals({
             />
             , and will carry{" "}
             <ValueToken
+              scope="recital"
               variable="accessibility"
               doc={doc}
               phrasing={ACCESS}
@@ -156,6 +164,7 @@ export function Recitals({
           <p className="text-sm leading-7">
             In service it is expected to see{" "}
             <ValueToken
+              scope="recital"
               variable="usage_profile"
               doc={doc}
               phrasing={TRAFFIC}
@@ -163,18 +172,21 @@ export function Recitals({
             />
             . It will be maintained under{" "}
             <ValueToken
+              scope="recital"
               variable="service_level"
               doc={doc}
               placeholder="a service level not yet agreed"
             />{" "}
             for{" "}
             <ValueToken
+              scope="recital"
               variable="contract_term"
               doc={doc}
               placeholder="a term not yet agreed"
             />{" "}
             from handover,{" "}
             <ValueToken
+              scope="recital"
               variable="connectivity_package"
               doc={doc}
               phrasing={MONITORING}

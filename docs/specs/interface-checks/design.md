@@ -150,6 +150,21 @@ served from memory:
 - A conversation whose draft moved beneath it goes stale, and its reason names
   the draft it was working on and the current one, character for character.
 
+`tests/interface/refusals.test.tsx`, against a rendered `AskChoices`, for each
+of the three controls a payload can ask for ([accessible
+surface](../accessible-surface/design.md)):
+
+- The rules behind a ruled-out option are text in the document, reachable with
+  no hover and no focus. This is the assertion that would have failed for two
+  of the three controls before that spec, while the third passed — the rules
+  were in state and were arriving only on a `title`.
+- The refused control's `aria-describedby` resolves, and resolves to the
+  element carrying the visible sentence rather than to a second copy of it.
+- A refusal with no product rule to cite still says something, in the words
+  `refusalText` gives it.
+
+Legibility itself is colour, which this tier asserts on nowhere by design.
+
 ## Verification
 
 - `npm test`: 194 passed across 8 files in about 6s — 187 in `offline`, 7 in

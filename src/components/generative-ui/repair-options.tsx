@@ -85,8 +85,10 @@ export function RepairOptions({ toolCallId, status, result }: CardProps) {
                 .join(", ")}
             </div>
           )}
+          {/* The rule labels behind a repair are what constitution #6 exists to
+              surface, and they were set at 10px (docs/specs/accessible-surface). */}
           {option.rules.length > 0 && (
-            <div className="mt-0.5 text-[10px] text-muted-foreground">
+            <div className="mt-0.5 text-xs text-muted-foreground">
               {option.rules.map((r) => r.label).join("; ")}
             </div>
           )}
@@ -107,6 +109,18 @@ export function RepairOptions({ toolCallId, status, result }: CardProps) {
 /**
  * A repair is a paragraph, not a label: multi-line, left-aligned and free to
  * grow, so the shared shape is a Button with its nowrap/centering relaxed.
+ *
+ * A disabled button fades itself, and it gives that up here: a spent repair is
+ * still the record of what was offered, and the rules line under it is what
+ * constitution #6 exists to surface.
+ *
+ * That argument used to be about compounding — the card faded too, and two
+ * fades over one string left the line barely readable. The card no longer
+ * fades anything (`card-shell.tsx`, and docs/specs/accessible-surface decision
+ * 2, which generalises exactly this reasoning), so nothing compounds and the
+ * override now carries the argument alone. It is kept for the half that was
+ * never about compounding. What says the card is spent is its dashed edge and
+ * the controls being genuinely `disabled`.
  */
 function RepairButton({
   className,
@@ -116,7 +130,7 @@ function RepairButton({
     <Button
       variant="outline"
       className={cn(
-        "block h-auto w-full whitespace-normal px-3 py-2 text-left text-sm font-normal hover:border-primary disabled:cursor-not-allowed",
+        "block h-auto w-full whitespace-normal px-3 py-2 text-left text-sm font-normal hover:border-primary disabled:cursor-not-allowed disabled:opacity-100",
         className,
       )}
       {...props}

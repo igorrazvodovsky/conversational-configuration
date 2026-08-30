@@ -16,6 +16,8 @@ Two brand values survive because something still references them: `--cpk-lilac-4
 
 Tailwind v4 still needs the `@theme inline` bridge: `bg-background`, `text-muted-foreground` and `border-input` are utilities only if `--color-*` is declared there. This is the one edit that can fail silently, because an unmapped token isn't an error, only an unstyled element, so it is verified against the compiled stylesheet before any call site is touched.
 
+One token is not the value `@shadcn/theme-zinc` ships. `--ring` is a zinc step darker in both themes — zinc-500 in light, zinc-400 in dark — because stock zinc's ring is 2.63:1 against white and a focus indicator needs 3:1, so the light theme had no conforming one anywhere. It is still a step of the same ramp rather than a colour from outside it. The [accessible surface](../accessible-surface/design.md) rules that change and the app-level `:focus-visible` outline that goes with it.
+
 ## Decision 3: the Lyra style
 
 `components.json` sets `"style": "radix-lyra"`, so `add` fetches components in shadcn's Lyra flavour: square, dense, sharp. Concretely it changes more than corners. The default button is `h-8` and `text-xs` rather than `h-9` and `text-sm`, `destructive` is a tint rather than a fill, controls take a one-pixel press-down on `:active`, and `ToggleGroup` gains a default gap between segments.
@@ -38,7 +40,7 @@ The style reaches the chat pane too, through composition rather than override, a
 | provenance tag span | `Badge variant="secondary"` | one component for `you` / `agent` / `auto` / `proposed` |
 | `FootprintSummary`'s absolutely-positioned div | `Popover` | gains outside-click and Escape, which the hand-rolled version lacked |
 | `VariableRow`'s and `ToolReasoning`'s `open` state | `Collapsible` | replaces a `<details>` element and a `useState` toggle; focus management and `aria-expanded` come free |
-| `ScaleControl`'s segmented row | `ToggleGroup type="single" spacing={0}` | keeps per-segment `disabled` and `title` |
+| `ScaleControl`'s segmented row | `ToggleGroup type="single" spacing={0}` | keeps per-segment `disabled`, `title` and `aria-describedby` |
 | bordered list wrappers | `Card` / `CardContent` | canvas groups, in-chat cards |
 | dashed-border empty states | `Empty` | elevator list, canvas, workspace-not-found |
 | chat/app switch | `Tabs` | both are gone: the switch left with the split ([agreement-workspace](../agreement-workspace/design.md)), and `tabs.tsx` stays installed but unused |
@@ -53,9 +55,11 @@ Three upstream defaults are relaxed at call sites, each to preserve behaviour ra
 
 Installing also swapped the three individual `@radix-ui/react-*` dependencies for the unified `radix-ui` package the current components import from.
 
-## Decision 5: keep native `title` for unavailability
+## Decision 5: native `title` for unavailability, as the second channel rather than the only one
 
 Radix `Tooltip` doesn't fire on a disabled trigger, and every "ruled out by your other choices" and "outside the valid range" explanation in this app sits on a disabled control. Wrapping each in an enabled span to satisfy the tooltip would change focus order and hit targets for no gain, so those explanations stay on the native `title` attribute. `Tooltip` is installed and used only where the trigger is enabled — the frames strip, whose chips carry "click to compare with the current configuration" — which is what `TooltipProvider` in `layout.tsx` is for.
+
+*What this decision got wrong, and what it now means.* The premise holds and the conclusion drawn from it was too narrow: the alternative to a tooltip that will not fire is not a different tooltip, it is not being a tooltip. A disabled control is outside the tab order, so a `title` on one reaches a mouse and nothing else — no keyboard, no touch screen — and for a while every named rule the solver produced arrived that way and stopped there. The rules now render as visible text under the control that refuses, with `aria-describedby` from the control to that line; `RefusalList` in `src/components/refusals.tsx` is the one place it is written. `title` is kept on top of it, because a tooltip is a real convenience for a mouse and costs nothing once it is not the only channel. The [accessible surface](../accessible-surface/design.md) rules this.
 
 There is a catch in keeping `title`. shadcn's `Button` and `Toggle` set `disabled:pointer-events-none`, and a control with no pointer events never gets the hover the browser needs to raise its native tooltip. So every disabled control that carries a reason also carries `disabled:pointer-events-auto`, exported as `KEEP_TITLE` from `src/lib/utils.ts` so the concession and its reason are written once. It can't be clicked either way, and it can still be hovered. This was verified in the running app on both merge paths: every disabled control whose `title` is a reason computes `pointer-events: auto`. Lyra didn't change this default, so the workaround survives the style switch.
 

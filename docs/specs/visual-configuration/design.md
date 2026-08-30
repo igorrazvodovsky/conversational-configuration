@@ -81,6 +81,12 @@ Demand mode doesn't draw on its own, and this cost the first build its picture: 
 
 The environment map and the floor textures take a few seconds to fetch and decode on the first entry, during which a suspended scene renders nothing. A black panel says nothing, so the scene reports when it has mounted — which, being inside the Suspense boundary, it can't do until the loaders have resolved — and the viewer shows a line until then. The cost is the 1.6 MB HDRI, and a smaller one is the obvious lever if it ever matters.
 
+## Decision 10: the agreement is the render's text alternative, and the markup says so
+
+The render draws nothing the agreement does not state, which decision 3 makes structural: every part names the variable it comes from. That already settles what a person who cannot see the picture should be given — not a description of geometry, but the same values in words, which the document mode holds and a button reaches. What the markup never did was say it.
+
+The canvas gets a wrapper with `role="img"` and a name that says what is drawn and where its equivalent is. The role goes on a wrapper around the canvas alone rather than on the panel, because `role="img"` makes its whole subtree presentational and the panel also holds the "drawing the car…" status line, which is not part of the picture. The WebGL canvas has no accessible content of its own, so a name on it would be a name on nothing. `OrbitControls` stays pointer-only; the viewpoint buttons are the keyboard route to every angle the render offers, and they were already that. The [accessible surface](../accessible-surface/design.md) rules this.
+
 ## Alternatives considered
 
 - *A downloaded 3D model.* Argued and rejected in the requirements: a static mesh can't move with the configuration, and the box needs no mesh.

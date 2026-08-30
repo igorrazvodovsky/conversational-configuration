@@ -53,9 +53,10 @@ function CameraRig({
   shaft: ShaftGeometry | null;
 }) {
   const camera = useThree((s) => s.camera);
-  const controls = useThree((s) => s.controls) as
-    | { target: { set: (x: number, y: number, z: number) => void }; update: () => void }
-    | null;
+  const controls = useThree((s) => s.controls) as {
+    target: { set: (x: number, y: number, z: number) => void };
+    update: () => void;
+  } | null;
   const invalidate = useThree((s) => s.invalidate);
   const scene = useRef({ car, shaft });
   scene.current = { car, shaft };
@@ -152,39 +153,60 @@ export default function CarViewer({
 
       <div className="relative min-h-0 flex-1">
         {car ? (
-          <Canvas
-            // Demand, not continuous: frames are drawn when the configuration
-            // changes and while the operator orbits, and never otherwise.
-            frameloop="demand"
-            dpr={[1, 2]}
-            // The buffer has to stay readable or the still-image export the
-            // requirements leave out of scope becomes impossible to add later.
-            gl={{ preserveDrawingBuffer: true, antialias: true }}
-            camera={{ fov: 45, near: 0.05, far: 120 }}
+          /*
+            What the picture is, and where its equivalent is. The render is a
+            projection of values the agreement already states, so the agreement
+            mode is its text alternative rather than a described geometry — a
+            fact the markup never declared (docs/specs/accessible-surface,
+            decision 8).
+
+            The role goes on a wrapper around the canvas alone rather than on
+            the panel: `role="img"` makes its whole subtree presentational, and
+            the panel also holds the status line below, which is not part of
+            the picture. The WebGL canvas has no accessible content of its own,
+            so a name on it is a name on nothing.
+          */
+          <div
+            role="img"
+            className="absolute inset-0"
+            aria-label={`The configured car, ${viewpoint.label.toLowerCase()}. Every value it draws is stated in words in the agreement, which the "Back to the agreement" button opens.`}
           >
-            <Suspense fallback={null}>
-              <CarScene
-                config={config}
-                car={car}
-                shaft={shaft}
-                hidden={hidden}
-                onReady={onReady}
+            <Canvas
+              // Demand, not continuous: frames are drawn when the configuration
+              // changes and while the operator orbits, and never otherwise.
+              frameloop="demand"
+              dpr={[1, 2]}
+              // The buffer has to stay readable or the still-image export the
+              // requirements leave out of scope becomes impossible to add later.
+              gl={{ preserveDrawingBuffer: true, antialias: true }}
+              camera={{ fov: 45, near: 0.05, far: 120 }}
+            >
+              <Suspense fallback={null}>
+                <CarScene
+                  config={config}
+                  car={car}
+                  shaft={shaft}
+                  hidden={hidden}
+                  onReady={onReady}
+                />
+              </Suspense>
+              <OrbitControls
+                makeDefault
+                enablePan={false}
+                minDistance={0.4}
+                maxDistance={24}
+                maxPolarAngle={Math.PI * 0.52}
               />
-            </Suspense>
-            <OrbitControls
-              makeDefault
-              enablePan={false}
-              minDistance={0.4}
-              maxDistance={24}
-              maxPolarAngle={Math.PI * 0.52}
-            />
-            <CameraRig viewpoint={viewpoint} car={car} shaft={shaft} />
-          </Canvas>
+              <CameraRig viewpoint={viewpoint} car={car} shaft={shaft} />
+            </Canvas>
+          </div>
         ) : (
           <MissingValues config={config} />
         )}
+        {/* A sibling of the image rather than a child of it, so it is not
+            swallowed by the image's own name. */}
         {car && !ready && (
-          <p className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">
+          <p className="pointer-events-none absolute inset-0 grid place-items-center text-xs text-muted-foreground">
             drawing the car…
           </p>
         )}

@@ -108,6 +108,7 @@ function ScheduleRow({
         <OptionEditor
           variable={variable.name}
           doc={doc}
+          scope="schedule"
           onDone={() => setOpen(false)}
         />
       </CollapsibleContent>

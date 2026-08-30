@@ -15,6 +15,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Check, FileText, Lock, Sparkles, User } from "lucide-react";
 
+import { Refusal, RefusalList, refusalId } from "@/components/refusals";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,7 +119,9 @@ export const KIND_BADGE: Partial<
 
 /**
  * The option list behind every editable value, wherever it is opened from.
- * Invalid options are unclickable and say why; deltas are monthly at the term
+ * Invalid options are unclickable and say why *on the page* rather than only
+ * in a `title` a disabled control never raises for a keyboard or touch user
+ * (docs/specs/accessible-surface, decision 3); deltas are monthly at the term
  * in effect; a value's situational gloss rides along as its title, so the
  * choice can be made in the building's language rather than the catalogue's.
  */
@@ -126,10 +129,17 @@ export function OptionEditor({
   variable,
   doc,
   onDone,
+  scope,
 }: {
   variable: string;
   doc: DocumentView;
   onDone?: () => void;
+  /** what makes this editor's refusal ids unique on the page. The layer that
+   * mounted it, because two layers can hold an editor for one variable open at
+   * the same time — a prose token's popover and a schedule row's disclosure are
+   * independent — and duplicate ids would send both controls' `aria-describedby`
+   * to whichever line rendered first. */
+  scope: string;
 }) {
   // Every layer's editor renders this component exactly while it is open —
   // schedule rows and prose tokens alike — so its mount is the single place
@@ -144,7 +154,17 @@ export function OptionEditor({
   if (!model) return null;
   const display = displayOf(doc, variable);
 
+  // The refusals of this variable, gathered once so the list underneath and
+  // each control's `aria-describedby` quote one sentence rather than two.
+  const refusals: Refusal[] = model.options.flatMap((option) => {
+    const rules = rulesAgainst(doc.config, variable, option.value);
+    return rules === null
+      ? []
+      : [{ value: option.value, label: option.label, rules }];
+  });
+
   return (
+    <div>
     <div className="flex flex-wrap gap-1.5">
       {model.options.map((option) => {
         // Availability is a swap question — could this value be taken instead
@@ -161,13 +181,19 @@ export function OptionEditor({
             variant={isCurrent ? "default" : "outline"}
             disabled={invalid}
             title={rules ? refusalText(rules) : option.note}
+            aria-describedby={
+              invalid ? refusalId(scope, variable, option.value) : undefined
+            }
             onClick={() => {
               onDone?.();
               doc.onSelect(variable, option.value);
             }}
             className={
               invalid
-                ? `cursor-not-allowed line-through opacity-40 ${KEEP_TITLE}`
+                ? // Muted and struck, never faded: the popover or clause above
+                  // may carry a state of its own and two opacities over one
+                  // string multiply (docs/specs/accessible-surface, decision 2).
+                  `cursor-not-allowed text-muted-foreground line-through ${KEEP_TITLE}`
                 : isCurrent
                   ? ""
                   : "font-normal hover:border-primary"
@@ -176,23 +202,40 @@ export function OptionEditor({
             {isCurrent && <Check />}
             {option.label}
             {delta ? (
-              <span className="opacity-70">+{formatMonthly(delta)}</span>
+              <span className="text-muted-foreground">
+                +{formatMonthly(delta)}
+              </span>
             ) : null}
           </Button>
         );
       })}
     </div>
+    <RefusalList scope={scope} variable={variable} refusals={refusals} />
+    </div>
   );
 }
 
-/** Four renderings for the four distinctions the sheet draws, so a value's
- * standing is legible inside a sentence: agreed, proposed, forced, open. */
+/**
+ * Two renderings, because two is what an underline inside a sentence can
+ * actually draw: *the agreement states this* against *this is not settled*.
+ *
+ * There were six, and four of them — `user`, `agent`, `document`, `forced` —
+ * were identical apart from an `opacity-90`, while `proposed` and `open` split
+ * on dotted against dashed at 40% alpha, which at this size is not a
+ * difference anyone perceives. The sheet was claiming six distinctions and
+ * drawing at most three (docs/specs/accessible-surface, decision 6).
+ *
+ * Who chose a value is not dropped; it moves entirely to `ProvenanceBadge`,
+ * which carries an icon and a word, and to the `sr-only` sentence every token
+ * below now names its kind with. That is where docs/specs/choice-provenance
+ * puts provenance anyway.
+ */
 const TOKEN_STYLE: Record<ValueKind, string> = {
-  user: "font-medium text-foreground decoration-dotted",
-  agent: "font-medium text-foreground decoration-dotted",
-  document: "font-medium text-foreground decoration-dotted",
-  forced: "font-medium text-foreground decoration-dotted opacity-90",
-  proposed: "italic text-muted-foreground decoration-dotted",
+  user: "font-medium text-foreground decoration-solid",
+  agent: "font-medium text-foreground decoration-solid",
+  document: "font-medium text-foreground decoration-solid",
+  forced: "font-medium text-foreground decoration-solid",
+  proposed: "italic text-muted-foreground decoration-dashed",
   open: "italic text-muted-foreground decoration-dashed",
 };
 
@@ -210,10 +253,20 @@ export function ValueToken({
   doc,
   placeholder = "not yet decided",
   phrasing,
+  scope = "token",
 }: {
   variable: string;
   doc: DocumentView;
   placeholder?: string;
+  /**
+   * Which layer wrote this token, for the refusal ids its editor mints.
+   * Three agreement-group values — term, service level, usage profile — are
+   * restated in the recitals as well as stated in the terms, so one variable
+   * has two tokens on one page and their editors would collide on an id
+   * (docs/specs/agreement-document, *Marks in the margin*). Recitals pass
+   * `"recital"`; every other token is the default.
+   */
+  scope?: string;
   /**
    * How this value reads in running text, when the catalogue's label does not
    * fit a sentence — "Office" is a column heading, "an office building" is
@@ -239,6 +292,12 @@ export function ValueToken({
     doc.revealed.has(variable) && "bg-primary/10",
   );
 
+  // A value that cannot be edited says nothing extra. The kind belongs on the
+  // control below, where it describes an affordance somebody is about to use;
+  // here it would interpolate into every sentence of a document whose whole
+  // premise is that it reads as a contract, and the margin's provenance badge
+  // already answers it in the place this design puts attribution
+  // (docs/specs/accessible-surface, decision 6).
   if (display.kind === "forced" || doc.disabled) {
     return (
       <span className={style} title={KIND_TITLE[display.kind]} data-reveal={variable}>
@@ -256,6 +315,10 @@ export function ValueToken({
           title={`${KIND_TITLE[display.kind]} — click to change`}
         >
           {label}
+          {/* On the control and not in the prose: this one is an affordance a
+              keyboard user is about to act on, and its name should say what
+              standing the value has before they change it. */}
+          <span className="sr-only"> — {KIND_TITLE[display.kind]}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -266,6 +329,7 @@ export function ValueToken({
         <OptionEditor
           variable={variable}
           doc={doc}
+          scope={scope}
           onDone={() => setOpen(false)}
         />
       </PopoverContent>
@@ -339,7 +403,7 @@ export function ProvenanceBadge({
   if (!badge) return null;
   const requirements = doc.requirementsFor(variable);
   const className =
-    "gap-1 px-2 py-0.5 text-[10px] font-normal text-muted-foreground";
+    "gap-1 px-2 py-0.5 text-xs font-normal text-muted-foreground";
 
   if (!requirements?.length) {
     return (

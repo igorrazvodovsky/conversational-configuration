@@ -4,7 +4,9 @@
  * In-chat controls for the agent's ask_choices tool (docs/specs/agreement-document).
  *
  * The payload is computed server-side from solver state — valid options only
- * are selectable; invalid values render greyed in place. Option prices are
+ * are selectable; invalid values render struck through in place, with the rules
+ * that ruled them out listed underneath where every input device reaches them
+ * (docs/specs/accessible-surface). Option prices are
  * monthly deltas at the term in effect (docs/specs/service-agreement). Controls go
  * inert once the conversation moves past them or after submission.
  */
@@ -15,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Rule, choiceMessage, formatMonthly, refusalText } from "@/lib/configurator";
+import { Refusal, RefusalList, refusalId } from "@/components/refusals";
 import { KEEP_TITLE } from "@/lib/utils";
 import { useCardDispatch } from "./card-dispatch";
 import { CardPending, CardProps, CardShell, parsePayload } from "./card-shell";
@@ -81,6 +84,7 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
             selected={selections[variable.name]}
             inert={inert}
             onSelect={select}
+            scope={toolCallId}
           />
         </div>
       ))}
@@ -113,18 +117,19 @@ interface ControlProps {
   selected?: string;
   inert: boolean;
   onSelect: (variable: string, value: string) => void;
+  /** what makes this control's refusal ids unique on the page: the tool call
+   * that drew it, since a transcript may hold several cards over one variable */
+  scope: string;
 }
 
-function Control({ variable, selected, inert, onSelect }: ControlProps) {
-  switch (variable.control) {
+function Control(props: ControlProps) {
+  switch (props.variable.control) {
     case "scale":
-      return (
-        <ScaleControl {...{ variable, selected, inert, onSelect }} />
-      );
+      return <ScaleControl {...props} />;
     case "list":
-      return <OptionList {...{ variable, selected, inert, onSelect }} />;
+      return <OptionList {...props} />;
     default:
-      return <ChipRow {...{ variable, selected, inert, onSelect }} />;
+      return <ChipRow {...props} />;
   }
 }
 
@@ -140,50 +145,73 @@ function optionState(o: PayloadOption, selected?: string) {
   };
 }
 
+/** The ruled-out options of one variable, in the shape the shared list wants.
+ * The list is what a keyboard or touch user reads; `title` is a convenience
+ * for the mouse on top of it (docs/specs/accessible-surface, decision 3). */
+function refusalsOf(variable: PayloadVariable, selected?: string): Refusal[] {
+  return variable.options
+    .filter((o) => optionState(o, selected).disabled)
+    .map((o) => ({ value: o.value, label: o.label, rules: o.rules ?? [] }));
+}
+
+/**
+ * Unavailability is a muted foreground and a strike, never an opacity: the
+ * card above may carry a state of its own, and two opacities over one string
+ * multiply (docs/specs/accessible-surface, decision 2).
+ */
+const UNAVAILABLE = `cursor-not-allowed text-muted-foreground line-through ${KEEP_TITLE}`;
+
 function CheapestMark() {
   return (
     <BadgePercent
+      role="img"
       className="inline size-3 text-emerald-600"
       aria-label="cheapest valid option"
     />
   );
 }
 
-function ChipRow({ variable, selected, inert, onSelect }: ControlProps) {
+function ChipRow({ variable, selected, inert, onSelect, scope }: ControlProps) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {variable.options.map((o) => {
-        const { active, disabled, why } = optionState(o, selected);
-        return (
-          <Button
-            key={o.value}
-            size="sm"
-            variant={active ? "default" : "outline"}
-            disabled={disabled || inert}
-            onClick={() => onSelect(variable.name, o.value)}
-            title={why}
-            className={`font-normal ${
-              disabled
-                ? `cursor-not-allowed line-through opacity-40 ${KEEP_TITLE}`
-                : active
-                  ? ""
-                  : "hover:border-primary"
-            }`}
-          >
-            {o.label} {o.cheapest && <CheapestMark />}
-            {o.price > 0 && (
-              <span className="text-xs opacity-70">
-                +{formatMonthly(o.price)}
-              </span>
-            )}
-          </Button>
-        );
-      })}
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {variable.options.map((o) => {
+          const { active, disabled, why } = optionState(o, selected);
+          return (
+            <Button
+              key={o.value}
+              size="sm"
+              variant={active ? "default" : "outline"}
+              disabled={disabled || inert}
+              onClick={() => onSelect(variable.name, o.value)}
+              title={why}
+              aria-describedby={
+                disabled ? refusalId(scope, variable.name, o.value) : undefined
+              }
+              className={`font-normal ${
+                disabled ? UNAVAILABLE : active ? "" : "hover:border-primary"
+              }`}
+            >
+              {o.label} {o.cheapest && <CheapestMark />}
+              {o.price > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  +{formatMonthly(o.price)}
+                </span>
+              )}
+            </Button>
+          );
+        })}
+      </div>
+      <RefusalList
+        scope={scope}
+        variable={variable.name}
+        refusals={refusalsOf(variable, selected)}
+      />
     </div>
   );
 }
 
-function ScaleControl({ variable, selected, inert, onSelect }: ControlProps) {
+function ScaleControl({ variable, selected, inert, onSelect, scope }: ControlProps) {
   const active = variable.options.find(
     (o) => optionState(o, selected).active,
   )?.value;
@@ -211,11 +239,19 @@ function ScaleControl({ variable, selected, inert, onSelect }: ControlProps) {
               title={
                 why ?? (o.price > 0 ? `+${formatMonthly(o.price)}` : undefined)
               }
+              aria-describedby={
+                disabled ? refusalId(scope, variable.name, o.value) : undefined
+              }
               // h-auto + whitespace-normal: toggle items are nowrap and fixed
               // height by default, which makes long scale labels ("630 kg /
               // 8 persons") overlap their neighbours instead of wrapping.
+              //
+              // A segment outside the valid range is told apart by the same
+              // vocabulary the chips use — muted, struck, dashed edge — and
+              // not by a background tint: no tint reaches 3:1 against the card
+              // (docs/specs/accessible-surface, decision 3).
               className={`h-auto min-w-0 flex-1 px-1 py-1.5 text-xs leading-tight whitespace-normal data-[state=on]:bg-primary data-[state=on]:text-primary-foreground ${
-                disabled ? `bg-secondary opacity-40 ${KEEP_TITLE}` : ""
+                disabled ? `border-dashed ${UNAVAILABLE}` : ""
               }`}
             >
               {o.label} {o.cheapest && <CheapestMark />}
@@ -223,14 +259,19 @@ function ScaleControl({ variable, selected, inert, onSelect }: ControlProps) {
           );
         })}
       </ToggleGroup>
-      <div className="mt-0.5 text-[10px] text-muted-foreground">
-        greyed segments are outside the currently valid range
-      </div>
+      {/* Replaces the 10px "greyed segments are outside the currently valid
+          range" legend, which described a distinction the CSS did not draw and
+          named no rule. */}
+      <RefusalList
+        scope={scope}
+        variable={variable.name}
+        refusals={refusalsOf(variable, selected)}
+      />
     </div>
   );
 }
 
-function OptionList({ variable, selected, inert, onSelect }: ControlProps) {
+function OptionList({ variable, selected, inert, onSelect, scope }: ControlProps) {
   return (
     <div className="divide-y border">
       {variable.options.map((o) => {
@@ -244,7 +285,7 @@ function OptionList({ variable, selected, inert, onSelect }: ControlProps) {
               active
                 ? "bg-secondary font-medium"
                 : disabled
-                  ? "opacity-40"
+                  ? "text-muted-foreground"
                   : "hover:bg-secondary"
             }`}
           >
@@ -253,6 +294,9 @@ function OptionList({ variable, selected, inert, onSelect }: ControlProps) {
               disabled={disabled || inert}
               onClick={() => onSelect(variable.name, o.value)}
               title={why}
+              aria-describedby={
+                disabled ? refusalId(scope, variable.name, o.value) : undefined
+              }
               className={`w-full text-left disabled:cursor-not-allowed ${disabled ? KEEP_TITLE : ""}`}
             >
               <ItemContent>
@@ -264,7 +308,16 @@ function OptionList({ variable, selected, inert, onSelect }: ControlProps) {
               </ItemContent>
               <ItemActions className="text-xs text-muted-foreground">
                 {disabled ? (
-                  <span className="max-w-[18rem] text-right">{why}</span>
+                  /* This list is the one control that always showed its
+                     reasons, and it keeps doing so in place. The id is here so
+                     `aria-describedby` points at the visible sentence rather
+                     than at a second copy of it. */
+                  <span
+                    id={refusalId(scope, variable.name, o.value)}
+                    className="max-w-[18rem] text-right"
+                  >
+                    {why}
+                  </span>
                 ) : (
                   <span className="tabular-nums">
                     {o.price > 0 ? `+${formatMonthly(o.price)}` : "included"}
