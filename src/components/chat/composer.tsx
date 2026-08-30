@@ -22,6 +22,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { ComposerAttachments } from "./attachments";
+import { CHAT_COLUMN } from "./column";
 
 /**
  * The placeholder is passed explicitly: CopilotKit's own textarea reads it
@@ -103,14 +104,14 @@ export const configuratorInput = {
     NonNullable<ComponentProps<typeof CopilotChatInput>["children"]>
   >[0]) => (
     /*
-      The view's input overlay is pointer-events-none so the transcript stays
-      reachable around the composer; the composer itself has to opt back in.
-      It is opaque because it floats over the transcript — mid-scroll, rows
-      pass behind it. The bottom padding is CopilotKit's reservation for its
-      licence banner.
+      The composer stands at the foot of the pane rather than floating over the
+      transcript (docs/specs/chat-pane, decision 9), so it needs neither the
+      opaque background that kept rows from showing through nor the
+      `pointer-events-auto` that opted back out of the overlay it sat in. The
+      bottom padding is CopilotKit's reservation for its licence banner.
     */
     <div
-      className="pointer-events-auto mx-auto w-full max-w-3xl bg-background px-4 pt-2"
+      className={cn(CHAT_COLUMN, "pt-2")}
       style={{ paddingBottom: "var(--copilotkit-license-banner-offset, 1rem)" }}
     >
       {/*

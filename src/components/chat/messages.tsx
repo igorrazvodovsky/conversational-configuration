@@ -40,26 +40,21 @@ function UserText({ content }: { content: string }) {
 }
 
 /**
- * The hover toolbar hangs below its message instead of sitting in the column.
+ * The toolbar stands under its message, in the row's own flow, which is what
+ * `MessageFooter` is for (docs/specs/chat-pane, decision 7).
  *
- * It is invisible until the row is hovered, so in flow it reserved its own
- * height under every message — a toolbar's worth of blank space between each
- * turn and the next, with nothing on screen to account for it. Out of flow it
- * costs nothing and appears over the gap the transcript already leaves. That
- * gap is `gap-6`, 24px, which is what the toolbar has to fit into: copy is the
- * only button bound on either row, and it is shrunk to match through its own
- * slot, since a card or a bubble starts at the very top of the row below.
+ * It was an overlay until 2026-08-30, hung at `top-full` and revealed on hover,
+ * so that it cost no height. What that bought in space it lost in placement: a
+ * button floating in the gap belongs to neither of the rows it sits between,
+ * and on a message whose last element is a tool-call line it read as splitting
+ * that line off from the next one. In flow it is always visible, and the space
+ * it takes is space something occupies.
+ *
+ * Copy is the only button bound on either row. It comes down to 24px through
+ * the slot it has, which is this app's size for a control in the chrome; the
+ * class is important because the library's own size is a `cpk:`-prefixed
+ * utility of equal weight and stylesheet order would otherwise decide.
  */
-const TOOLBAR_OVERLAY =
-  "pointer-events-none absolute inset-x-0 top-full opacity-0 transition-opacity " +
-  "group-hover/message:pointer-events-auto group-hover/message:opacity-100 " +
-  // The copy button stays in the tab order while the toolbar is hidden, so
-  // without this a keyboard user tabs onto an invisible control
-  // (constitution #16).
-  "focus-within:pointer-events-auto focus-within:opacity-100";
-
-/* Important, because the library's own size is a `cpk:`-prefixed utility of
-   equal weight and stylesheet order would otherwise decide the winner. */
 const TOOLBAR_BUTTON = "size-6!";
 
 function UserMessage(props: ComponentProps<typeof CopilotChatUserMessage>) {
@@ -70,6 +65,16 @@ function UserMessage(props: ComponentProps<typeof CopilotChatUserMessage>) {
       {...props}
       messageRenderer={UserText}
       copyButton={TOOLBAR_BUTTON}
+      /*
+        The user row's toolbar arrives `cpk:invisible cpk:group-hover:visible`,
+        and the group it waits on is a plain `group`, which this composition
+        has nowhere: shadcn's `Message` names its group `group/message`, so the
+        hover never matched and the toolbar was permanently invisible while
+        keeping its box. In flow that is 28px of nothing under every bubble,
+        which decision 7 forbids. The string slot value merges as a class, and
+        `!` beats the library's own utility.
+      */
+      toolbar="visible!"
     >
       {({ messageRenderer, toolbar }) => (
         <Message align="end">
@@ -78,7 +83,7 @@ function UserMessage(props: ComponentProps<typeof CopilotChatUserMessage>) {
             <Bubble align="end" variant="secondary">
               <BubbleContent>{messageRenderer}</BubbleContent>
             </Bubble>
-            <MessageFooter className={TOOLBAR_OVERLAY}>{toolbar}</MessageFooter>
+            <MessageFooter>{toolbar}</MessageFooter>
           </MessageContent>
         </Message>
       )}
@@ -118,11 +123,7 @@ function AssistantMessage(
               </div>
             )}
             {toolCallsView}
-            {toolbarVisible && (
-              <MessageFooter className={TOOLBAR_OVERLAY}>
-                {toolbar}
-              </MessageFooter>
-            )}
+            {toolbarVisible && <MessageFooter>{toolbar}</MessageFooter>}
           </MessageContent>
         </Message>
       )}

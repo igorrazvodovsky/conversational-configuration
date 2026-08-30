@@ -19,6 +19,8 @@ import {
   MessageScrollerContent,
   MessageScrollerItem,
 } from "@/components/ui/message-scroller";
+import { cn } from "@/lib/utils";
+import { CHAT_COLUMN } from "./column";
 import { CARD_TOOLS } from "@/components/generative-ui/card-shell";
 import { CANVAS_EDIT_PREFIX } from "@/lib/configurator";
 
@@ -140,9 +142,10 @@ function toolRowMessageIds(messages: ChatMessage[]): Set<string> {
 
 /**
  * The item's own `content-visibility: auto` also applies paint containment,
- * which clips anything drawn outside its box — the hover toolbar hangs below
- * one (docs/specs/chat-pane decision 7) and was rendered, revealed and never
- * painted. It is turned off here rather than in the primitive, the way a
+ * which clips anything drawn outside its box. A card's edge is a `ring-1`,
+ * drawn outside the box on a card as wide as the row, so every card in the
+ * transcript was reading as a pair of horizontal rules (docs/specs/chat-pane
+ * decision 7). It is turned off here rather than in the primitive, the way a
  * literal `rounded-*` is; `contain-intrinsic-size` goes inert with it, which
  * decision 2 already argues this transcript can afford. Important, because
  * both are arbitrary-value utilities of equal weight.
@@ -151,9 +154,9 @@ const ROW = "[content-visibility:visible]!";
 
 /**
  * Pulls a row up by the transcript's own gap, leaving the two rows separated
- * by their margins alone. Safe because a tool row carries no hover toolbar to
- * hang into the gap being removed: CopilotKit shows one only on a message with
- * text, and these have none.
+ * by their margins alone. Safe because a tool row carries no toolbar at all:
+ * CopilotKit renders one only on a message with text, so the row above the
+ * gap being closed ends at its tool line and nothing follows it.
  */
 const GROUPED = "-mt-6";
 
@@ -172,7 +175,7 @@ export const configuratorMessageView: CopilotChatMessageViewProps["children"] = 
   const visible = rows(messageElements).filter((row) => !hidden.has(row.id));
 
   return (
-    <MessageScrollerContent className="py-6">
+    <MessageScrollerContent className={cn(CHAT_COLUMN, "py-6")}>
       {visible.map((row, index) => {
         const grouped =
           toolRows.has(row.id) &&

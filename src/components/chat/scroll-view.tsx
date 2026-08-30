@@ -3,20 +3,18 @@
 /**
  * The transcript's scroll container (docs/specs/chat-pane).
  *
- * Three things this takes over from CopilotKit's own view, each of which fails
- * quietly: `autoScroll={false}` on the chat, so its stick-to-bottom and this
- * scroller are not both steering; the children are rendered unwrapped, because
- * they already carry the bottom padding that clears the composer; and the
- * provider is keyed by thread, so a conversation opened from the store starts
- * at its end rather than wherever the last one was.
+ * This is no longer a slot. CopilotKit's `scrollView` exists to hold the
+ * composer's clearance and the suggestion strip inside one scrolled box; the
+ * pane lays those out itself (decision 9), so the scroller is rendered
+ * directly and holds nothing but the message view. It takes the space the
+ * stack leaves it, which is what `flex-1` and `min-h-0` say here.
+ *
+ * The provider is keyed by thread, so a conversation opened from the store
+ * starts at its end rather than wherever the last one was.
  */
 
-import { useEffect, useRef, type ComponentProps } from "react";
-import {
-  CopilotChatView,
-  useAgent,
-  useCopilotChatConfiguration,
-} from "@copilotkit/react-core/v2";
+import { useEffect, useRef, type ReactNode } from "react";
+import { useAgent, useCopilotChatConfiguration } from "@copilotkit/react-core/v2";
 
 import {
   MessageScroller,
@@ -53,18 +51,13 @@ function SettleAtEnd() {
   return null;
 }
 
-type ScrollViewProps = ComponentProps<typeof CopilotChatView.ScrollView>;
-
 export function ConfiguratorScrollView({
   children,
   className,
-  autoScroll: _autoScroll,
-  inputContainerHeight: _inputContainerHeight,
-  isResizing: _isResizing,
-  scrollToBottomButton: _scrollToBottomButton,
-  feather: _feather,
-  ...props
-}: ScrollViewProps) {
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const threadId = useCopilotChatConfiguration()?.threadId;
 
   return (
@@ -74,10 +67,8 @@ export function ConfiguratorScrollView({
       defaultScrollPosition="end"
       scrollPreviousItemPeek={48}
     >
-      <MessageScroller className={cn("min-h-0 flex-1", className)} {...props}>
-        <MessageScrollerViewport className="px-4">
-          {children}
-        </MessageScrollerViewport>
+      <MessageScroller className={cn("min-h-0 flex-1", className)}>
+        <MessageScrollerViewport>{children}</MessageScrollerViewport>
         <MessageScrollerButton />
         <SettleAtEnd />
       </MessageScroller>
