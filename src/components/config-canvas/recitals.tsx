@@ -23,6 +23,7 @@
 import {
   Clause,
   DeviationMark,
+  LeftToUsMark,
   DocumentView,
   LAYER_HEADING,
   ProvenanceBadge,
@@ -79,10 +80,12 @@ function Marks({ doc, variables }: { doc: DocumentView; variables: string[] }) {
     <>
       {variables.map((variable) => {
         const unmet = unmetFor(doc, variable);
+        const leftToUs = doc.leftToUsFor(variable);
         return (
           <div key={variable} className="w-full space-y-1">
             <ProvenanceBadge variable={variable} doc={doc} />
             {unmet && <DeviationMark entries={unmet} doc={doc} />}
+            {leftToUs && <LeftToUsMark clauses={leftToUs} />}
           </div>
         );
       })}

@@ -167,17 +167,78 @@ def test_a_workspace_that_is_gone_does_not_break_the_conversation():
     assert "history" not in command.update
 
 
-def test_declining_a_change_writes_nothing_at_all():
+def test_declining_a_change_moves_nothing_and_is_still_recorded():
     """keep_as_is answers a change that never was: no configuration in the
-    update, and nothing in the store to undo (docs/specs/nonlinear-interaction)."""
+    update, and nothing added to what undo can reach
+    (docs/specs/nonlinear-interaction). What it does leave is an entry saying
+    the change was declined (docs/specs/action-log)."""
     state = attached()
     step(set_choices, state, choices={"building_type": "hospital"}, source="user")
     before = stored(state)
     command = call(keep_as_is, state)
-    assert set(command.update) == {"messages"}
+    assert "configuration" not in command.update
     assert stored(state) == before
-    assert workspace_store.history_depths(
-        workspace_store.get_workspace(state["workspace_id"]))["undo"] == 1
+
+    record = workspace_store.get_workspace(state["workspace_id"])
+    entry = workspace_store.draft_log(record)[-1]
+    assert (entry["action"], entry["asserted"], entry["retracted"]) == (
+        "keep_as_is", [], [])
+    assert workspace_store.history_depths(record)["undo"] == 1
+
+
+def test_declining_a_change_without_a_workspace_records_nothing():
+    command = call(keep_as_is, detached())
+    assert set(command.update) == {"messages"}
+
+
+# -- the log (docs/specs/action-log) --------------------------------------
+
+
+def _last_entry(state: dict) -> dict:
+    return workspace_store.draft_log(
+        workspace_store.get_workspace(state["workspace_id"]))[-1]
+
+
+def test_every_content_tool_commits_under_its_own_name():
+    """The runtime carries no tool name, so each tool passes its own. A name
+    that drifts from the tool spending it fails here, and a tool that commits
+    without one raises before it can log anonymously."""
+    state = attached()
+    for tool, kwargs in [
+        (set_choices, {"choices": {"building_type": "hotel"}, "source": "user"}),
+        (revise_choices, {"changes": {"building_type": "office"}, "source": "user"}),
+        (propose_completion, {}),
+        (clear_choices, {"variables": ["building_type"]}),
+        (keep_as_is, {}),
+    ]:
+        step(tool, state, **kwargs)
+        assert _last_entry(state)["action"] == tool.name, tool.name
+
+    document = seeded()
+    assert _last_entry(document)["action"] == "ingest_rfq"
+    step(reconcile_requirement, document, variable="rated_speed", move="open")
+    assert _last_entry(document)["action"] == "reconcile_requirement"
+
+
+def test_the_names_an_entry_may_carry_are_tools_that_commit():
+    """CONTENT_ACTIONS is what the offline coupling check reads, so it has to
+    stay the set of tools that reach a store door."""
+    assert configuration_module.CONTENT_ACTIONS <= {
+        t.name for t in configuration_module.configuration_tools}
+    with pytest.raises(ValueError, match="not an action the log knows"):
+        configuration_module._logged("switch_draft")
+
+
+def test_an_entry_records_whose_move_it_was():
+    """Not always who the facts are attributed to: the two content tools pass
+    their own argument, so the agent recording what the customer just said logs
+    a customer's move."""
+    state = attached()
+    step(set_choices, state, choices={"building_type": "hotel"}, source="user")
+    step(propose_completion, state)
+    log = workspace_store.draft_log(
+        workspace_store.get_workspace(state["workspace_id"]))
+    assert [e["source"] for e in log] == ["user", "agent"]
 
 
 # -- the mirrors the canvas renders from (docs/specs/parallel-drafts) -----
@@ -201,6 +262,22 @@ def test_every_structural_move_mirrors_the_drafts():
         step(discard_draft_tool, state, name="Premium"),
     ):
         assert MIRRORS <= set(command.update), text(command)
+
+
+def test_declining_a_change_costs_the_customer_no_redo():
+    """It writes an entry, so it has to mirror the counts — and it must not
+    change them. A decline leaves the agreement where the undone change was
+    replayable from, so the redo survives it and redo still puts it back."""
+    state = attached()
+    step(set_choices, state, choices={"building_type": "hospital"}, source="user")
+    step(undo_change, state)
+    assert state["history"] == {"undo": 0, "redo": 1}
+
+    command = step(keep_as_is, state)
+    assert MIRRORS <= set(command.update)
+    assert command.update["history"] == {"undo": 0, "redo": 1}
+    step(redo_change, state)
+    assert stored(state)["choices"]["building_type"]["value"] == "hospital"
 
 
 def test_a_restore_mirrors_the_drafts_too():
@@ -283,6 +360,114 @@ def test_changes_that_contradict_each_other_come_back_as_the_conflict():
     )
     assert text(command).startswith("REJECTED")
     assert "configuration" not in command.update
+
+
+def _after(message: str, state: dict) -> dict:
+    """The state a tool sees on a turn the customer opened with `message`."""
+    return {**state, "messages": [{"role": "user", "content": message}]}
+
+
+def test_set_choices_refuses_a_message_the_customer_dispatched():
+    """The routing is a fact about the message, not a request to the model: the
+    prompt asking for revise_choices was measurably not enough on the opening
+    turn of a conversation (docs/specs/one-gesture-one-action)."""
+    state = attached()
+    command = call(
+        set_choices,
+        _after("Set Building type to Hospital (building_type=hospital)", state),
+        choices={"building_type": "hospital"}, source="user",
+    )
+    assert text(command).startswith("REFUSED")
+    assert "revise_choices" in text(command)
+    assert "configuration" not in command.update
+    assert stored(state)["choices"] == {}
+
+
+def test_set_choices_refuses_a_sheet_edit_too():
+    state = attached()
+    command = call(
+        set_choices,
+        _after("Canvas edit: Set Building type to Hospital (building_type=hospital)",
+               state),
+        choices={"building_type": "hospital"}, source="user",
+    )
+    assert text(command).startswith("REFUSED")
+    assert stored(state)["choices"] == {}
+
+
+def test_set_choices_still_records_what_the_customer_said_in_prose():
+    """The guard reaches the dispatched sentences and nothing else. A customer
+    describing their building is what set_choices is for."""
+    state = attached()
+    step(set_choices, _after("It's a hospital in Frankfurt.", state),
+         choices={"building_type": "hospital"}, source="user")
+    assert stored(state)["choices"]["building_type"]["value"] == "hospital"
+
+
+def test_prose_that_opens_on_the_grammars_own_word_is_not_a_gesture():
+    """"Set up an elevator for a hospital" is a customer talking. Matching the
+    first word would send a batch the agent translated out of prose to a total
+    action, and lose the partial application that protects the rest of what
+    they said (docs/specs/agent-tools design, what a rejection costs)."""
+    state = attached()
+    step(set_choices,
+         _after("Set up an elevator for a hospital, 12 floors, busy mornings.",
+                state),
+         choices={"building_type": "hospital"}, source="user")
+    assert stored(state)["choices"]["building_type"]["value"] == "hospital"
+
+
+def test_a_conflicting_pick_on_an_undecided_term_still_offers_repairs():
+    """Every dispatched `Set …` sentence reaches this tool, so a pick on a term
+    nobody had decided gets repair paths rather than the refusal `set_choices`
+    would give it (docs/specs/one-gesture-one-action)."""
+    state = attached()
+    step(set_choices, state, choices={"installation": "modernization"},
+         source="user")
+    command = call(revise_choices, state,
+                   changes={"rated_speed": "mps3_0"}, source="user")
+    payload = json.loads(text(command))
+    assert payload["kind"] == "repairs"
+    assert [d["variable"] for d in payload["repairs"][0]["drop"]] == ["installation"]
+    assert "configuration" not in command.update
+
+
+def test_a_half_conflicting_batch_lands_nothing_and_offers_repairs():
+    """What a multi-variable control dispatches is one total action: the
+    customer picked every value in it deliberately, so the innocent half
+    landing is worse than being shown the way through. This is the reverse of
+    what `set_choices` does with a prose batch (docs/specs/agent-tools design,
+    what a rejection costs)."""
+    state = attached()
+    step(set_choices, state, choices={"installation": "modernization"},
+         source="user")
+    command = call(
+        revise_choices, state,
+        changes={"rated_speed": "mps3_0", "building_type": "hotel"},
+        source="user",
+    )
+    payload = json.loads(text(command))
+    assert payload["kind"] == "repairs"
+    assert [d["variable"] for d in payload["repairs"][0]["drop"]] == ["installation"]
+    assert "configuration" not in command.update
+    # the innocent half of the batch is not recorded either
+    assert "building_type" not in stored(state)["choices"]
+
+
+def test_a_batch_of_undecided_terms_applies_whole():
+    """The ordinary case of a dispatched batch: nothing was decided before, and
+    the tool that used to be for revisions records it without ceremony."""
+    state = attached()
+    step(revise_choices, state,
+         changes={"building_type": "office", "region": "europe",
+                  "installation": "new_build"},
+         source="user")
+    choices = stored(state)["choices"]
+    assert {v: c["value"] for v, c in choices.items()
+            if v in ("building_type", "region", "installation")} == {
+        "building_type": "office", "region": "europe",
+        "installation": "new_build"}
+    assert choices["building_type"]["source"] == "user"
 
 
 def test_applying_a_repair_drops_and_sets_in_one_step():
@@ -381,11 +566,26 @@ def test_undo_reverses_the_last_batch_and_redo_puts_it_back():
     assert stored(state)["choices"]["building_type"]["value"] == "hospital"
 
 
-def test_undo_names_what_moved_in_the_customer_s_terms():
+def test_undo_names_the_move_it_reversed_and_whose_it_was():
+    """The record holds the action, so the reply can name the move rather than
+    describe the difference it made (ontology finding 3)."""
+    state = attached()
+    step(set_choices, state, choices={"building_type": "hospital"}, source="agent")
+    command = step(undo_change, state)
+    assert "the assistant's recording of Building type" in text(command)
+    # and what moved is still said, because the customer is about to see it
+    assert "Hospital" in text(command)
+
+
+def test_undo_walks_past_a_declined_change_to_the_batch_before_it():
+    """A decline sits between the customer and the batch they mean to reverse,
+    and it is no step back to anywhere."""
     state = attached()
     step(set_choices, state, choices={"building_type": "hospital"}, source="user")
+    step(keep_as_is, state)
     command = step(undo_change, state)
-    assert "Hospital" in text(command)
+    assert "your recording of Building type" in text(command)
+    assert stored(state)["choices"] == {}
 
 
 def test_each_end_of_the_history_says_which_end_it_is():
@@ -394,9 +594,24 @@ def test_each_end_of_the_history_says_which_end_it_is():
     assert "Nothing to redo" in text(call(redo_change, state))
 
 
-def test_undo_walks_the_current_draft_s_own_history():
-    """A fork starts with no history of its own, so an undo taken on it must
-    not reach into the history of the draft it came from."""
+def test_a_walk_that_has_used_its_whole_reach_does_not_claim_to_be_the_start():
+    """Two refusals, not one: earlier states are still in the record, and
+    saying the agreement is at its earliest recorded state would be false."""
+    state = attached()
+    loads = ["kg630", "kg1000", "kg1250", "kg1600", "kg2000"] * 3
+    for load in loads:
+        step(revise_choices, state, changes={"rated_load": load}, source="user")
+    for _ in range(workspace_store.HISTORY_DEPTH):
+        step(undo_change, state)
+
+    command = call(undo_change, state)
+    assert "as far as undo reaches" in text(command)
+    assert "earliest recorded state" not in text(command)
+
+
+def test_undo_walks_the_current_draft_s_own_log():
+    """A fork starts with no log of its own, so an undo taken on it must not
+    reach into the log of the draft it came from."""
     state = attached()
     step(set_choices, state, choices={"building_type": "hospital"}, source="user")
     step(fork_draft_tool, state, name="Premium")
@@ -422,7 +637,7 @@ def test_undo_when_the_workspace_is_gone_is_an_error():
 
 def seeded() -> dict:
     state = attached()
-    step(ingest_rfq, state, requirements=OFFICE_TOWER, unmapped=[],
+    step(ingest_rfq, state, clauses=OFFICE_TOWER,
          document_text=OFFICE_TOWER_PATH.read_text(),
          budget_cap=OFFICE_TOWER_BUDGET_CAP)
     return state
@@ -438,7 +653,7 @@ def test_ingest_seeds_the_agreement_and_names_its_deviations():
 
 def test_ingest_reports_the_rules_behind_each_deviation():
     state = attached()
-    command = step(ingest_rfq, state, requirements=OFFICE_TOWER, unmapped=[],
+    command = step(ingest_rfq, state, clauses=OFFICE_TOWER,
                    document_text=OFFICE_TOWER_PATH.read_text(),
                    budget_cap=OFFICE_TOWER_BUDGET_CAP)
     assert "Because R" in text(command)
@@ -452,7 +667,7 @@ def test_ingest_freezes_the_document_text_on_the_workspace():
 
 def test_ingest_reports_the_cap_the_document_states():
     state = attached()
-    command = step(ingest_rfq, state, requirements=OFFICE_TOWER, unmapped=[],
+    command = step(ingest_rfq, state, clauses=OFFICE_TOWER,
                    document_text=OFFICE_TOWER_PATH.read_text(),
                    budget_cap=OFFICE_TOWER_BUDGET_CAP)
     assert f"caps the charge at {OFFICE_TOWER_BUDGET_CAP} EUR/month" in text(command)
@@ -461,18 +676,55 @@ def test_ingest_reports_the_cap_the_document_states():
 def test_ingest_lists_the_clauses_no_variable_carries():
     state = attached()
     command = step(
-        ingest_rfq, state, requirements=OFFICE_TOWER,
-        unmapped=[{"clause": "6.3", "quote": "Possession of the shaft is available "
-                                             "from 4 May 2026", "note": "possession"}],
+        ingest_rfq, state,
+        clauses=OFFICE_TOWER + [
+            {"clause": "6.3", "quote": "Possession of the shaft is available "
+                                       "from 4 May 2026", "note": "possession"}],
         document_text=OFFICE_TOWER_PATH.read_text(),
     )
     assert "no product variable carries" in text(command) and "6.3" in text(command)
 
 
+def test_a_thread_written_before_clause_identity_still_reads_its_document():
+    """State arrives from a thread checkpoint, which the store's read-time
+    adapter never sees, so the tool door lifts it too
+    (docs/specs/document-clauses)."""
+    state = attached()
+    state["configuration"] = {
+        **empty_configuration(),
+        "choices": {"rated_speed": {"value": "mps2_5", "source": "document"}},
+        "rfq": {
+            "requirements": [{"variable": "rated_speed", "value": "mps3_0",
+                              "clause": "3.1", "quote": "3.0 m/s",
+                              "reconciliation": "pending"}],
+            "unmapped": [],
+        },
+    }
+    command = call(get_configuration, state)
+    assert "clause 3.1" in command or "3.1" in command
+    assert not command.startswith("ERROR:")
+
+
+def test_ingest_reports_the_clauses_the_document_leaves_to_us():
+    """The third kind of clause reaches the agent as something to raise
+    (docs/specs/document-clauses, finding 9)."""
+    state = attached()
+    command = step(
+        ingest_rfq, state,
+        clauses=OFFICE_TOWER + [
+            {"variable": "door_finish", "clause": "6.5",
+             "quote": "Door finish open to proposal"}],
+        document_text=OFFICE_TOWER_PATH.read_text(),
+    )
+    assert "leaves these to us" in text(command) and "clause 6.5" in text(command)
+    left = configuration_module.clauses_left_to_us(stored(state))
+    assert [c["clause"] for c in left] == ["6.5"]
+
+
 def test_ingesting_twice_is_an_error_and_moves_nothing():
     state = seeded()
     before = stored(state)
-    command = call(ingest_rfq, state, requirements=OFFICE_TOWER, unmapped=[],
+    command = call(ingest_rfq, state, clauses=OFFICE_TOWER,
                    document_text="")
     assert text(command).startswith("ERROR:")
     assert stored(state) == before
@@ -488,8 +740,123 @@ def test_accepting_a_deviation_waives_it_and_reports_the_register():
     assert "Waived clause" in text(command)
     assert "Waived (still listed, never forgotten)" in text(command)
     marks = {r["variable"]: r["reconciliation"]
-             for r in stored(state)["rfq"]["requirements"]}
+             for r in configuration_module.requirements(stored(state))}
     assert marks[deviation] == "waived"
+
+
+def test_a_thread_resumed_before_clause_identity_takes_the_record_s_clauses():
+    """The second door into a configuration. A pre-document-clauses checkpoint
+    holds two lists, and minting identity for them here would hand the store a
+    document it does not recognise — so the block is taken from the record,
+    which minted them once already (docs/specs/document-clauses, decision 3)."""
+    state = attached()
+    step(ingest_rfq, state,
+         clauses=[{"variable": "rated_speed", "value": "mps3_0",
+                   "clause": "3.1", "quote": "3.0 m/s"}],
+         document_text="tender")
+    minted = [c["id"] for c in stored(state)["rfq"]["clauses"]]
+
+    # what the checkpoint of a conversation written before that spec carries
+    old = {**state["configuration"], "rfq": {
+        "requirements": [{"variable": "rated_speed", "value": "mps3_0",
+                          "clause": "3.1", "quote": "3.0 m/s",
+                          "reconciliation": "pending"}],
+        "unmapped": [],
+    }}
+    resumed = {"workspace_id": state["workspace_id"], "configuration": old}
+    step(revise_choices, resumed, changes={"building_type": "hotel"},
+         source="user")
+
+    assert [c["id"] for c in stored(resumed)["rfq"]["clauses"]] == minted
+    entry = workspace_store.draft_log(
+        workspace_store.get_workspace(state["workspace_id"]))[-1]
+    relations = {f[0] for f in entry["asserted"] + entry["retracted"]}
+    # the edit moved a choice and dropped the candidate; the document is
+    # untouched, where a second minting would have rewritten every clause of it
+    assert not relations & {"cites", "quote", "carries", "requires",
+                            "note", "reconciled"}
+
+
+def test_undoing_a_move_that_only_marked_a_clause_names_its_term():
+    """`reconciled(Clause, Mark)` names a clause, so a reopen — the one move
+    whose whole content is a mark — has no term in its facts. The reversal
+    resolves the clause to say what moved (docs/specs/document-clauses)."""
+    state = seeded()
+    deviation = next(
+        e["variable"] for e in configuration_module.register(state["configuration"])
+        if e["status"] == "deviation")
+    step(reconcile_requirement, state, variable=deviation, move="accept")
+    step(reconcile_requirement, state, variable=deviation, move="open")
+
+    label = configuration_module.MODEL.variables[deviation].label
+    said = text(step(undo_change, state))
+    assert f"deviation on {label}" in said
+    assert "nothing the sheet shows" not in said
+
+
+def test_undoing_an_ingestion_names_it_once():
+    """The action's phrase and the possessive before it are one sentence, and
+    this action's source is always the document."""
+    state = seeded()
+    said = text(step(undo_change, state))
+    # the source possessive and the phrase are one sentence, so "the document"
+    # may appear once in the naming of the move and not twice
+    named = said.split(".")[0]
+    assert "the document's seeding" in named
+    assert named.count("the document") == 1
+
+
+def test_coming_into_line_with_the_document_is_not_reported_as_a_revision():
+    """Revising onto the value the document asked for answers no clause: every
+    clause on the term is now met, so nothing was waived or revised. Reporting
+    it as "Clause  revised" named a move that did not happen, and named it with
+    an empty citation (docs/specs/document-clauses, decision 4)."""
+    state = attached()
+    step(ingest_rfq, state,
+         clauses=[
+             {"variable": "installation", "value": "modernization",
+              "clause": "1.2", "quote": "modernization"},
+             {"variable": "service_level", "value": "premium",
+              "clause": "4.1", "quote": "24/7 cover"},
+         ],
+         document_text="tender")
+    # off the requirement, then back onto it
+    step(reconcile_requirement, state, variable="service_level",
+         move="revise", value="standard")
+    command = step(reconcile_requirement, state, variable="service_level",
+                   move="revise", value="premium")
+
+    said = text(command)
+    # the facts the message has to carry: which clause, and that it is met
+    assert "Clause 4.1" in said.split("\n")[0]
+    assert "Clause  " not in said, "a citation the move could not fill"
+    statuses = {e["variable"]: e["status"]
+                for e in configuration_module.register(stored(state))}
+    assert statuses["service_level"] == "met"
+    # and no clause was marked by this move, so nothing may be reported as one
+    assert "along with the rest" not in said
+
+
+def test_a_move_that_answers_some_clauses_still_names_them():
+    """The other side of it: a document asking two values of one term has a
+    clause to waive and a clause it already meets, and both are named."""
+    state = attached()
+    step(ingest_rfq, state,
+         clauses=[
+             {"variable": "building_type", "value": "office",
+              "clause": "1.1", "quote": "office"},
+             {"variable": "rated_speed", "value": "mps1_6",
+              "clause": "3.1", "quote": "1.6 m/s"},
+             {"variable": "rated_speed", "value": "mps3_0",
+              "clause": "7.4", "quote": "3.0 m/s"},
+         ],
+         document_text="tender")
+    said = text(step(reconcile_requirement, state,
+                     variable="rated_speed", move="accept"))
+    waived = said.split("\n")[0]
+    assert waived.startswith("Waived clause 7.4:") or \
+        waived.startswith("Waived clause 3.1:")
+    assert "asked for that value and is now met" in said
 
 
 def test_revising_a_requirement_into_a_collision_returns_repairs():

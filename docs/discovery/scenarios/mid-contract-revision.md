@@ -16,8 +16,8 @@ Changing something already agreed is an ordinary move. When the change collides 
 2. The customer asks for a speed the existing shaft can't carry.
 3. Repair options appear, each with its ripple and its rules, alongside the option of changing nothing.
 4. The customer abandons. Nothing moves.
-5. The customer asks again and applies a repair. It lands atomically, and the pit, headroom, platform and drive follow as consequences.
-6. Undo reverses the change, what it dropped and what it rippled, together, and redo restores it.
+5. The customer asks again, this time by changing the speed on the sheet, and applies a repair. It lands atomically, and the pit, headroom, platform and drive follow as consequences. Asking from the sheet reaches the same repair path as asking in words, which is what [one gesture, one action](../../specs/one-gesture-one-action/design.md) settles.
+6. Undo reverses the change, what it dropped and what it rippled, together, naming the move it reversed and whose it was; redo restores it.
 
 ## What it demonstrates
 

@@ -9,20 +9,28 @@ from src.configuration import (
     SOLVER,
     apply_choices,
     build_repair_payload,
-    describe_restoration,
+    clauses_left_to_us,
+    describe_delta,
     draft_comparison,
     empty_configuration,
     ingest,
     keep_as_is,
+    live_value,
     make_candidate,
+    name_action,
+    _terms_named,
     reconcile,
     record_choices,
     register,
+    requirements,
+    cursor_move,
     restore,
     revise,
-    snapshot,
+    unmapped_clauses,
+    variables_by_clause,
     withdraw_choices,
 )
+from src import trace
 from src.product_model.reference import REFERENCE
 from src.solver import ConflictError
 from tests.rfq_fixtures import OFFICE_TOWER
@@ -159,7 +167,7 @@ def test_unavailable_is_rebuilt_on_restore(empty):
     """Derived state cannot survive an undo stale, or the document starts
     explaining an agreement that is no longer there."""
     config, _ = apply_choices(empty, {"building_type": "hospital"}, "user")
-    revived = restore(snapshot(config))
+    revived = restore(trace.rebuild(trace.facts(config)))
     # Which options are out is the assertion; *which* minimal core Z3 hands
     # back for one of them can differ between two runs of the same question,
     # and either core is a true one.
@@ -495,7 +503,7 @@ FIXTURE_B = OFFICE_TOWER
 
 @pytest.fixture()
 def seeded(empty):
-    config, _, _ = ingest(empty, FIXTURE_B, [], budget_cap=1800)
+    config, _, _ = ingest(empty, FIXTURE_B, budget_cap=1800)
     return config
 
 
@@ -509,7 +517,7 @@ def test_ingest_records_every_kept_requirement_with_document_provenance(seeded):
 
 
 def test_ingest_freezes_the_document_and_seeds_a_valid_whole(seeded):
-    stored = seeded["rfq"]["requirements"]
+    stored = requirements(seeded)
     assert len(stored) == len(FIXTURE_B)
     assert all(r["reconciliation"] == "pending" for r in stored)
     assert {(r["variable"], r["clause"], r["quote"]) for r in stored} == {
@@ -536,48 +544,88 @@ def test_register_of_an_unseeded_agreement_is_empty(empty):
     assert register(empty) == []
 
 
-def test_ingest_demotes_unknown_codes_instead_of_dropping_them(empty):
+def test_a_clause_the_model_cannot_carry_stays_a_clause(empty):
+    """Nothing is demoted between lists, because there is one list: a clause
+    the model cannot carry loses the facts it cannot hold and keeps the rest
+    (docs/specs/document-clauses)."""
     entries = FIXTURE_B + [
         {"variable": "budget", "value": "eur1800", "clause": "6.1", "quote": "cap"},
         {"variable": "rated_load", "value": "kg9999", "clause": "9.9", "quote": "bogus"},
     ]
-    config, _, demoted = ingest(empty, entries, [])
-    assert [u["clause"] for u in demoted] == ["6.1", "9.9"]
-    assert "no product variable" in demoted[0]["note"]
-    assert "is not a value of" in demoted[1]["note"]
-    # nothing silently dropped: every demoted clause is listed as unmapped
-    assert {u["clause"] for u in config["rfq"]["unmapped"]} == {"6.1", "9.9"}
-    assert len(config["rfq"]["requirements"]) == len(FIXTURE_B)
+    config, _, unmappable = ingest(empty, entries)
+    assert [u["clause"] for u in unmappable] == ["6.1", "9.9"]
+    assert "no product variable" in unmappable[0]["note"]
+    assert "is not a value of" in unmappable[1]["note"]
+    # nothing silently dropped, and nothing moved: both are clauses of the one
+    # list, carrying neither the variable nor the value the model rejected
+    assert {u["clause"] for u in unmapped_clauses(config)} == {"6.1", "9.9"}
+    assert all("variable" not in u for u in unmapped_clauses(config))
+    assert [c["quote"] for c in unmapped_clauses(config)] == ["cap", "bogus"]
+    assert len(requirements(config)) == len(FIXTURE_B)
+    assert len(config["rfq"]["clauses"]) == len(FIXTURE_B) + 2
 
 
 def test_ingest_keeps_the_document_s_own_unmapped_clauses(empty):
-    config, _, _ = ingest(empty, FIXTURE_B,
-                          [{"clause": "6.3", "quote": "Possession of the shaft",
-                            "note": "programme, not a product variable"}])
-    assert config["rfq"]["unmapped"][0]["clause"] == "6.3"
+    config, _, unmappable = ingest(empty, FIXTURE_B + [
+        {"clause": "6.3", "quote": "Possession of the shaft",
+         "note": "programme, not a product variable"}])
+    assert unmapped_clauses(config)[0]["clause"] == "6.3"
+    assert unmapped_clauses(config)[0]["note"].startswith("programme")
+    # a clause the extraction placed correctly is not reported as one the
+    # model could not carry
+    assert unmappable == []
+
+
+def test_a_clause_left_to_us_is_recorded_and_asks_for_nothing(empty):
+    """The third kind: a variable carries it, the document states no value
+    (docs/specs/document-clauses, finding 9)."""
+    config, _, _ = ingest(empty, FIXTURE_B + [
+        {"variable": "door_finish", "clause": "5.9",
+         "quote": "Door finish open to proposal"}])
+    left = clauses_left_to_us(config)
+    assert [c["clause"] for c in left] == ["5.9"]
+    assert left[0]["variable"] == "door_finish"
+    assert "value" not in left[0] and "reconciliation" not in left[0]
+    # it seeds nothing and deviates from nothing
+    assert "door_finish" not in config["choices"]
+    assert all(e["clause"] != "5.9" for e in register(config))
+
+
+def test_a_clause_left_to_us_on_an_unknown_variable_is_unmapped(empty):
+    config, _, unmappable = ingest(empty, FIXTURE_B + [
+        {"variable": "handover", "clause": "6.4", "quote": "date to be agreed"}])
+    assert clauses_left_to_us(config) == []
+    assert [u["clause"] for u in unmappable] == ["6.4"]
+
+
+def test_every_clause_carries_an_identity_of_its_own(empty):
+    config, _, _ = ingest(empty, FIXTURE_B + [
+        {"clause": "6.3", "quote": "Possession", "note": "programme"}])
+    ids = [c["id"] for c in config["rfq"]["clauses"]]
+    assert all(ids) and len(set(ids)) == len(ids)
 
 
 def test_ingest_twice_is_rejected(seeded):
     with pytest.raises(ValueError, match="already seeded"):
-        ingest(seeded, FIXTURE_B, [])
+        ingest(seeded, FIXTURE_B)
 
 
 def test_ingest_rejects_an_already_configured_agreement(empty):
     config, _ = apply_choices(empty, {"building_type": "hotel"}, "user")
     with pytest.raises(ValueError, match="already has recorded choices"):
-        ingest(config, FIXTURE_B, [])
+        ingest(config, FIXTURE_B)
 
 
 def test_ingest_maps_nothing_is_rejected(empty):
     with pytest.raises(ValueError, match="maps to a product variable"):
         ingest(empty, [{"variable": "budget", "value": "x", "clause": "6.1",
-                        "quote": "cap"}], [])
+                        "quote": "cap"}])
 
 
 def test_failed_ingest_leaves_no_partial_state(empty):
     before = json.loads(json.dumps(empty))
     with pytest.raises(ValueError):
-        ingest(empty, [{"variable": "nope", "value": "x", "clause": "1", "quote": "q"}], [])
+        ingest(empty, [{"variable": "nope", "value": "x", "clause": "1", "quote": "q"}])
     assert empty == before
 
 
@@ -593,7 +641,7 @@ def test_accept_waives_the_requirement_and_pins_the_offered_value(seeded):
 
 
 def test_accept_needs_something_offered(empty):
-    config, _, _ = ingest(empty, [FIXTURE_B[0]], [])
+    config, _, _ = ingest(empty, [FIXTURE_B[0]])
     with pytest.raises(ValueError, match="already meets the document"):
         reconcile(config, "building_type", "accept")
 
@@ -613,7 +661,7 @@ def test_revise_marks_the_requirement_and_moves_the_agreement(seeded):
 def test_revising_back_onto_the_document_reads_as_met(empty):
     """The register is the diff, not a history of moves: an agreement that
     lands on the document's value complies, whatever happened on the way."""
-    config, _, _ = ingest(empty, FIXTURE_B[:6], [])
+    config, _, _ = ingest(empty, FIXTURE_B[:6])
     config, _, _ = reconcile(config, "usage_profile", "revise", "medium")
     assert next(e for e in register(config)
                 if e["variable"] == "usage_profile")["status"] == "revised"
@@ -643,7 +691,7 @@ def test_open_puts_a_reconciled_requirement_back(seeded):
                 if e["variable"] == "rated_speed")["status"] == "deviation"
 
 
-def test_reconcile_moves_every_clause_on_one_variable_together(empty):
+def test_reconcile_answers_every_clause_on_one_variable_together(empty):
     """Three clauses bearing on service level are one disagreement, answered
     once — that is how a tender reads."""
     entries = [
@@ -653,10 +701,36 @@ def test_reconcile_moves_every_clause_on_one_variable_together(empty):
         {"variable": "service_level", "value": "premium", "clause": "4.2", "quote": "8 h"},
         {"variable": "service_level", "value": "premium", "clause": "4.3", "quote": "99.5 %"},
     ]
-    config, _, _ = ingest(empty, entries, [])
+    config, _, _ = ingest(empty, entries)
     config, _, _ = reconcile(config, "service_level", "revise", "standard")
     marks = [e["status"] for e in register(config) if e["variable"] == "service_level"]
     assert marks == ["revised", "revised", "revised"]
+
+
+def test_a_move_marks_the_clauses_it_answers_and_no_others(empty):
+    """A document that asks two different values of one term is answered per
+    clause: accepting what is offered waives the clause that deviates and
+    leaves the clause the agreement meets alone (docs/specs/document-clauses,
+    finding 6). Before clauses had identity, both took the same mark."""
+    entries = [
+        {"variable": "building_type", "value": "office", "clause": "1.1", "quote": "a"},
+        {"variable": "rated_speed", "value": "mps1_6", "clause": "3.1", "quote": "b"},
+        {"variable": "rated_speed", "value": "mps3_0", "clause": "7.4", "quote": "c"},
+    ]
+    config, _, _ = ingest(empty, entries)
+    offered = live_value(config, "rated_speed")
+    asked = {c["clause"]: c["value"] for c in requirements(config)}
+    deviating = next(k for k, v in asked.items() if v != offered and k != "1.1")
+    met = next(k for k, v in asked.items() if v == offered)
+
+    config, _, _ = reconcile(config, "rated_speed", "accept")
+    marks = {c["clause"]: c["reconciliation"] for c in requirements(config)}
+    assert marks[deviating] == "waived"
+    assert marks[met] == "pending"
+    # and the register reads the same way
+    statuses = {e["clause"]: e["status"] for e in register(config)}
+    assert statuses[deviating] == "waived"
+    assert statuses[met] == "met"
 
 
 def test_duplicate_clauses_do_not_outvote_a_single_one(empty):
@@ -669,7 +743,7 @@ def test_duplicate_clauses_do_not_outvote_a_single_one(empty):
         {"variable": "rated_speed", "value": "mps3_0", "clause": "3.2", "quote": "c"},
         {"variable": "rated_speed", "value": "mps3_0", "clause": "3.3", "quote": "d"},
     ]
-    config, seeded_result, _ = ingest(empty, entries, [])
+    config, seeded_result, _ = ingest(empty, entries)
     assert len(seeded_result.deviations) == 1
     assert config["choices"]["installation"]["value"] == "modernization"
 
@@ -678,7 +752,7 @@ def test_the_frozen_reference_survives_every_later_transition(seeded):
     """Reconciliation and revision move the agreement; the document does not
     move. Deleting a conversation loses nothing but the argument."""
     immutable = [{k: v for k, v in r.items() if k != "reconciliation"}
-                 for r in seeded["rfq"]["requirements"]]
+                 for r in requirements(seeded)]
     config, _, _ = reconcile(seeded, "rated_speed", "accept")
     config, _ = apply_choices(config, {"wall_finish": "laminate"}, "user")
     config = make_candidate(config)
@@ -686,7 +760,7 @@ def test_the_frozen_reference_survives_every_later_transition(seeded):
     config = make_candidate(config)
 
     assert [{k: v for k, v in r.items() if k != "reconciliation"}
-            for r in config["rfq"]["requirements"]] == immutable
+            for r in requirements(config)] == immutable
     # the marks survive too, and the register still derives against the document
     assert next(e for e in register(config)
                 if e["variable"] == "rated_speed")["status"] == "waived"
@@ -703,64 +777,118 @@ def test_reconciling_a_variable_the_document_is_silent_on(seeded):
         reconcile(seeded, "wall_finish", "open")
 
 
-# -- undo (docs/specs/undo) -----------------------------------------------
+# -- reversal (docs/specs/undo, docs/specs/action-log) --------------------
+#
+# The vocabulary these run through is `trace`, whose own round-trip properties
+# are in test_trace.py. What is checked here is the validation a reconstructed
+# state passes on its way back into a whole configuration.
 
 
-def test_restore_returns_the_exact_prior_state(with_candidate):
+def _reversal(before, after, source="user", action="revise_choices"):
+    """The state `before` rebuilt from `after` by walking the cursor back over
+    the entry that made it, which is what the tool does — and that entry."""
+    entry = {"action": action, "source": source, **trace.delta(before, after)}
+    return entry, trace.apply(after, cursor_move(entry, "undo"))
+
+
+def test_a_reversal_returns_the_exact_prior_state(with_candidate):
     """Choices with their sources and the candidate all come back — not an
     approximation of them."""
-    before = with_candidate
-    snap = snapshot(before)
-    moved, _ = revise(before, {"building_type": "office"}, [], "agent")
+    moved, _ = revise(with_candidate, {"building_type": "office"}, [], "agent")
     moved = make_candidate(moved)
     assert moved["choices"]["building_type"] == {"value": "office", "source": "agent"}
 
-    back = restore(snap)
-    assert back["choices"] == before["choices"]
-    assert back["candidate"] == before["candidate"]
+    _, rebuilt = _reversal(with_candidate, moved)
+    back = restore(rebuilt)
+    assert back["choices"] == with_candidate["choices"]
+    assert back["candidate"] == with_candidate["candidate"]
 
 
-def test_restore_re_derives_statuses_rather_than_keeping_them(with_candidate):
-    """A snapshot has no statuses to copy — the solver recomputes them, which
-    is what makes a restore a move and not a bypass."""
-    snap = snapshot(with_candidate)
-    assert "statuses" not in snap
-    assert restore(snap)["statuses"] == with_candidate["statuses"]
+def test_a_reversal_re_derives_statuses_rather_than_keeping_them(with_candidate):
+    """A delta carries no statuses to copy — the solver recomputes them, which
+    is what makes a reversal a move and not a bypass."""
+    moved, _ = revise(with_candidate, {"building_type": "office"}, [], "agent")
+    _, rebuilt = _reversal(with_candidate, moved)
+    assert "statuses" not in rebuilt
+    assert restore(rebuilt)["statuses"] == with_candidate["statuses"]
 
 
-def test_restore_refuses_a_value_the_model_no_longer_has(with_candidate):
+def test_a_reversal_refuses_a_value_the_model_no_longer_has(with_candidate):
     """The reachable failure once elevator.json is edited (constitution #2):
     the agreement stays as it was and the conflict is named."""
-    snap = snapshot(with_candidate)
-    snap["choices"]["building_type"] = {"value": "spaceport", "source": "user"}
+    rebuilt = trace.rebuild(trace.facts(with_candidate))
+    rebuilt["choices"]["building_type"] = {"value": "spaceport", "source": "user"}
     with pytest.raises(ValueError, match="unknown value"):
-        restore(snap)
+        restore(rebuilt)
 
 
-def test_restore_carries_the_reconciliation_marks_of_its_own_batch(seeded):
+def test_a_reversal_carries_the_reconciliation_marks_of_its_own_batch(seeded):
     """Marks move with a batch, so restoring them is most of what undoing a
     reconciliation means."""
-    snap = snapshot(seeded)
     waived, _, _ = reconcile(seeded, "rated_speed", "accept")
     assert next(e for e in register(waived)
                 if e["variable"] == "rated_speed")["status"] == "waived"
 
-    back = restore(snap)
+    _, rebuilt = _reversal(seeded, waived, action="reconcile_requirement")
+    back = restore(rebuilt)
     assert next(e for e in register(back)
                 if e["variable"] == "rated_speed")["status"] == "deviation"
 
 
-def test_restore_drops_a_candidate_that_no_longer_extends_the_choices(with_candidate):
-    """Only reachable through a hand-built snapshot, but the guard is the same
-    one every other transition applies."""
-    snap = snapshot(with_candidate)
-    snap["choices"]["building_type"] = {"value": "office", "source": "user"}
-    assert restore(snap)["candidate"] is None
+def test_a_reversal_drops_a_candidate_that_no_longer_extends_the_choices(with_candidate):
+    """Only reachable through a hand-built state, but the guard is the same one
+    every other transition applies."""
+    rebuilt = trace.rebuild(trace.facts(with_candidate))
+    rebuilt["choices"]["building_type"] = {"value": "office", "source": "user"}
+    assert restore(rebuilt)["candidate"] is None
 
 
-def test_the_restoration_is_described_in_the_customer_s_terms(with_candidate):
+def test_the_move_reversed_is_named_with_its_source(with_candidate):
+    """What the snapshot history could not say: which action moved the value
+    and whose it was (ontology finding 3)."""
     moved, _ = revise(with_candidate, {"building_type": "office"}, [], "agent")
-    described = describe_restoration(moved, restore(snapshot(with_candidate)))
+    entry, _ = _reversal(with_candidate, moved, source="agent")
+    assert name_action(entry) == "the assistant\'s revision of Building type"
+
+    entry, _ = _reversal(with_candidate, moved, source="user")
+    assert name_action(entry) == "your revision of Building type"
+
+
+def test_describing_a_reversal_survives_a_requirement_the_model_dropped(seeded):
+    """The description runs after the write has landed, so it must not raise.
+    `restore` re-validates choices against the model and not the frozen
+    register, and constitution #2 makes a model edit ordinary.
+
+    The clause still resolves — it is the *term* it bears on that the model no
+    longer declares, which is the case the lookup has to survive."""
+    waived, _, _ = reconcile(seeded, "rated_speed", "accept")
+    entry, _ = _reversal(seeded, waived, action="reconcile_requirement")
+    change = trace.invert(entry)
+    dropped = {f[1]: "warp_core" for f in change["asserted"]
+               if f[0] == "reconciled"}
+    assert dropped, "the reversal has to move a mark for this to test anything"
+    assert "warp_core" not in describe_delta(change, dropped)
+
+
+def test_a_mark_that_moved_is_described_by_the_term_its_clause_bears_on(seeded):
+    """`reconciled(Clause, Mark)` names a clause, so describing it means
+    resolving the clause to its term. Reading the fact's own second argument as
+    a variable — which it was before clauses had identity — describes nothing
+    (docs/specs/document-clauses)."""
+    waived, _, _ = reconcile(seeded, "rated_speed", "accept")
+    entry, _ = _reversal(seeded, waived, action="reconcile_requirement")
+    change = trace.invert(entry)
+    named = variables_by_clause(change, seeded, waived)
+    assert "the deviation on Rated speed pending" in describe_delta(change, named)
+    assert _terms_named(entry, named) == ["Rated speed"]
+    # and without the map there is nothing to say, which is the defect
+    assert "deviation" not in describe_delta(change)
+
+
+def test_a_reversal_is_described_in_the_customer_s_terms(with_candidate):
+    moved, _ = revise(with_candidate, {"building_type": "office"}, [], "agent")
+    entry, _ = _reversal(with_candidate, moved)
+    described = describe_delta(trace.invert(entry))
     assert "Office" in described and "Hotel" in described
 
 
@@ -768,9 +896,10 @@ def test_a_restored_fee_is_named(with_candidate):
     """The monthly figure moves with the batch, so the description says so."""
     moved, _ = revise(with_candidate, {"cop": "touch_premium"}, [], "user")
     assert moved["candidate"]["price"] != with_candidate["candidate"]["price"]
-    described = describe_restoration(moved, restore(snapshot(with_candidate)))
+    entry, _ = _reversal(with_candidate, moved)
+    described = describe_delta(trace.invert(entry))
     assert f"{with_candidate['candidate']['price']} EUR/month" in described
 
     unpriced, _ = apply_choices(empty_configuration(), {"building_type": "hotel"}, "user")
-    described = describe_restoration(with_candidate, restore(snapshot(unpriced)))
-    assert "no priced candidate" in described
+    entry, _ = _reversal(unpriced, with_candidate)
+    assert "no priced candidate" in describe_delta(trace.invert(entry))

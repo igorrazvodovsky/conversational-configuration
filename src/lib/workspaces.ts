@@ -31,8 +31,23 @@ export function latestThread(
   );
 }
 
+/** One action taken on a draft (docs/specs/action-log). The facts are the
+ * agent's business; what the frontend reads is whether an entry has any — an
+ * action that asserted nothing is no step back to anywhere — and where the
+ * cursor stands relative to it. */
+export interface LogEntry {
+  id: string;
+  action: string;
+  source: string;
+  conversation: string | null;
+  at: string;
+  standing: "applied" | "reversed" | "abandoned";
+  asserted: unknown[][];
+  retracted: unknown[][];
+}
+
 /** One draft of the workspace's agreement (docs/specs/parallel-drafts): a whole
- * configuration with its own undo history, not a snapshot of one. */
+ * configuration with its own record of what was done to it. */
 export interface DraftRecord {
   id: string;
   name: string;
@@ -41,11 +56,10 @@ export interface DraftRecord {
    * lineage rather than being repaired. */
   forkedFrom: string | null;
   configuration: Configuration;
-  /** Undo/redo snapshots of this draft (docs/specs/undo). Only the depths are
-   * read here — the snapshots themselves are the agent's business, and drafts
-   * adapted from workspaces written before that spec carry no history at
-   * all. */
-  history?: { past: unknown[]; future: unknown[] };
+  /** Every action taken on this draft, oldest first (docs/specs/action-log).
+   * Drafts adapted from workspaces written before that spec carry none until
+   * something is written to them. */
+  log?: LogEntry[];
 }
 
 export interface WorkspaceRecord {
@@ -71,14 +85,34 @@ export function currentDraft(record: WorkspaceRecord): DraftRecord {
   );
 }
 
-/** What the canvas needs to know about the current draft's history: whether
- * either end has anything in it. Mirrored into agent state, seeded from the
- * record on attach. */
+/** How far the cursor may walk back from the head of a draft's log, counted in
+ * reversible entries. The agent's copy is `HISTORY_DEPTH` in
+ * `agent/src/workspace_store.py`, and `tests/couplings.test.ts` asserts the two
+ * agree. */
+export const REVERSAL_REACH = 10;
+
+/** Whether walking the cursor past this entry would change the agreement. An
+ * action whose whole content is that it occurred — a declined change, or a
+ * batch that re-recorded what the agreement already held — is walked past
+ * rather than spent a step on (docs/specs/action-log). */
+const reversible = (entry: LogEntry) =>
+  entry.asserted.length > 0 || entry.retracted.length > 0;
+
+/** How many reversals each way the current draft offers. Mirrored into agent
+ * state, seeded from the record on attach — which is why this predicate exists
+ * twice, here and as `history_depths` in the store, and why the couplings check
+ * holds the two against each other. */
 export function historyDepths(record: WorkspaceRecord | null) {
-  const history = record ? currentDraft(record).history : undefined;
+  const log = (record ? currentDraft(record).log : undefined) ?? [];
+  const walked = log.filter(
+    (e) => e.standing === "reversed" && reversible(e),
+  ).length;
+  const applied = log.filter(
+    (e) => e.standing === "applied" && reversible(e),
+  ).length;
   return {
-    undo: history?.past.length ?? 0,
-    redo: history?.future.length ?? 0,
+    undo: Math.max(0, Math.min(applied, REVERSAL_REACH - walked)),
+    redo: walked,
   };
 }
 

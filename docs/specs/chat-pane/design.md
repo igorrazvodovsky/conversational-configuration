@@ -75,3 +75,7 @@ Constitution #9: UI is verified by running the app. The slots carry behaviour an
 - The browser pass ran in both themes. Dispatch was confirmed verbatim on all three cards, a used card goes inert exactly as before, and the reply anchor and the composer clearance were measured rather than eyeballed.
 - Two things the pass didn't reach: drag-and-drop and paste into the composer. The file input was driven directly, and the drop-zone props pass through untouched, so this is unverified rather than changed.
 - CopilotKit's slash-command menu and its feather gradient aren't reachable from the slots this composition uses. Neither is configured, and the composer's opaque background does the feather's job. Virtualization is off, as decision 2 anticipated.
+
+## Known defect
+
+The composer throws a React "Maximum update depth exceeded" runtime error, raised in `src/components/ui/textarea.tsx` through `InputGroupTextarea` and `ComposerTextArea`. Observed in the browser on 2026-08-21 while verifying [one gesture, one action](../one-gesture-one-action/design.md), which touches no React and did not cause it. No check sees it: the interface checks render the transcript against a mocked stream and the composer is not among what they mount.

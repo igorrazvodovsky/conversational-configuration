@@ -66,6 +66,12 @@ def load_agent(agent_dir: Path):
 # -- turn driver -----------------------------------------------------------
 
 
+# Every conversation opened since the running scenario began, so the trace
+# below can be read without each scenario remembering to hand one over. `run`
+# clears it per scenario, and the harness is sequential.
+_OPENED: list["Conversation"] = []
+
+
 class Conversation:
     """One conversation against the graph. Accumulates state the way the
     frontend does: messages plus the configuration the tools returned."""
@@ -82,6 +88,7 @@ class Conversation:
         self.said: list[str] = []
         self.state = {"messages": list(messages or []), **self.hydrate(workspace_id),
                       "workspace_id": workspace_id}
+        _OPENED.append(self)
 
     def hydrate(self, workspace_id=None) -> dict:
         """What `use-workspace-attachment` seeds into agent state on attach: the
@@ -179,6 +186,7 @@ class Checks:
         return bool(passed)
 
 
+
 def payload(turn, kind: str) -> dict | None:
     """The typed card payload a tool returned this turn, if any."""
     for raw in turn["results"]:
@@ -211,8 +219,34 @@ def sources(turn) -> dict[str, str]:
     return {v: c["source"] for v, c in turn["configuration"]["choices"].items()}
 
 
+def clauses(rfq: dict) -> list[dict]:
+    """The document's clauses, from either shape the record has held.
+
+    Comparison mode runs *this tree's* assertions against the other tree's
+    agent, so an assertion that indexes `rfq["clauses"]` crashes the arm whose
+    agent predates docs/specs/document-clauses and writes `requirements` and
+    `unmapped` instead. That is the same rule `report_trace` follows for a ref
+    predating the log: the harness reads what the older tree can say, and the
+    comparison is about what moved rather than about which shape said it.
+
+    A view for reading, not a lift — no identity is minted, because nothing
+    here needs one. Every assertion reads the citation, the quote, the variable,
+    the value and the mark, and both shapes carry all five.
+    """
+    if "clauses" in rfq:
+        return rfq["clauses"]
+    return list(rfq.get("requirements", [])) + list(rfq.get("unmapped", []))
+
+
 def called(turn, name: str) -> list[dict]:
     return [call["args"] for call in turn["calls"] if call["name"] == name]
+
+
+def did(turn) -> str:
+    """What the turn called, with arguments. A failure that names only the tool
+    leaves the next reader re-running the suite to find out what it was given,
+    and the suite costs money per run."""
+    return "; ".join(f"{c['name']}({c['args']})" for c in turn["calls"]) or "nothing"
 
 
 def asked_about(turn) -> set[str]:
@@ -403,6 +437,12 @@ def scenario_mid_contract_revision(ctx) -> Checks:
            start.get("installation") == "modernization"
            and start.get("rated_speed") == "mps1_6",
            f"choices: {start}")
+    # Which action a dispatched sentence reaches is the grammar's to say, not
+    # the model's, and nothing here was decided before this turn
+    # (docs/specs/one-gesture-one-action).
+    c.that("dispatched_setup_uses_revise_choices",
+           bool(called(turn, "revise_choices")),
+           did(turn))
 
     # The revision, free-form: this turn is about the agent framing a change to
     # something already decided as a revision at all.
@@ -443,8 +483,14 @@ def scenario_mid_contract_revision(ctx) -> Checks:
              if called(turn, name)]
     c.that("abandon_calls_no_state_tool", not moved, f"called: {moved}")
 
-    # Ask again, then apply the top repair through the card's own grammar.
-    turn = convo.say("On reflection, let's do 3.0 m/s after all.")
+    # Ask again — this time from the sheet, so the second ask also checks that
+    # a dispatched gesture reaches the repair path rather than the partial one
+    # (docs/specs/one-gesture-one-action). The first ask stays prose, where
+    # which action to call is still the agent's judgment.
+    turn = convo.say(grammar.canvas_edit_message(MODEL, [("rated_speed", "mps3_0")]))
+    c.that("sheet_edit_uses_revise_choices",
+           bool(called(turn, "revise_choices")) and not called(turn, "set_choices"),
+           did(turn))
     repairs = payload(turn, "repairs")
     if not c.that("repairs_offered_again", repairs is not None,
                   "no repairs payload on the second request"):
@@ -516,7 +562,10 @@ PREMIUM_DIRECTION = [
 
 def _priced_office(convo, MODEL, c, prefix: str, essentials) -> dict:
     """Record the essentials and price them. Returns the completion turn."""
-    convo.say(grammar.choice_message(MODEL, essentials))
+    turn = convo.say(grammar.choice_message(MODEL, essentials))
+    c.that(f"{prefix}_dispatch_uses_revise_choices",
+           bool(called(turn, "revise_choices")),
+           did(turn))
     turn = convo.say("That's the picture. Put the agreement together.")
     c.that(f"{prefix}_is_priced", bool((turn["configuration"]["candidate"] or {})
                                        .get("price")),
@@ -616,8 +665,8 @@ def scenario_comparing_agreements(ctx) -> Checks:
     c.that("switch_restores_the_other_agreement", chosen(turn) == practical,
            f"{practical} -> {chosen(turn)}")
 
-    # Whole, not a snapshot: the draft that is no longer current still holds
-    # its own choices, who chose them, and its own history.
+    # Whole, not a copy: the draft that is no longer current still holds its
+    # own choices, who chose them, and its own record of what was done to it.
     record = workspace_store.get_workspace(convo.state["workspace_id"])
     aside = next((d for d in record["drafts"] if d["name"] == premium_name), None)
     if not c.that("the_other_draft_survives_the_switch", aside is not None,
@@ -635,9 +684,9 @@ def scenario_comparing_agreements(ctx) -> Checks:
            == premium_sources,
            f"{premium_sources} -> "
            f"{ {v: ch['source'] for v, ch in aside['configuration']['choices'].items()} }")
-    c.that("it_keeps_its_own_history", bool(aside["history"]["past"]),
-           f"history depths: past {len(aside['history']['past'])}, "
-           f"future {len(aside['history']['future'])}")
+    log = aside.get("log") or []
+    c.that("it_keeps_its_own_log", bool(log),
+           f"actions on {premium_name!r}: {[e['action'] for e in log]}")
     return c
 
 
@@ -708,7 +757,7 @@ def scenario_renewal_as_revision(ctx) -> Checks:
     c.that("the_bare_statement_lands_on_the_shaft",
            landed or repairs is not None,
            f"shaft: {chosen(turn).get('shaft')}, repairs: {repairs is not None}, "
-           f"calls: {[x['name'] for x in turn['calls']]}")
+           f"did: {did(turn)}, said: {turn['text'][:200]!r}")
     c.that("the_statement_is_a_revision_not_a_restart",
            set(chosen(turn)) >= settled - {"shaft", "rated_load"},
            f"settled {sorted(settled)}, now {sorted(chosen(turn))}")
@@ -775,9 +824,12 @@ def scenario_tender_as_entrance(ctx) -> Checks:
     c.that("every_seeded_choice_is_document_sourced",
            set(sources(turn).values()) == {"document"},
            f"sources: {sources(turn)}")
+    # One list of clauses, three kinds (docs/specs/document-clauses); the
+    # assertions below are about the ones that ask for something.
+    asked = [c_ for c_ in clauses(rfq) if c_.get("variable") and c_.get("value")]
     c.that("every_requirement_carries_its_clause",
-           all(r["clause"] and r["quote"] for r in rfq["requirements"]),
-           f"clauseless: {[r['variable'] for r in rfq['requirements'] if not r['clause']]}")
+           all(r["clause"] and r["quote"] for r in asked),
+           f"clauseless: {[r['variable'] for r in asked if not r['clause']]}")
 
     candidate = turn["configuration"]["candidate"]
     c.that("the_seed_is_a_priced_valid_whole",
@@ -787,7 +839,7 @@ def scenario_tender_as_entrance(ctx) -> Checks:
     # The register is the solver's partition of what the agent read, not the
     # agent's own account of what it could meet. Re-seeding the recorded
     # requirements has to reproduce it exactly.
-    requested = [(r["variable"], r["value"]) for r in rfq["requirements"]]
+    requested = [(r["variable"], r["value"]) for r in asked]
     seeded = SOLVER.seed(requested)
     c.that("the_register_is_the_solvers_partition",
            chosen(turn) == dict(seeded.kept),
@@ -799,7 +851,7 @@ def scenario_tender_as_entrance(ctx) -> Checks:
     # of the document. Separated so a failure says which one moved: a run where
     # the agent simply never mapped one of the two clauses is an extraction
     # miss, not a model change, and reads as one here.
-    read = {(r["variable"], r["value"]) for r in rfq["requirements"]}
+    read = {(r["variable"], r["value"]) for r in asked}
     conflicting = {("installation", "modernization"), ("rated_speed", "mps3_0")}
     c.that("the_conflicting_clauses_were_read", conflicting <= read,
            f"missing from the register: {sorted(conflicting - read)}; "
@@ -822,12 +874,16 @@ def scenario_tender_as_entrance(ctx) -> Checks:
            [m.get("move") for m in moves] == ["accept"]
            and moves[0].get("variable") == accepted.variable,
            f"calls: {moves}")
-    waived = [r for r in (turn["configuration"].get("rfq") or {}).get("requirements", [])
-              if r["variable"] == accepted.variable]
+    # The clauses on that variable the move answered — one asking for the
+    # value now offered would be met rather than waived, which this document
+    # does not have (docs/specs/document-clauses).
+    waived = [r for r in (turn["configuration"].get("rfq") or {}).get("clauses", [])
+              if r.get("variable") == accepted.variable
+              and r.get("value") not in (None, accepted.offered)]
     c.that("the_accepted_requirement_is_waived_not_dropped",
            bool(waived) and all(r["reconciliation"] == "waived" for r in waived),
            f"entries on {accepted.variable}: "
-           f"{[(r['clause'], r['reconciliation']) for r in waived]}")
+           f"{[(r['clause'], r.get('reconciliation')) for r in waived]}")
 
     # -- revise another requirement, through the ordinary repair flow -------
     # A requirement, not necessarily a deviation: the customer changing their
@@ -860,10 +916,13 @@ def scenario_tender_as_entrance(ctx) -> Checks:
                    chosen(turn).get(revisable) == target,
                    f"{revisable}: {chosen(turn).get(revisable)}")
 
-    # -- the gaps, and the closing state ------------------------------------
+    # -- what is still undecided, and the closing state ----------------------
+    # `undecided` is the ontology's name for what ingestion reports as still
+    # open; *gap* named this and the clause left to us, and was retired
+    # (docs/specs/document-clauses, decision 7).
     settled = set(chosen(turn))
     turn = convo.say("What's still open at your end?")
-    c.that("gap_questions_are_only_about_gaps",
+    c.that("open_questions_are_only_about_undecided_terms",
            not (asked_about(turn) & settled),
            f"re-asked what the document settled: "
            f"{sorted(asked_about(turn) & settled)}")
@@ -882,8 +941,10 @@ def _revisable_requirement(MODEL, rfq, choices, skip):
     the turn is about the reconciliation move; falls back to any alternative,
     which reaches the same tool through its repair path."""
     fallback = (None, None)
-    for r in rfq["requirements"]:
-        variable = r["variable"]
+    for r in clauses(rfq):
+        variable = r.get("variable")
+        if not variable or not r.get("value"):
+            continue
         if variable == skip or variable not in choices:
             continue
         target = _other_valid_value(MODEL, choices, variable)
@@ -905,6 +966,28 @@ SCENARIOS = {
 }
 
 
+def trace() -> list[str]:
+    """What the running scenario left on the agreements' own records: every
+    action taken on every draft, in order (docs/specs/action-log).
+
+    Comparison mode reports this beside the assertions, so two arms diverge at
+    an action or they do not. Read from the store rather than from the turns,
+    which is what makes it a comparison of the record: an arm whose tree
+    predates the log reports nothing here, and the report says so rather than
+    inventing an agreement between the two.
+    """
+    seen, actions = [], []
+    for convo in _OPENED:
+        workspace_id = convo.state["workspace_id"]
+        if workspace_id in seen:
+            continue
+        seen.append(workspace_id)
+        record = convo.store.get_workspace(workspace_id)
+        actions += [entry["action"] for draft in record["drafts"]
+                    for entry in (draft.get("log") or [])]
+    return actions
+
+
 def run(agent_dir: Path, only: str | None = None) -> dict:
     ctx = load_agent(agent_dir)
     out = {}
@@ -912,7 +995,9 @@ def run(agent_dir: Path, only: str | None = None) -> dict:
         if only and name != only:
             continue
         print(f"  running {name}", file=sys.stderr)
-        out[name] = fn(ctx).results
+        _OPENED.clear()
+        results = fn(ctx).results
+        out[name] = {"assertions": results, "trace": trace()}
     return out
 
 

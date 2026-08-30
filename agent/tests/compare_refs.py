@@ -52,7 +52,8 @@ def main(ref: str, scenario: str | None) -> int:
     moved = 0
     for name in sorted(set(baseline) | set(current)):
         print(f"\n## {name}\n")
-        b, c = baseline.get(name, {}), current.get(name, {})
+        b = baseline.get(name, {}).get("assertions", {})
+        c = current.get(name, {}).get("assertions", {})
         # A scenario can report nothing on a side — one tree does not define it,
         # or it stopped before its first check. Nothing to compare, and a bare
         # max() over no keys would end the report with a traceback instead.
@@ -77,9 +78,38 @@ def main(ref: str, scenario: str | None) -> int:
             if bad:
                 print(f"  failures, {label}:")
                 print("\n".join(bad))
+        moved += report_trace(
+            ref,
+            baseline.get(name, {}).get("trace", []),
+            current.get(name, {}).get("trace", []),
+        )
 
-    print(f"\n{moved} assertion(s) moved between the two trees.")
+    print(f"\n{moved} assertion(s) and trace(s) moved between the two trees.")
     return 1 if moved else 0
+
+
+def report_trace(ref: str, before: list, after: list) -> int:
+    """The run as the agreement's own record holds it: a sequence of named
+    actions (docs/specs/action-log).
+
+    An assertion table says which claims moved; this says where the two runs
+    stopped doing the same thing, which is often one action earlier. Forward
+    only: both arms need the log, so a ref that predates it reports nothing and
+    this says so rather than reading the silence as agreement.
+    """
+    print("\ntrace:")
+    if not before or not after:
+        missing = ref if not before else "working tree"
+        print(f"  no trace on the {missing} side — that tree predates the log")
+        return 0
+    print(f"  {ref:>12}: {' → '.join(before)}")
+    print(f"  {'working tree':>12}: {' → '.join(after)}")
+    if before == after:
+        return 0
+    at = next((i for i, (x, y) in enumerate(zip(before, after)) if x != y),
+              min(len(before), len(after)))
+    print(f"  diverges at action {at + 1}   <- moved")
+    return 1
 
 
 if __name__ == "__main__":

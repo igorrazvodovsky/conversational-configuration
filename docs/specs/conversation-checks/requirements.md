@@ -39,6 +39,7 @@ Each criterion here is the expected outcome of the [discovery scenario](../../di
 ### Running it
 
 - GIVEN two git refs, WHEN the checks run in comparison mode, THEN each scenario runs against both trees from identical inputs and the report gives per-assertion outcomes side by side, so a difference names the assertion that moved rather than a score that fell.
+- GIVEN two arms of a comparison, WHEN both trees carry the [action log](../action-log/requirements.md), THEN the report also gives each run as the sequence of named actions its record holds, and says where the two diverge — often one action earlier than the assertion that noticed. GIVEN a ref that predates the log, THEN that side reports no sequence and the report says so, rather than reading the silence as agreement.
 - GIVEN a run that a provider rate limit interrupts, WHEN a conversation can't complete after backoff, THEN the run fails loudly and names the affected scenarios, and never drops them silently. A comparison missing different cells on each side isn't a weaker result, it is a false one.
 - GIVEN any harness run, WHEN it creates workspaces, THEN they are written to a throwaway store and never to `agent/data/workspaces`, so a test run can't pollute or overwrite the developer's own agreements.
 - The checks run behind an explicit pytest marker, skip cleanly when `OPENAI_API_KEY` is absent, and stay out of the default `uv run pytest`.

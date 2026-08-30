@@ -10,8 +10,9 @@
  *
  * The document is a projection of `agent.state.configuration`, never a store
  * (constitution #3), and every edit round-trips through the agent as a
- * structured message handled by set_choices, so the solver stays the single
- * source of validity. That message is hidden from the chat — the document is
+ * structured message handled by revise_choices, so the solver stays the single
+ * source of validity and the edit applies whole or comes back with repairs
+ * (docs/specs/one-gesture-one-action). That message is hidden from the chat — the document is
  * the record of the edit, the conversation only carries consequences.
  *
  * On a document-seeded agreement it also carries the deviation register
@@ -36,6 +37,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Configuration,
   DraftSummary,
+  type Clause,
   RegisterEntry,
   canvasEditMessage,
   compareDraftMessage,
@@ -47,6 +49,7 @@ import {
   liveValue,
   productModel,
   redoMessage,
+  clausesLeftToUs,
   registerEntries,
   reviseRequirementMessage,
   switchDraftMessage,
@@ -101,11 +104,11 @@ export function ConfigCanvas({
   const draftState = agent.state as
     | { drafts?: DraftSummary[]; current_draft_id?: string }
     | undefined;
-  // How far the workspace's history reaches (docs/specs/undo). A mirror of the
-  // store, seeded on attach and refreshed by every committing tool; empty
-  // before state arrives, and possibly a batch behind when another
-  // conversation moved the agreement, which costs the control's presence and
-  // never the reversal itself.
+  // How many reversals the current draft offers each way (docs/specs/undo,
+  // docs/specs/action-log). A mirror of the store, seeded on attach and
+  // refreshed by every committing tool; empty before state arrives, and
+  // possibly an action behind when another conversation moved the agreement,
+  // which costs the control's presence and never the reversal itself.
   const history = (agent.state as { history?: { undo: number; redo: number } })
     ?.history ?? { undo: 0, redo: 0 };
   const hasAnything =
@@ -247,13 +250,25 @@ export function ConfigCanvas({
     ]);
   }
   const openDeviations = register.filter((e) => e.status === "deviation");
+  // The clauses the document left to us, marked beside the term they bear on
+  // (docs/specs/document-clauses). They ask for nothing, so they are in no
+  // register row and answer to no move on the sheet.
+  const leftToUs = new Map<string, Clause[]>();
+  for (const clause of clausesLeftToUs(config)) {
+    leftToUs.set(clause.variable!, [
+      ...(leftToUs.get(clause.variable!) ?? []),
+      clause,
+    ]);
+  }
 
-  // Picking an option on a term the document speaks to is a reconciliation, not
-  // bookkeeping: it dispatches a visible message rather than the hidden canvas
-  // edit, because moving away from the customer's own requirement is
-  // negotiation and belongs in the record. Every editable island in every layer
-  // routes through here, so where on the page the click happened cannot change
-  // what the click means.
+  // Picking an option on a term the document asks something of is a
+  // reconciliation, not bookkeeping: it dispatches a visible message rather
+  // than the hidden canvas edit, because moving away from the customer's own
+  // requirement is negotiation and belongs in the record. The register is the
+  // test, so a term the document speaks to without asking anything — a clause
+  // it left to us — edits like any other (docs/specs/document-clauses). Every
+  // editable island in every layer routes through here, so where on the page
+  // the click happened cannot change what the click means.
   const dispatchChoice = (variable: string, value: string) => {
     setPending((p) => ({ ...p, [variable]: value }));
     dispatch(
@@ -269,6 +284,7 @@ export function ConfigCanvas({
     disabled: isRunning,
     pending,
     requirementsFor: (variable) => byVariable.get(variable),
+    leftToUsFor: (variable) => leftToUs.get(variable),
     onSelect: dispatchChoice,
     onDispatch: dispatch,
     revealed,
@@ -356,9 +372,9 @@ export function ConfigCanvas({
                 View
               </Button>
             {/* Undo lives on the record's own chrome (docs/specs/undo): the
-                history belongs to the agreement, not to the transcript. Each
-                control is absent rather than disabled at its end of the
-                history, and each dispatches a visible message — after a
+                record belongs to the agreement, not to the transcript. Each
+                control is absent rather than disabled at its end of the log,
+                and each dispatches a visible message — after a
                 restore the sheet shows only the restored state, so the chat
                 is where what was reversed can be said. A `title` rather than
                 a tooltip: nothing here may mint a React id. */}

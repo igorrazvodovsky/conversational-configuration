@@ -33,7 +33,9 @@ import {
   pricing,
   productModel,
   refusalText,
+  clausesLeftToUs,
   registerEntries,
+  requirements,
   repairMessage,
   resolveValue,
   reviseRequirementMessage,
@@ -49,6 +51,7 @@ import {
   candidate,
   chose,
   forcing,
+  leftToUs,
   openStatuses,
   requirement,
   rfq,
@@ -181,6 +184,30 @@ describe("the deviation register", () => {
   it("is empty on an agreement with no document behind it", () => {
     expect(registerEntries(agreement())).toEqual([]);
   });
+
+  it("has no row for a clause that asks for nothing", () => {
+    // A clause left to us and a clause no variable carries are clauses of the
+    // same list (docs/specs/document-clauses); neither can deviate from
+    // anything, so neither is in the register.
+    const config = agreement({
+      choices: chose({ rated_load: "kg1000" }, "document"),
+      rfq: rfq([
+        requirement("rated_load", "kg1000"),
+        leftToUs("contract_term"),
+        { id: "c-x", clause: "6.3", quote: "possession", note: "programme" },
+      ]),
+    });
+    // Which is also what routes the click: the canvas reconciles a term with a
+    // register row and edits every other one, so a term the document left to us
+    // edits (docs/specs/document-clauses, decision 6).
+    expect(registerEntries(config).map((e) => e.variable)).toEqual([
+      "rated_load",
+    ]);
+    expect(requirements(config)).toHaveLength(1);
+    expect(clausesLeftToUs(config).map((c) => c.variable)).toEqual([
+      "contract_term",
+    ]);
+  });
 });
 
 describe("the document's three layers", () => {
@@ -194,6 +221,9 @@ describe("the document's three layers", () => {
     expect(layerOf("context")).toBe("recitals");
     expect(layerOf("agreement")).toBe("terms");
     expect(layerOf("performance")).toBe("terms");
+    // A safety obligation is an operative term, not a schedule the vendor
+    // derives (docs/specs/document-clauses, decision 5).
+    expect(layerOf("safety")).toBe("terms");
   });
 
   it("sends anything the mapping does not name to the schedules", () => {

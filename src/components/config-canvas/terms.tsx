@@ -30,6 +30,7 @@ import {
 import {
   Clause,
   DeviationMark,
+  LeftToUsMark,
   DocumentView,
   Gloss,
   LAYER_HEADING,
@@ -51,6 +52,7 @@ function TermClause({
   index: number;
 }) {
   const unmet = unmetFor(doc, variable);
+  const leftToUs = doc.leftToUsFor(variable);
   const label = variablesByName.get(variable)?.label ?? variable;
 
   return (
@@ -59,6 +61,7 @@ function TermClause({
         <>
           <ProvenanceBadge variable={variable} doc={doc} />
           {unmet && <DeviationMark entries={unmet} doc={doc} />}
+          {leftToUs && <LeftToUsMark clauses={leftToUs} />}
         </>
       }
     >

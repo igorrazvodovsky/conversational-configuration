@@ -16,6 +16,8 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import type { LogEntry } from "@/lib/workspaces";
+
 const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 export interface AgentDump {
@@ -30,6 +32,10 @@ export interface AgentDump {
     co2: number[];
   };
   grammar: Record<string, string>;
+  /** Which grammar sentences `set_choices` refuses (docs/specs/one-gesture-one-action). */
+  guarded: string[];
+  /** Whether the guard fires on prose opening on the same word. */
+  guardedProse: boolean[];
   configurationKeys: string[];
   emptyConfigurationKeys: string[];
   sourceValues: string[];
@@ -39,6 +45,22 @@ export interface AgentDump {
     choices: Record<string, { value: string; source: string }>;
     statuses: Record<string, Record<string, string>>;
   }>;
+  /** The population the ontology has to name (docs/specs/ontology-of-phenomena). */
+  toolNames: string[];
+  /** Every name an entry of a draft's log may carry (docs/specs/action-log). */
+  contentActions: string[];
+  /** How far the cursor may walk back through one, in reversible entries. */
+  reversalReach: number;
+  /** A log holding every case the canvas's two counts turn on, and the counts
+   * the agent computes from it. */
+  logFixture: LogEntry[];
+  logFixtureDepths: { undo: number; redo: number };
+  variables: string[];
+  groups: string[];
+  ruleIds: string[];
+  workspaceKeys: string[];
+  draftKeys: string[];
+  entryKeys: string[];
 }
 
 export function agentDump(): AgentDump {

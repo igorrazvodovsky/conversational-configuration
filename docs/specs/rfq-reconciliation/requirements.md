@@ -19,7 +19,7 @@ Scope is stage one only: the EaaS-world RFQ that already speaks outcome terms �
 
 Ingestion:
 
-- GIVEN RFQ text, pasted or attached as a text file, with authored fixture documents provided alongside the feature, WHEN it is ingested, THEN every extracted requirement lands as a recorded commitment carrying document provenance, with its clause cited or quoted, and nothing is recorded that the document doesn't state. Requirements the extraction can't map to a model variable are listed as unmapped, never silently dropped.
+- GIVEN RFQ text, pasted or attached as a text file, with authored fixture documents provided alongside the feature, WHEN it is ingested, THEN every extracted requirement lands as a recorded commitment carrying document provenance, with its clause cited or quoted, and nothing is recorded that the document doesn't state. A clause the extraction can't map to a model variable is recorded as a clause carrying no variable, never silently dropped, and a clause the document leaves to us is recorded carrying its variable and no value ([document-clauses](../document-clauses/requirements.md)).
 - GIVEN ingestion completes, WHEN the canvas renders, THEN document-sourced values are distinguishable from conversation-chosen and solver-forced values: a third provenance source, answering "why is this value here?" with "your document, clause N".
 
 Seeding and deviations:
@@ -39,9 +39,9 @@ Frozen reference:
 
 - GIVEN a document-seeded workspace, WHEN any amount of reconciliation and revision has happened, THEN the original document text and its extracted requirement set remain stored immutably in the workspace, and the deviation register is computed as the difference between that reference and the live agreement. Deleting every conversation loses only the discussion, not the record.
 
-Gaps:
+What the document does not settle:
 
-- GIVEN a document that leaves decisions open, WHEN seeding completes, THEN the agent's questions target only the gaps, and nothing the document settles is re-asked. Under-specification is as characteristic of real RFQs as over-constraint, so elicitation is retargeted rather than removed.
+- GIVEN a document that leaves decisions open, WHEN seeding completes, THEN the agent's questions target only the terms it settles nothing on and the clauses it leaves to us, and nothing the document settles is re-asked. Under-specification is as characteristic of real RFQs as over-constraint, so elicitation is retargeted rather than removed. The two were both called *gaps* until [document-clauses](../document-clauses/requirements.md) separated them: a term nobody has decided is `undecided`, and a clause that asks us to propose is a clause of the document.
 
 Service frame:
 
@@ -49,7 +49,7 @@ Service frame:
 
 ## Relationship to the agreement document
 
-The RFQ and the agreement are a genre pair, a request and a response joined clause by clause. The deviation register is that join, in the form of a compliance matrix of requested against offered. The [agreement-document spec](../agreement-document/requirements.md) renders the agreement in this genre, and its layers define the stage boundary structurally: a stage-1 RFQ speaks only the customer-legible layers — recitals and operative terms, meaning the `agreement`, `context` and `performance` groups — and lacks the schedules, which the vendor derives. A prescriptive RFQ is one that enters the schedule layer.
+The RFQ and the agreement are a genre pair, a request and a response joined clause by clause. The deviation register is that join, in the form of a compliance matrix of requested against offered. The [agreement-document spec](../agreement-document/requirements.md) renders the agreement in this genre, and its layers define the stage boundary structurally: a stage-1 RFQ speaks only the customer-legible layers — recitals and operative terms, meaning the `agreement`, `context`, `performance` and `safety` groups — and lacks the schedules, which the vendor derives. `safety` joined them with [document-clauses](../document-clauses/design.md), which found that a fire-safety obligation fell under neither of the agent's two rules for reading a document. A prescriptive RFQ is one that enters the schedule layer.
 
 Both specs record the seam between them. This spec landed first, and the agreement-document spec closed it: a deviation on a recital or an operative term is a margin mark on that clause ("your document asked X, clause N"), while a deviation in the schedules keeps the row strip designed here. The register's own content and moves are the same in both. The RFQ itself is never rendered as a surface either way. It stays reference text, and what deserves rendering is the register on the agreement (constitution #10).
 

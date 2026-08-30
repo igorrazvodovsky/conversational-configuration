@@ -10,11 +10,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  REVERSAL_REACH,
   currentDraft,
   draftSummaries,
   historyDepths,
   latestThread,
   type DraftRecord,
+  type LogEntry,
   type WorkspaceRecord,
 } from "@/lib/workspaces";
 import { agreement, candidate } from "./agreement";
@@ -26,6 +28,24 @@ function draft(overrides: Partial<DraftRecord> = {}): DraftRecord {
     forkedFrom: null,
     configuration: agreement(),
     ...overrides,
+  };
+}
+
+/** One log entry, at a standing and with or without facts — the two things the
+ * frontend reads of one (docs/specs/action-log). */
+function entry(
+  standing: LogEntry["standing"] = "applied",
+  withFacts = true,
+): LogEntry {
+  return {
+    id: "entry-1",
+    action: "set_choices",
+    source: "user",
+    conversation: null,
+    at: "2026-08-01T00:00:00Z",
+    standing,
+    asserted: withFacts ? [["chose", "building_type", "hotel"]] : [],
+    retracted: [],
   };
 }
 
@@ -90,10 +110,10 @@ describe("the draft being worked on", () => {
 });
 
 describe("what the canvas chrome reads off the record", () => {
-  it("counts each end of the current draft's history", () => {
+  it("counts the reversals the current draft's log offers each way", () => {
     const drafts = [
-      draft({ history: { past: [1, 2, 3], future: [4] } }),
-      draft({ id: "draft-2", history: { past: [], future: [] } }),
+      draft({ log: [entry(), entry(), entry(), entry("reversed")] }),
+      draft({ id: "draft-2", log: [] }),
     ];
     expect(historyDepths(record({ drafts }))).toEqual({ undo: 3, redo: 1 });
     expect(
@@ -101,11 +121,35 @@ describe("what the canvas chrome reads off the record", () => {
     ).toEqual({ undo: 0, redo: 0 });
   });
 
-  it("offers no history for a draft written before undo existed", () => {
+  it("offers no reversal of an action that asserted nothing", () => {
+    // A declined change, or a batch that re-recorded what the agreement
+    // already held: an occurrence worth keeping and no step back to anywhere
+    // (docs/specs/action-log).
+    const drafts = [draft({ log: [entry(), entry("applied", false)] })];
+    expect(historyDepths(record({ drafts }))).toEqual({ undo: 1, redo: 0 });
+  });
+
+  it("counts no reversal of an entry a later action abandoned", () => {
+    const drafts = [draft({ log: [entry("abandoned"), entry()] })];
+    expect(historyDepths(record({ drafts }))).toEqual({ undo: 1, redo: 0 });
+  });
+
+  it("stops offering undo once the cursor has walked its whole reach", () => {
+    const walked = Array.from({ length: REVERSAL_REACH }, () =>
+      entry("reversed"),
+    );
+    const drafts = [draft({ log: [entry(), entry(), ...walked] })];
+    expect(historyDepths(record({ drafts }))).toEqual({
+      undo: 0,
+      redo: REVERSAL_REACH,
+    });
+  });
+
+  it("offers no reversal for a draft written before the log existed", () => {
     expect(historyDepths(record())).toEqual({ undo: 0, redo: 0 });
   });
 
-  it("offers no history before the record has arrived", () => {
+  it("offers no reversal before the record has arrived", () => {
     expect(historyDepths(null)).toEqual({ undo: 0, redo: 0 });
   });
 

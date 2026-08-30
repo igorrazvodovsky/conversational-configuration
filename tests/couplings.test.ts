@@ -21,11 +21,16 @@ import { describe, expect, it } from "vitest";
 import * as configurator from "@/lib/configurator";
 import type {
   Configuration,
-  Requirement,
+  Clause,
   Source,
 } from "@/lib/configurator";
 import { layerOf, modelGroups, productModel, variablesByName } from "@/lib/configurator";
 import { GEOMETRY_VARIABLES } from "@/components/config-canvas/render/geometry";
+import {
+  REVERSAL_REACH,
+  historyDepths,
+  type WorkspaceRecord,
+} from "@/lib/workspaces";
 import { agreement, chose, forcing, openStatuses } from "./agreement";
 
 const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
@@ -102,6 +107,29 @@ describe("the message grammar, built on both sides", () => {
     expect(FRONTEND[key]).toBe(AGENT.grammar[key]);
   });
 
+  it("refuses in the tool layer exactly the sentences that set a value", () => {
+    // The third copy of the grammar (docs/specs/one-gesture-one-action):
+    // `set_choices` reads the last human message and refuses a gesture. The
+    // set is asserted in both directions, so a rule that grew would start
+    // swallowing reconciliations and draft moves, and one that shrank would
+    // let a gesture through. The dump runs the real predicate over the
+    // agent's own sentences, which the check above holds equal to these.
+    expect(AGENT.guarded).toEqual([
+      "CANVAS_EDIT_PREFIX",
+      "canvasEditMessage",
+      "choiceMessage",
+      "choiceMessage/two",
+    ]);
+  });
+
+  it("lets prose through that opens on the grammar's own word", () => {
+    // "Set up an elevator for a hospital" is a customer talking, and it goes
+    // to set_choices with its partial semantics. The parenthesised code is
+    // what separates the two, so matching the first word would move the prose
+    // path this feature leaves alone.
+    expect(AGENT.guardedProse).toEqual([false, false, false, false]);
+  });
+
   it("keeps a draft name with quotes in it intact on both sides", () => {
     // The draft moves quote the name, so a name containing a quote is where
     // the two sides would diverge first if either started escaping.
@@ -167,6 +195,30 @@ describe("the grammar as the system prompt teaches it", () => {
       expect(AGENT.grammar[key].startsWith(prefix)).toBe(true);
     }
     expect(PROMPT).toContain(prefix);
+  });
+
+  it("sends a picked value to revise_choices, whatever the term's state", () => {
+    // The repair of finding 1: the rule for the dispatched sentence names one
+    // action and never the partial one, so a click applies whole or comes
+    // back with repairs (docs/specs/one-gesture-one-action).
+    const rule = promptRule('"Set <term> to <value> (term=value)"');
+    expect(rule).toContain("revise_choices");
+    onlyForbids(rule, "set_choices");
+  });
+
+  it("sends a sheet edit to the same action as a picked value", () => {
+    const rule = promptRule('- "Canvas edit:');
+    expect(rule).toContain("revise_choices");
+    onlyForbids(rule, "set_choices");
+  });
+
+  it("keeps the revise-over-record rule for what the customer says", () => {
+    // Prose is still the agent's judgment, and the method bullet is where the
+    // A/B in docs/specs/agent-tools measured that it has to live.
+    expect(PROMPT).toContain(
+      "When the customer *tells* you to change something already decided, "
+        + "revise it rather than recording it afresh.",
+    );
   });
 
   it("maps each reconciliation move onto the move name the tool takes", () => {
@@ -288,11 +340,14 @@ const SOURCE_VALUES = {
   document: true,
 } satisfies Record<Source, true>;
 
+// A mark is optional on a clause — two of the three kinds take none
+// (docs/specs/document-clauses) — so the union is narrowed before it keys the
+// record, and the agent's dump unwraps the same NotRequired on its side.
 const RECONCILIATION_VALUES = {
   pending: true,
   waived: true,
   revised: true,
-} satisfies Record<Requirement["reconciliation"], true>;
+} satisfies Record<NonNullable<Clause["reconciliation"]>, true>;
 
 describe("the two declarations of a configuration", () => {
   it("declares the same keys on both sides of the boundary", () => {
@@ -416,5 +471,284 @@ describe("the agreements the frontend checks build", () => {
     expect(FIXTURES.withAChoice.statuses[variable]).toEqual(
       REAL.chosen.statuses[variable],
     );
+  });
+});
+
+describe("the reversals the canvas offers, counted on both sides", () => {
+  // One predicate in two languages (docs/specs/action-log): the agent
+  // refreshes this mirror on every commit and the frontend seeds it from the
+  // record on attach, so a disagreement shows as a canvas that offers Undo
+  // only after a reload — which no other check in the repo sees.
+  const logged = (log: AgentDump["logFixture"]): WorkspaceRecord => ({
+    id: "ws-1",
+    name: null,
+    drafts: [
+      {
+        id: "draft-1",
+        name: "Original",
+        forkedFrom: null,
+        configuration: agreement(),
+        log,
+      },
+    ],
+    currentDraftId: "draft-1",
+    threads: [],
+    createdAt: "2026-08-01T00:00:00Z",
+    updatedAt: "2026-08-01T00:00:00Z",
+  });
+
+  it("reads the same log the same way", () => {
+    expect(historyDepths(logged(AGENT.logFixture))).toEqual(
+      AGENT.logFixtureDepths,
+    );
+  });
+
+  it("walks the cursor back exactly as far on both sides", () => {
+    expect(REVERSAL_REACH).toBe(AGENT.reversalReach);
+  });
+});
+
+/**
+ * The ontology's copy (docs/specs/ontology-of-phenomena). Constitution #15
+ * binds every artifact to the names enumerated there, and the enumeration is
+ * prose, so it is read as text the way the system prompt above is.
+ *
+ * What this catches is a name that arrived without being named: a new tool, a
+ * new element of the grammar, a new key on a configuration or on the durable
+ * record, a variable or rule the product model gained. It does not catch a
+ * signature that is wrong or a fact filed in the wrong class — reading the
+ * enumeration against the code stays the obligation of the session that
+ * changes the code.
+ */
+const ONTOLOGY = flat(
+  readFileSync(at("../docs/specs/ontology-of-phenomena/ontology.md"), "utf8"),
+);
+
+/**
+ * The gesture table unflattened, because the assertion below reads it a row at
+ * a time and a flattened table is one line.
+ */
+const GESTURE_TABLE = readFileSync(
+  at("../docs/specs/ontology-of-phenomena/ontology.md"),
+  "utf8",
+)
+  .split("## Gestures")[1]
+  .split("## What the enumeration settles")[0]
+  .split("\n")
+  .filter((line) => line.startsWith("| ") && !line.startsWith("| Gesture"));
+
+/**
+ * The gesture table's sentence for every element of the grammar, as templates,
+ * because the table spells the shape rather than one built example. A new
+ * element fails the coverage assertion until it has a row.
+ */
+const ONTOLOGY_SENTENCES: Record<string, string> = {
+  CANVAS_EDIT_PREFIX: "Canvas edit: ",
+  choiceMessage: "Set <term> to <value> (term=value)",
+  canvasEditMessage: "Canvas edit: Set …",
+  repairMessage: "Apply repair: drop …; set …",
+  abandonMessage: "Abandon the revision — keep the configuration as it is.",
+  acceptOfferedMessage: "Reconcile deviation: accept the offered …",
+  reviseRequirementMessage: "Reconcile deviation: change … to …",
+  leaveOpenMessage: "Reconcile deviation: leave … open",
+  forkDraftMessage: "Keep this draft and start another from it",
+  switchDraftMessage: 'Switch to draft "…"',
+  discardDraftMessage: 'Discard draft "…"',
+  compareDraftMessage: 'Compare draft "…" with the current one',
+  undoMessage: "Undo the last change",
+  redoMessage: "Redo the undone change",
+};
+
+/**
+ * The action every element of the grammar reaches, one per sentence. A gesture
+ * that reached whichever of two actions the model judged right is what
+ * [one-gesture-one-action](../docs/specs/one-gesture-one-action/design.md)
+ * repaired, so the table below is the shape of the repair: the value is one
+ * name, and the assertions refuse a row that offers a choice.
+ */
+const ONTOLOGY_ACTIONS: Record<string, string> = {
+  CANVAS_EDIT_PREFIX: "revise_choices",
+  choiceMessage: "revise_choices",
+  canvasEditMessage: "revise_choices",
+  repairMessage: "revise_choices",
+  abandonMessage: "keep_as_is",
+  acceptOfferedMessage: "reconcile_requirement",
+  reviseRequirementMessage: "reconcile_requirement",
+  leaveOpenMessage: "reconcile_requirement",
+  forkDraftMessage: "fork_draft",
+  switchDraftMessage: "switch_draft",
+  discardDraftMessage: "discard_draft",
+  compareDraftMessage: "compare_drafts",
+  undoMessage: "undo_change",
+  redoMessage: "redo_change",
+};
+
+/**
+ * A bullet of the prompt's *Messages that are not conversation* section: from
+ * the sentence it quotes to the start of the next bullet. Read as a segment
+ * rather than as the whole section, because a rule may name an action it
+ * forbids — the undo bullet names both content actions to rule them out.
+ */
+function promptRule(quoted: string): string {
+  const start = PROMPT.indexOf(quoted);
+  expect(start, `the prompt quotes ${quoted}`).toBeGreaterThanOrEqual(0);
+  const end = PROMPT.indexOf('- "', start + quoted.length);
+  expect(end, `a bullet follows ${quoted}`).toBeGreaterThan(start);
+  return PROMPT.slice(start, end);
+}
+
+/**
+ * The only way a rule may name the action it doesn't reach is to forbid it, so
+ * reverting a rule to "One set_choices call" fails here while the prohibition
+ * that keeps the model off it passes.
+ */
+function onlyForbids(rule: string, action: string): void {
+  for (const before of rule.split(action).slice(0, -1)) {
+    expect(before.endsWith("Never "), `"…${before.slice(-40)}${action}"`).toBe(
+      true,
+    );
+  }
+}
+
+/**
+ * Every key of the two durable shapes, and the ontology term that carries it.
+ * Keys are prefixed because a workspace and a draft both have an `id` and a
+ * `name`, and the two mean different things. A key added on either side fails
+ * the coverage assertion until someone says here what it means.
+ */
+const CARRIED_BY: Record<string, string[]> = {
+  "workspace.id": ["`record.id`, a uuid"],
+  "workspace.name": ["named(Workspace, Name)"],
+  "workspace.drafts": ["draft_of(Draft, Workspace)"],
+  "workspace.currentDraftId": ["current(Workspace, Draft)"],
+  "workspace.threads": ["belongs_to(Conversation, Workspace)"],
+  "workspace.rfq_document": ["document_text(Workspace, Text)"],
+  "workspace.createdAt": ["Timestamp"],
+  "workspace.updatedAt": ["moved_at(Conversation, Timestamp)"],
+  "draft.id": ["`draft.id`, a uuid"],
+  "draft.name": ["named(Draft, Name)"],
+  "draft.forkedFrom": ["forked_from(Draft, Draft)"],
+  "draft.configuration": ["chose(Draft, Variable, Option)"],
+  "draft.log": ["logged(Draft, Position, Entry)"],
+  "entry.id": ["`entry.id`, a uuid"],
+  "entry.action": ["acted(Entry, Action)"],
+  "entry.source": ["moved_by(Entry, Source)"],
+  "entry.conversation": ["during(Entry, Conversation)"],
+  "entry.at": ["occurred_at(Entry, Timestamp)"],
+  "entry.asserted": ["asserted(Entry, Fact)"],
+  "entry.retracted": ["retracted(Entry, Fact)"],
+  "entry.standing": ["standing(Entry, Standing)"],
+  "configuration.choices": [
+    "chose(Draft, Variable, Option)",
+    "attributed(Draft, Variable, Source)",
+  ],
+  "configuration.statuses": ["status(Draft, Variable, Option, Status)"],
+  "configuration.unavailable": ["separates(Draft, Variable, Option, Rule)"],
+  "configuration.candidate": ["candidate_value(Draft, Variable, Option)"],
+  "configuration.rfq": [
+    "requires(Clause, Variable, Option)",
+    "carries(Clause, Variable)",
+    "reconciled(Clause, Mark)",
+  ],
+};
+
+describe("the ontology, as the vocabulary every artifact names by", () => {
+  it("names every action the agent offers", () => {
+    // A tool the ontology has never heard of fails here, before it can be
+    // cited in a spec or a prompt under a name nothing else uses.
+    const unnamed = AGENT.toolNames.filter((name) => !ONTOLOGY.includes(name));
+    expect(unnamed).toEqual([]);
+  });
+
+  it("has a row for every element of the grammar, none excepted", () => {
+    const built = new Set(Object.keys(FRONTEND).map((key) => key.split("/")[0]));
+    expect(Object.keys(ONTOLOGY_SENTENCES).sort()).toEqual([...built].sort());
+  });
+
+  it.each(Object.entries(ONTOLOGY_SENTENCES))(
+    "%s is in the gesture table, spelled as this table spells it",
+    (_key, template) => {
+      expect(ONTOLOGY).toContain(template);
+    },
+  );
+
+  it("names one action for every element of the grammar, none excepted", () => {
+    const built = new Set(Object.keys(FRONTEND).map((key) => key.split("/")[0]));
+    expect(Object.keys(ONTOLOGY_ACTIONS).sort()).toEqual([...built].sort());
+  });
+
+  it.each(Object.entries(ONTOLOGY_ACTIONS))(
+    "%s reaches an action the agent actually builds",
+    (_key, action) => {
+      expect(AGENT.toolNames).toContain(action);
+    },
+  );
+
+  it.each(Object.entries(ONTOLOGY_ACTIONS))(
+    "%s has one gesture row, and that row names its action and no alternative",
+    (key, action) => {
+      const rows = GESTURE_TABLE.filter((row) =>
+        row.includes(ONTOLOGY_SENTENCES[key]),
+      );
+      expect(rows).toHaveLength(1);
+      const cell = rows[0].split("|")[3];
+      expect(cell).toContain(`\`${action}\``);
+      // "set_choices or revise_choices" is the shape the repair removed: a
+      // gesture whose action the model picks is a gesture with no action.
+      expect(cell).not.toContain(" or ");
+    },
+  );
+
+  it.each(Object.entries(ONTOLOGY_SENTENCES))(
+    "%s opens on the sentence the frontend actually builds",
+    (key, template) => {
+      // The fixed head of the template — everything before the first
+      // placeholder — is a prefix of the real sentence, so rewording a builder
+      // fails here as well as against the prompt.
+      const head = template.split(/[…<]/)[0];
+      expect(head.length).toBeGreaterThan(0);
+      expect(FRONTEND[key].startsWith(head)).toBe(true);
+    },
+  );
+
+  it("accounts for every key of a configuration, a draft, an entry and the record", () => {
+    const keys = [
+      ...AGENT.workspaceKeys.map((key) => `workspace.${key}`),
+      ...AGENT.draftKeys.map((key) => `draft.${key}`),
+      ...AGENT.entryKeys.map((key) => `entry.${key}`),
+      ...AGENT.configurationKeys.map((key) => `configuration.${key}`),
+    ];
+    expect(Object.keys(CARRIED_BY).sort()).toEqual(keys.sort());
+  });
+
+  it.each(Object.entries(CARRIED_BY))(
+    "%s is carried by a fact the ontology states",
+    (_key, terms) => {
+      for (const term of terms) expect(ONTOLOGY).toContain(term);
+    },
+  );
+
+  it("names every action an entry of a log may carry", () => {
+    // The acceptance criterion of docs/specs/action-log: a tool added without
+    // being named in the ontology fails a run before it can write a name into
+    // the durable record.
+    for (const action of AGENT.contentActions) {
+      expect(AGENT.toolNames, action).toContain(action);
+      expect(ONTOLOGY, action).toContain(action);
+    }
+  });
+
+  it("declares the population the product model actually has", () => {
+    // The one place the enumeration states a count. Checked rather than
+    // trusted, so it cannot go stale the next time a variable lands.
+    const declared = ONTOLOGY.match(/(\d+) variables in (\d+) groups/);
+    expect(declared).not.toBeNull();
+    expect(Number(declared![1])).toBe(AGENT.variables.length);
+    expect(Number(declared![2])).toBe(AGENT.groups.length);
+
+    const rules = ONTOLOGY.match(/(\d+) rules, all `R`-prefixed/);
+    expect(rules).not.toBeNull();
+    expect(Number(rules![1])).toBe(AGENT.ruleIds.length);
+    expect(AGENT.ruleIds.every((id) => id.startsWith("R"))).toBe(true);
   });
 });

@@ -34,22 +34,46 @@ export interface Candidate {
   objective?: "price" | "co2";
 }
 
-/** The frozen requirements document an RFQ-seeded agreement diverges from
- * (docs/specs/rfq-reconciliation). Immutable after ingestion apart from the
- * `reconciliation` mark — which is what lets the register be derived here
- * rather than stored. */
-export interface Requirement {
+/** One clause of the customer's document (docs/specs/document-clauses). Three
+ * kinds, told apart by the facts a clause carries rather than by which list it
+ * is in: `variable` with `value` asks for something, `variable` alone leaves
+ * the decision to us, and neither is a clause no product variable carries.
+ * Immutable after ingestion apart from the `reconciliation` mark — which is
+ * what lets the register be derived here rather than stored. */
+export interface Clause {
+  id: string;
+  clause: string; // the citation the document gives it — "5.2"
+  quote: string;
+  variable?: string;
+  value?: string;
+  note?: string;
+  reconciliation?: "pending" | "waived" | "revised";
+}
+
+/** A clause that asks for a value: the only kind that enters the register. */
+export interface Requirement extends Clause {
   variable: string;
   value: string;
-  clause: string;
-  quote: string;
-  reconciliation: "pending" | "waived" | "revised";
 }
 
 export interface RFQ {
-  requirements: Requirement[];
-  unmapped: { clause: string; quote: string; note: string }[];
+  clauses: Clause[];
   budget_cap?: number;
+}
+
+/** The clauses of the document that ask for something. */
+export function requirements(config: Configuration): Requirement[] {
+  return (config.rfq?.clauses ?? []).filter(
+    (clause): clause is Requirement => !!clause.variable && !!clause.value,
+  );
+}
+
+/** The clauses the document leaves to us to decide — a question to raise,
+ * never a value on the sheet (docs/specs/document-clauses). */
+export function clausesLeftToUs(config: Configuration): Clause[] {
+  return (config.rfq?.clauses ?? []).filter(
+    (clause) => !!clause.variable && !clause.value,
+  );
 }
 
 /** One draft of the agreement (docs/specs/parallel-drafts) — what rides in
@@ -179,7 +203,7 @@ export function liveValue(
  * a solver core (docs/specs/rfq-reconciliation design).
  */
 export function registerEntries(config: Configuration): RegisterEntry[] {
-  return (config.rfq?.requirements ?? []).map((requirement) => {
+  return requirements(config).map((requirement) => {
     const offered = liveValue(config, requirement.variable);
     // met first: an agreement back on the document's value complies,
     // whatever mark reconciliation left behind
@@ -285,6 +309,11 @@ const LAYER_OF_GROUP: Record<string, Layer> = {
   context: "recitals",
   agreement: "terms",
   performance: "terms",
+  // Rescue and firefighters' operation are obligations the building is held
+  // to, not hardware standing in for an outcome, so they are operative terms
+  // the customer reads and reconciles rather than a collapsed schedule
+  // (docs/specs/document-clauses, decision 5).
+  safety: "terms",
 };
 
 export function layerOf(group: string): Layer {
@@ -352,8 +381,11 @@ export function termMonthsInEffect(config: Configuration): number {
 
 /**
  * The structured control-activation message (docs/specs/agreement-document design):
- * a visible user message the agent records via set_choices. Includes both the
- * human-readable labels and the exact codes so the LLM never has to guess.
+ * a visible user message the agent applies through one revise_choices call,
+ * whether or not those terms were decided before, so a picked change applies
+ * whole or comes back with repair paths (docs/specs/one-gesture-one-action).
+ * Includes both the human-readable labels and the exact codes so the LLM never
+ * has to guess.
  */
 export function choiceMessage(
   selections: { variable: string; value: string }[],

@@ -64,9 +64,9 @@ Scenario note: [mid-contract-revision](discovery/scenarios/mid-contract-revision
 
    Nothing on the sheet moves. This is worth showing before applying the repair, because it is the half of the interaction a compliance-checking tool doesn't have.
 
-4. Type: *On reflection, let's do 3.0 m/s after all.*
+4. Click the rated speed on the terms layer and choose 3.0 m/s.
 
-   The same card comes back.
+   The same card comes back. Asking from the sheet reaches the repair path the way the typed revision did, which is what makes a click's outcome independent of how the agent read the state ([one-gesture-one-action](specs/one-gesture-one-action/design.md)).
 
 5. Click the repair option.
 
@@ -108,7 +108,7 @@ Scenario note: [comparing-agreements](discovery/scenarios/comparing-agreements.m
 
 7. Open the drafts menu again and switch back to *Original*.
 
-   The whole document changes back, with its own values, its own provenance and its own undo history. The premium draft is untouched and still in the menu with its own price.
+   The whole document changes back, with its own values, its own provenance and its own record of what was done to it. The premium draft is untouched and still in the menu with its own price.
 
 *End state.* One workspace holding two whole agreements, compared on a pair of figures, with either one a click away.
 

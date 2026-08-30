@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/popover";
 import {
   Configuration,
+  type Clause as DocumentClause,
   RegisterEntry,
   ResolvedValue,
   ValueKind,
@@ -53,6 +54,9 @@ export interface DocumentView {
   disabled: boolean;
   pending: Record<string, string>;
   requirementsFor: (variable: string) => RegisterEntry[] | undefined;
+  /** the clauses the document left to us on this term, if any
+   * (docs/specs/document-clauses) */
+  leftToUsFor: (variable: string) => DocumentClause[] | undefined;
   /** the shell's routed dispatch — canvas edit or reconciliation, per variable */
   onSelect: (variable: string, value: string) => void;
   onDispatch: (content: string) => void;
@@ -310,7 +314,7 @@ function ClausePopover({
         <p className="mb-2 text-muted-foreground">Your document asks:</p>
         <dl className="space-y-2">
           {entries.map((entry) => (
-            <div key={entry.clause + entry.quote}>
+            <div key={entry.id}>
               <dt className="font-medium">
                 clause {entry.clause} — {optionLabel(entry.variable, entry.value)}
               </dt>
@@ -454,6 +458,25 @@ export function DeviationMark({
           {waived ? "Reopen" : "Leave open"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * What the customer's document left to us on this term
+ * (docs/specs/document-clauses). A mark rather than a register row, because a
+ * clause that asks for nothing has nothing to compare: no requested value, no
+ * offered value, no rule between them, and no move that answers it here. What
+ * answers it is the conversation the agent opens, so the mark says which
+ * clause is waiting and stops there.
+ */
+export function LeftToUsMark({ clauses }: { clauses: DocumentClause[] }) {
+  const cited = clauses.map((c) => c.clause).filter(Boolean);
+  return (
+    <div className="border-l-2 border-muted-foreground/40 pl-2 text-xs text-muted-foreground">
+      {cited.length
+        ? `Clause ${cited.join(", ")} leaves this to us`
+        : "Your document leaves this to us"}
     </div>
   );
 }

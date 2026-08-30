@@ -254,8 +254,9 @@ export function useWorkspaceAttachment(workspaceId: string) {
           workspace_id: record.id,
           configuration: draft.configuration,
           // The canvas renders its undo controls from this mirror
-          // (docs/specs/undo); the current draft's own history is what it
-          // mirrors, and tools refresh it as they commit.
+          // (docs/specs/undo); what it counts is how far the cursor can walk
+          // through the current draft's own log (docs/specs/action-log), and
+          // tools refresh it as they commit.
           history: historyDepths(record),
           // Which draft this is and what else exists beside it
           // (docs/specs/parallel-drafts). This seed is the only path for the

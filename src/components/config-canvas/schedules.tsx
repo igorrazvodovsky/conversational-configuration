@@ -31,6 +31,7 @@ import { ModelVariable, layerGroups, optionLabel } from "@/lib/configurator";
 import { cn } from "@/lib/utils";
 import {
   DeviationMark,
+  LeftToUsMark,
   DocumentView,
   Gloss,
   LAYER_HEADING,
@@ -53,6 +54,7 @@ function ScheduleRow({
   const display = displayOf(doc, variable.name);
   const editable = display.kind !== "forced";
   const unmet = unmetFor(doc, variable.name);
+  const leftToUs = doc.leftToUsFor(variable.name);
 
   return (
     <Collapsible
@@ -93,6 +95,12 @@ function ScheduleRow({
       {unmet && (
         <div className="mt-2">
           <DeviationMark entries={unmet} doc={doc} />
+        </div>
+      )}
+
+      {leftToUs && (
+        <div className="mt-2">
+          <LeftToUsMark clauses={leftToUs} />
         </div>
       )}
 

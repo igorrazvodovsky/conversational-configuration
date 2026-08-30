@@ -1,6 +1,6 @@
 # Offline checks: what runs without a provider key
 
-Status: approved and built 2026-08-20. Every criterion here is met. The two findings the first pass recorded are closed: the grammar is compared by building it on both sides rather than by reading source text, and the system prompt has a rule for every element of it. That prompt edit is the one thing here not verified against the live agent, which needs the conversation checks ([design.md](design.md)).
+Status: approved and built 2026-08-20, extended since with the ontology as a fourth party to the coupling checks. Every criterion here is met. The two findings the first pass recorded are closed: the grammar is compared by building it on both sides rather than by reading source text, and the system prompt has a rule for every element of it. That prompt edit is the one thing here not verified against the live agent, which needs the conversation checks ([design.md](design.md)).
 
 These are the counterpart to the [conversation checks](../conversation-checks/requirements.md). Those drive the live agent and cost money; these run offline, in seconds, over everything the agent's behavior rests on.
 
@@ -27,6 +27,8 @@ Serves discovery principle [the canvas holds the state and the chat explains it]
 - GIVEN the structured message grammar, WHEN the checks run, THEN the frontend and the agent build every sentence from the same inputs and the two are asserted equal string for string, so a rewording on either side fails rather than degrading a card.
 - GIVEN the system prompt, which is prose and can only be read, WHEN the checks run, THEN every element of the grammar is asserted to have a rule there, none exempted, and each rule's wording is asserted against the sentence the frontend actually builds.
 - GIVEN the product model, WHEN the checks run, THEN every variable, option code and group the frontend addresses by name is asserted to exist in it, and every option code the render parses is asserted to still parse.
+- GIVEN the [ontology of phenomena](../ontology-of-phenomena/ontology.md), which constitution #15 binds every artifact to and which is prose like the prompt, WHEN the checks run, THEN every tool the agent offers, every element of the grammar, every key of a configuration and of the durable record, and the counts the enumeration states of the product model are asserted to be named there — so a name that arrived without being named fails before it can be cited under a name nothing else uses.
+- GIVEN the [action log](../action-log/requirements.md), WHEN the checks run, THEN every name an entry may carry is asserted to be a tool the agent builds and a name the ontology enumerates, and the two implementations of the counts the canvas renders its reversal controls from — one per language, because the agent writes that mirror and the frontend seeds it — are asserted to read one constructed log to the same pair.
 - GIVEN the two hand-maintained declarations of the configuration shape, a TypeScript interface and a Python `TypedDict`, WHEN the checks run, THEN the frontend's members are asserted against what the agent declares and against the keys of an agreement the agent actually built.
 
 ### Running them

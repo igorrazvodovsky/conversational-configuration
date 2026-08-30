@@ -7,6 +7,7 @@
 import type {
   Candidate,
   Choice,
+  Clause,
   Configuration,
   OptionStatus,
   RFQ,
@@ -107,12 +108,15 @@ export function candidate(
   return { assignment, price, ...extra };
 }
 
+let minted = 0;
+
 export function requirement(
   variable: string,
   value: string,
   overrides: Partial<Requirement> = {},
 ): Requirement {
   return {
+    id: `clause-${(minted += 1)}`,
     variable,
     value,
     clause: "3.1",
@@ -122,8 +126,23 @@ export function requirement(
   };
 }
 
-export function rfq(requirements: Requirement[], budget_cap?: number): RFQ {
-  return { requirements, unmapped: [], ...(budget_cap ? { budget_cap } : {}) };
+/** A clause the document leaves to us: it carries a variable and asks for no
+ * value (docs/specs/document-clauses). */
+export function leftToUs(
+  variable: string,
+  overrides: Partial<Clause> = {},
+): Clause {
+  return {
+    id: `clause-${(minted += 1)}`,
+    variable,
+    clause: "5.2",
+    quote: `clause leaving ${variable} to us`,
+    ...overrides,
+  };
+}
+
+export function rfq(clauses: Clause[], budget_cap?: number): RFQ {
+  return { clauses, ...(budget_cap ? { budget_cap } : {}) };
 }
 
 export const A_RULE: Rule = { id: "R1", label: "a rule with a label" };
