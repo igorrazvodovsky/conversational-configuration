@@ -23,17 +23,21 @@ import {
 } from "@/lib/configurator";
 
 export interface SuggestedMove {
-  /** The chip's text. For every move below it is also the message: the
-   * customer reads the sentence they could have typed. */
+  /** The chip's text. It is always also the message, with no exception:
+   * the customer reads the sentence they could have typed. */
   title: string;
   message: string;
 }
 
 /** The entry prompts, which are right exactly once — on a workspace where
- * nothing has been said yet. The first four are worded as they were before this
- * spec; the demo scenarios open from those chips.
+ * nothing has been said yet. One per entrance, and each says the whole of what
+ * it sends: these used to carry a short label over a longer message that named
+ * a city, a floor count, a travel distance and a traffic profile the customer
+ * never saw. A chip may assert what its own sentence says and nothing more
+ * (docs/specs/suggested-moves design decision 2), so the specifics are left for
+ * the agent to elicit.
  *
- * The fifth is the document entrance (docs/specs/rfq-reconciliation). It is
+ * The last is the document entrance (docs/specs/rfq-reconciliation). It is
  * here rather than in a family below because it belongs to the untouched
  * workspace, and it is here at all because it is the one way in that a customer
  * cannot find by trying: the delivery lead's project has already written the
@@ -41,31 +45,11 @@ export interface SuggestedMove {
  * them. A click cannot carry the document, so the pill opens the subject and
  * the agent asks for the text. */
 export const ENTRY_PROMPTS: SuggestedMove[] = [
-  {
-    title: "Hotel new build",
-    message:
-      "We're planning a new 6-storey hotel in Munich, about 20 m of travel, normal guest traffic. What elevator would you suggest?",
-  },
-  {
-    title: "Hospital bed lift",
-    message:
-      "New hospital wing in Boston, 8 floors. We need to move patient beds between wards.",
-  },
-  {
-    title: "Office modernization",
-    message:
-      "We're modernizing a 1970s office building in Berlin and keeping the existing shaft. 12 floors, busy mornings.",
-  },
-  {
-    title: "What can you configure?",
-    message:
-      "What decisions go into configuring an elevator here, and where should we start?",
-  },
-  {
-    title: "Start from our RFQ",
-    message:
-      "We've issued an RFQ for the lift package. Can I hand you our requirements and have you tell me what you can do against them?",
-  },
+  move("We're planning a new hotel"),
+  move("We need a bed lift for a new hospital wing"),
+  move("We're modernizing an office building"),
+  move("What decisions go into configuring an elevator?"),
+  move("Can I start from our RFQ?"),
 ];
 
 /** A sentence that is its own chip. */
@@ -190,9 +174,9 @@ const MAX_FAMILIES = 3;
  *
  * The entry prompts need both tests. An agreement with nothing recorded is not
  * necessarily an untouched one — the customer may have described the building
- * and had the agent ask a question back — and offering a Munich hotel to
- * someone who has just described a Berlin office is the failure this spec
- * exists to fix, one turn in rather than three revisions in.
+ * and had the agent ask a question back — and offering a new hotel to someone
+ * who has just described an office is the failure this spec exists to fix, one
+ * turn in rather than three revisions in.
  *
  * State that has not arrived yet is the untouched case, not the no-moves case:
  * a reload should not blank the surface on its way up.

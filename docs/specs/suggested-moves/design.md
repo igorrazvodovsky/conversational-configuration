@@ -26,7 +26,13 @@ The [agreement document spec](../agreement-document/requirements.md) already req
 
 The catalogue lives in its own module, `src/lib/suggested-moves.ts`, rather than beside the projection helpers in `lib/configurator.ts`. With review-by-reading standing in for an automated check, one file that holds every family and nothing else is worth more than proximity to the helpers it calls.
 
-A move pill's title *is* its message: the chip shows the sentence it sends. That is what makes the strip teach — the customer reads a sentence they could have typed, and clicking it is indistinguishable from typing it. The four entry prompts keep their existing short title over a long message, which the first acceptance criterion preserves unchanged, and every pill this spec adds is short enough to be its own chip.
+A pill's title *is* its message: the chip shows the sentence it sends. That is what makes the strip teach — the customer reads a sentence they could have typed, and clicking it is indistinguishable from typing it. Every pill in the catalogue satisfies it, the entry prompts included since 2026-08-30.
+
+*The entry prompts were the exception, and the exception is what made them wrong.* A chip reading *Hotel new build* sent "We're planning a new 6-storey hotel in Munich, about 20 m of travel, normal guest traffic" — a city, a height, a travel distance and a traffic profile the customer never saw and never said. The label was true and the message asserted four things beyond it. The rule that replaces the exception is that *a chip may assert what its own sentence says and nothing more*, which is the same rule as title-is-message read from the other end, and with the two collapsed it holds automatically. So the five entrances are named in the customer's voice and nothing else: *We're planning a new hotel*, *We need a bed lift for a new hospital wing*, *We're modernizing an office building*, *What decisions go into configuring an elevator?*, *Can I start from our RFQ?* Each asserts exactly what its old label asserted. The floors, the travel and the traffic are the agent's to ask for, which is what elicitation is for (constitution #4).
+
+This costs the demo its one-turn opening, and that is the trade being made. It also removes the thing the spec's own opening complaint was about, one turn earlier than the complaint noticed it: a customer who clicks *Hotel new build* and is answered about Munich has been misdescribed before they typed anything. The evidence behind the ruling is in [what a suggestion chip should do when it is clicked](../../research/suggestion-dispatch.md): shipped products insert or use visible slots wherever a suggestion carries specifics only the user knows, and prefilling the composer would have shown the invented facts rather than removed them, at the price of replacing the connected chat component.
+
+*The punctuation looks inconsistent and is not.* Statements carry no terminal stop and questions carry their mark, which is the catalogue's standing convention — *Make it cheaper* beside *Why this service level?* — and the entry prompts now follow it like everything else.
 
 ## Decision 3: the move catalogue is the inventory, filtered by state
 
@@ -34,7 +40,7 @@ Each pill family is a predicate over the configuration plus the text to offer wh
 
 | Family | Offered when | Move |
 |---|---|---|
-| Entry prompts | Nothing said, nothing recorded, no candidate | The demo scenarios' prompts, unchanged, plus the document entrance, and nothing beside them |
+| Entry prompts | Nothing said, nothing recorded, no candidate | One sentence per entrance — hotel new build, hospital bed lift, office modernization, the capability question, the document — and nothing beside them |
 | Answer the document | A requirement of the customer's document is still in deviation | The first such clause, named, asking for what it asked for |
 | The trade-off pair | A candidate exists | *Make it cheaper* and *lower the carbon*, always both |
 | Ask why | A value is solver-forced or agent-chosen | Why that term reads as it does — the term named rather than the value, as *Notes from implementation* explains |
@@ -58,7 +64,7 @@ Two inventory moves are deliberately absent, for the same reason. *Fork and comp
 
 Emptiness is the canvas's test rather than a second one: choices recorded, or a candidate standing. The two surfaces have to agree about what an untouched workspace is, and an RFQ-seeded workspace is correctly not one, because its document-sourced choices are choices. State that hasn't arrived yet falls to the entry prompts rather than to an empty strip, so a reload never blanks the surface on its way up.
 
-*The entry prompts need a second test the other families don't: an empty transcript.* An agreement with nothing recorded isn't necessarily an untouched one. A customer who described the building and got a question back has recorded nothing, and the strip that greets them with a Munich hotel is this spec's opening complaint, arriving one turn in instead of three revisions in. So the entry branch reads `agent.messages` as well as the configuration, and between the first message and the first recorded choice the strip is empty — the criterion that an empty strip is correct, doing the work it was written for.
+*The entry prompts need a second test the other families don't: an empty transcript.* An agreement with nothing recorded isn't necessarily an untouched one. A customer who described the building and got a question back has recorded nothing, and the strip that greets them with a new hotel is this spec's opening complaint, arriving one turn in instead of three revisions in. So the entry branch reads `agent.messages` as well as the configuration, and between the first message and the first recorded choice the strip is empty — the criterion that an empty strip is correct, doing the work it was written for.
 
 The order is the table's order, and the cap is three *families*, never three pills. A cap counted in pills could emit *make it cheaper* and drop *lower the carbon*, which is the first never-move arrived at by rendering. The pair is one entry that yields two pills, so no cap can reach between them.
 
@@ -122,6 +128,8 @@ By running the app (constitution #9), which is the whole of the check — decisi
 - The run's end is one transition rather than two, despite decision 8 firing a reload beside the library's own. It was counted rather than watched, since a blink is shorter than a screenshot: a mutation observer on the pill count logged exactly `2 → 0` when the run started and `0 → 2` when it ended, six seconds apart, with nothing in between.
 - Clicking a pill sent a visible user message identical to the chip's own text, and the agent answered it as it answers the sentence typed.
 - *Why this service level?*, asked from the strip, was answered and not offered again, and the family moved to *Why this drive type?*, the next term nobody chose. Asking *What would change if the traffic were heavier?* retired that pill while the usage profile stood. In both cases the rest of the strip was unaffected: the trade-off pair, which the agent's reply had just brought into range by proposing a completion, stayed put.
+
+*The entry prompts were reworded on 2026-08-30.* The catalogue's own checks pass, including a new guard that fails if a message regains a city, a floor count, a travel figure or a speed, and `npm run typecheck` is clean. The reworded strip and the click were then verified in the running app the same day, and the entrances work. That last part of the record is thinner than the entries above it: it says the chips render and lead somewhere, and it does not say how many rows they wrap to or what the agent asks for first, because neither was recorded. The conversation checks cannot stand in — the scenarios type their own opening turns and reach the entrances without the chips, which is why none of them needed changing.
 
 *One thing the record can't show cheaply.* A workspace with recorded state opened by reload lands with `isRunning` stuck true — the known gap in *Notes from implementation* — and no strip at all, so every check here was run through the header's *New conversation* instead. That path keeps workspace state on the canvas and gives the strip a settled agent to read.
 

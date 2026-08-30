@@ -2,7 +2,7 @@
 
 *Evidence: solid.* Every claim here was read out of the installed packages — `@copilotkit/react-core` and `@copilotkit/runtime` at 1.65.0, and the Python `copilotkit` 0.1.94 — rather than from the documentation. That distinction did work: several docs pages describe a v1 API or an Enterprise-only path, and one of them contradicts what this repo demonstrably does. Where a claim rests on reading rather than on running, it says so.
 
-Read 2026-08-14, with *State reaches the canvas as snapshots, never as deltas* added 2026-08-16 against the same package versions. It grounds the [shared attention](../specs/shared-attention/requirements.md) and [suggested moves](../specs/suggested-moves/requirements.md) specs, the removal of the starter's MCP configuration from the runtime route, and the state-transport reasoning in [parallel drafts](../specs/parallel-drafts/design.md).
+Read 2026-08-14, with *State reaches the canvas as snapshots, never as deltas* added 2026-08-16 and *Two suggestion props that disagree with their types* added 2026-08-30, against the same package versions. It grounds the [shared attention](../specs/shared-attention/requirements.md) and [suggested moves](../specs/suggested-moves/requirements.md) specs, the removal of the starter's MCP configuration from the runtime route, and the state-transport reasoning in [parallel drafts](../specs/parallel-drafts/design.md).
 
 ## 1. The tier
 
@@ -61,7 +61,18 @@ The starter's `mcpApps` block named `https://mcp.excalidraw.com` in the runtime 
 
 So every message sent in the prototype opened an outbound connection to a third-party host and offered the elevator agent that host's tools. The block was removed on the day this note was written.
 
-## 6. What this note does not establish
+## 6. Two suggestion props that disagree with their types
+
+Read out of `CopilotChat` in `react-core` 1.65.0 while asking whether a suggestion pill could fill the composer instead of sending ([suggestion dispatch](suggestion-dispatch.md)). Both are about the same component and they fail in opposite directions.
+
+`CopilotChat` builds the props it hands `CopilotChatView` by naming its own handlers first and spreading the caller's props after them, and then sets a second group of props after that spread. What lands in each group decides whether a caller can override it, and the types describe neither arrangement.
+
+- `onSelectSuggestion` is typed *out* of `CopilotChatProps` and is in the first group, so a caller's value wins at runtime. The built-in handler adds the suggestion's message to the agent and starts a run; overriding it is possible and means depending on a spread order the types disclaim.
+- `inputValue` and `onInputChange` are typed *into* `CopilotChatProps` and are in the group set after the spread, so the component's own state wins unconditionally. Passing them type-checks and does nothing, with no warning. Controlling the composer's text therefore needs `CopilotChatView` rather than `CopilotChat`, which means re-implementing the run and stop handling, attachments, transcription, the suggestion lifecycle and the welcome-screen gating that the connected component owns.
+
+The second is a silent failure of the kind [the stylesheet](../specs/ui-component-library/design.md) warns about, and it is worth knowing before anyone reaches for those props for any reason.
+
+## 7. What this note does not establish
 
 - Whether `connect()`'s replay makes the manual hydration in `use-workspace-attachment.ts` partly redundant. It was read from source rather than run.
 - Whether any solver round trip is slow enough to want `copilotkit_emit_state` state streaming. That is unmeasured, and constitution #10 argues against adding the mechanism to find out. What such streaming would look like is settled by *State reaches the canvas as snapshots, never as deltas* — more frequent whole snapshots — so only the question of worth is open.

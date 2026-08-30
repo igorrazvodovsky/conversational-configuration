@@ -20,7 +20,7 @@ Scenario note: [needs-not-nomenclature](discovery/scenarios/needs-not-nomenclatu
 
 *The claim.* A customer who knows their building and nothing about elevators can reach a priced, valid agreement without learning the product's vocabulary. The agent translates needs into choices, announces what the rules then force, and the customer keeps the last word over anything the agent picked.
 
-*Setup.* A new elevator. The *Hospital bed lift* entry chip is the shortest way in, and this walkthrough types its own opening instead, so the building is stated in one turn.
+*Setup.* A new elevator. The entry chip reading *We need a bed lift for a new hospital wing* opens the same entrance, and leaves the floors, the travel and the traffic for the agent to ask about; this walkthrough types its own opening instead, so the building is stated in one turn.
 
 1. Type: *We're planning a new wing for a district hospital in Germany. The lift serves the ward block — six floors above ground, about twenty metres from the bottom landing to the top one, and it has to take a bed with a nurse walking either side of it. It runs all day and it has to be usable by patients on their own.*
 
@@ -50,7 +50,7 @@ Scenario note: [mid-contract-revision](discovery/scenarios/mid-contract-revision
 
 *The claim.* Changing something already decided is an ordinary move. When the change collides with earlier decisions, the system doesn't refuse. It computes the ways forward, names the rules behind each, and lets the customer pick or walk away.
 
-*Setup.* A new elevator, then the *Office modernization* entry chip, or the opening turn below.
+*Setup.* A new elevator. The entry chip reading *We're modernizing an office building* reaches the same entrance over several turns; type the opening below instead, which states the speed the change is about to collide with.
 
 1. Type: *We're modernizing a 1970s office building in Berlin and keeping the existing shaft. 12 floors, busy mornings. The existing lift runs at 1.6 m/s.*
 

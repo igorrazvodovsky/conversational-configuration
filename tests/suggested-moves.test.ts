@@ -40,8 +40,8 @@ describe("the entry prompts", () => {
   });
 
   it("stop once the customer has said something, even before anything is recorded", () => {
-    // Offering a Munich hotel to someone who has just described a Berlin
-    // office is the failure this catalogue exists to fix.
+    // Offering a new hotel to someone who has just described an office is
+    // the failure this catalogue exists to fix.
     expect(suggestedMoves(agreement(), true, NOTHING_ASKED)).toEqual([]);
   });
 
@@ -52,16 +52,23 @@ describe("the entry prompts", () => {
     expect(offered.some((m) => /RFQ|requirements/i.test(m.message))).toBe(true);
   });
 
-  it("keep the wording the demo scenarios open from", () => {
-    // The set may gain a prompt; it may not lose or reword one.
-    for (const opening of [
-      "We're planning a new 6-storey hotel in Munich",
-      "New hospital wing in Boston",
-      "We're modernizing a 1970s office building in Berlin",
-      "What decisions go into configuring an elevator here",
-    ]) {
-      expect(ENTRY_PROMPTS.some((m) => m.message.startsWith(opening))).toBe(true);
+  it("cover every entrance, and the set may gain one but not lose one", () => {
+    for (const entrance of [/hotel/i, /hospital/i, /modernizing/i, /configuring an elevator/i, /RFQ/i]) {
+      expect(ENTRY_PROMPTS.some((m) => entrance.test(m.message))).toBe(true);
     }
+  });
+
+  it("say the whole of what they send, which is what the exception used to break", () => {
+    for (const prompt of ENTRY_PROMPTS) expect(prompt.title).toBe(prompt.message);
+  });
+
+  it("assert nothing about the project beyond the entrance they name", () => {
+    // A chip may assert what its own sentence says and nothing more, so no
+    // city, floor count, travel, traffic profile or speed
+    // (docs/specs/suggested-moves design decision 2). The old chips carried
+    // four of those under a three-word label.
+    const specifics = /\b(Munich|Berlin|Boston|[0-9]+([.,][0-9]+)?\s*(-|\s)?(m\/s|metres?|meters?|m\b|floors?|stor(e?y|ies)))/i;
+    for (const prompt of ENTRY_PROMPTS) expect(prompt.message).not.toMatch(specifics);
   });
 
   it("stop on a document-seeded agreement, whose requirements are choices already", () => {
