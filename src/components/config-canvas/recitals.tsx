@@ -82,7 +82,10 @@ function Marks({ doc, variables }: { doc: DocumentView; variables: string[] }) {
         const unmet = unmetFor(doc, variable);
         const leftToUs = doc.leftToUsFor(variable);
         return (
-          <div key={variable} className="w-full space-y-1">
+          <div
+            key={variable}
+            className="flex w-full flex-col items-start gap-1 @2xl:items-end"
+          >
             <ProvenanceBadge variable={variable} doc={doc} />
             {unmet && <DeviationMark entries={unmet} doc={doc} />}
             {leftToUs && <LeftToUsMark clauses={leftToUs} />}

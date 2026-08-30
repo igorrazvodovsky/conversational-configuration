@@ -99,7 +99,7 @@ function Consideration({ doc }: { doc: DocumentView }) {
   return (
     <Clause
       margin={
-        <span className="text-xs text-muted-foreground">
+        <span className="w-full text-xs text-muted-foreground">
           {completionLabel(candidate)}
         </span>
       }

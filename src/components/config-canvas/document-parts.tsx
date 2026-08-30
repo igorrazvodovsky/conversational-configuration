@@ -463,7 +463,7 @@ export function DeviationMark({
   }));
 
   return (
-    <div className="border-l-2 border-muted-foreground/40 pl-2 text-xs">
+    <div className="w-full border-l-2 border-muted-foreground/40 pl-2 text-xs">
       <p className="text-muted-foreground">
         {asks.map(({ value, clauses }, i) => (
           <span key={value}>
@@ -537,7 +537,7 @@ export function DeviationMark({
 export function LeftToUsMark({ clauses }: { clauses: DocumentClause[] }) {
   const cited = clauses.map((c) => c.clause).filter(Boolean);
   return (
-    <div className="border-l-2 border-muted-foreground/40 pl-2 text-xs text-muted-foreground">
+    <div className="w-full border-l-2 border-muted-foreground/40 pl-2 text-xs text-muted-foreground">
       {cited.length
         ? `Clause ${cited.join(", ")} leaves this to us`
         : "Your document leaves this to us"}
@@ -563,6 +563,14 @@ export function unmetFor(
  * out of the reading line. It only becomes a column when the canvas is wide
  * enough to spare one; narrower, the marks flow under the clause they mark.
  * A container query, not a viewport one: the canvas is a resizable panel.
+ *
+ * While it is a column it has an edge: a shrink-wrapped mark flushes to the
+ * right of the sheet, so the badges make one edge against the ends of the
+ * dividing rules rather than a ragged one against nothing. Marks that are
+ * blocks of prose declare `w-full` and keep their own left edge, which is what
+ * holds the marks' border rules in one line down the page. Below the container
+ * query nothing flushes: a badge at the far right of a
+ * full-width row is no longer beside the term it attributes.
  */
 export function Clause({
   children,
@@ -574,7 +582,9 @@ export function Clause({
   return (
     <div className="grid gap-x-6 gap-y-2 py-3 @2xl:grid-cols-[minmax(0,1fr)_11rem]">
       <div className="min-w-0">{children}</div>
-      <div className="flex flex-col items-start gap-2">{margin}</div>
+      <div className="flex flex-col items-start gap-2 @2xl:items-end">
+        {margin}
+      </div>
     </div>
   );
 }
