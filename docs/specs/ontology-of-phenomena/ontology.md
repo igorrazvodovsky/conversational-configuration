@@ -22,11 +22,13 @@ An individual carries identity and nothing else. It is matched, never interprete
 
 | Individual | Identity | Comes into existence | Ceases |
 |---|---|---|---|
-| Workspace | `record.id`, a uuid | `create_workspace`, from the workspace list | never — nothing deletes one |
+| Workspace | `record.id`, a uuid | `create_workspace`, from the workspace list | `delete_workspace`, from the list or from the head of the agreement |
 | Draft | `draft.id`, a uuid | with its workspace, or by `fork_draft` | `discard_draft` |
-| Conversation | its LangGraph thread id | `register_thread`, on its first message | never — no path deletes a thread |
+| Conversation | its LangGraph thread id | `register_thread`, on its first message | never — no path deletes a thread, and deleting its workspace does not either (finding 13) |
 | Clause | `clause.id`, a uuid, minted once and persisted | `ingest_rfq` | undoing that ingestion; reconciling one never does, since a reconciled clause stays listed |
 | Entry | `entry.id`, a uuid | any content action, in the draft's log | retention, oldest first |
+
+Every ceasing named in that table is a ceasing *within* a workspace, and the workspace's own ends all of them at once: a Draft, an Entry and a Clause live inside the record, so `delete_workspace` destroys the population of all three without visiting any of them. A Conversation is the exception, and the one thing a workspace holds that is not inside it.
 
 *Ephemeral.* A Card is identified by the tool-call id that produced it and lives in the thread checkpoint. It is what makes a tool result clickable, and it is the only individual whose whole lifecycle is a rendering concern.
 
@@ -217,9 +219,15 @@ An action whose entire content is that it occurred, which the paper admits and t
 
 ```
 create_workspace () : (workspace: Workspace)   POST /workspaces, from the list
+delete_workspace (workspace)                   DELETE /workspaces/{id}, from the list
+                                               or the agreement's own head
 register_thread (workspace, thread)            POST, on a conversation's first message
 attach_rfq (workspace, text)                   inside ingest_rfq only
 ```
+`delete_workspace` destroys the Workspace and everything inside the record with
+it, writes no entry, and is reached by no tool: a conversation cannot destroy
+the agreement it is about. It is the only action with no undoing, because the
+log a reversal walks is inside what it destroys.
 Every write also stamps `moved_at` on the conversation that caused it. That is a side effect of the store's one door, not an action of its own.
 
 ## Queries
@@ -250,6 +258,7 @@ What the customer does, and the action it reaches. Every card click dispatches a
 | Type | ordinary prose | whatever the agent judges | visible |
 | Open an editor | — | none; publishes `editing(...)` | — |
 | Start an elevator | — | `create_workspace` | — |
+| Delete an elevator | — | `delete_workspace` | — |
 
 ## What the enumeration settles
 
@@ -288,3 +297,5 @@ Findings, not repairs. Each repair is a change to a surface or a tool, with its 
 11. *The durable individual answers to three names.* It is a `Workspace` in the store, in `name_workspace` and in the list the customer opens it from; "the agreement" throughout the prompt's Drafts and State sections; and "this elevator's entry" in `name_workspace`'s own docstring, which is the wording the agent reads at the moment it calls the tool. The three are one individual and nothing but the table above says so. Renaming is barred by names already spent — `workspace` is a store key and a tool name — so what the finding asks for is that the ontology stay the place the identity is stated, not that any of the three give way.
 
 12. *Nobody is an individual.* The prototype has no `Customer`, `Operator` or `Approver`. `Source` is a *value* — `user`, `agent`, `document` — so `attributed(Draft, Variable, Source)` says a choice came from the customer's side and cannot say which customer, and `moved_by(Entry, Source)` says the same of a move. The paper takes the other position: the actors that perform actions are usually represented as individuals (§4.1, note 7). Nothing here can be a fact about a person, which is the ontological shape of a gap the [phase plan](../../discovery/phase-plan.md) already records from the job crossing — the approver has two shapes, internal and external, and no artifact anywhere, and delegation is served only on the agent's side of the boundary. Until the individual exists, the constitution's *the customer* in #4 and *the user* in #5 name nothing this document carries, and they stand as they are rather than being reworded onto `Source`, which would say something false.
+
+13. *Deleting a workspace orphans its conversations.* The Conversation row above says a thread ceases never, and that stays true after `delete_workspace`: the LangGraph checkpoints of every conversation the workspace held survive it. What is destroyed is `belongs_to(Conversation, Workspace)`, so those threads exist and are reachable from nothing the app draws — the elevator list is the only door to a conversation, and the deleted elevator is not on it. This is the ephemeral half of the system outliving the durable half, which is the opposite of the order everything else here assumes. It is left as it is rather than repaired: the store has never owned thread storage ([agreement workspace](../agreement-workspace/design.md)), and reaching into LangGraph's checkpointer would be a second write path to a store the prototype otherwise only reads.

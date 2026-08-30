@@ -109,6 +109,38 @@ def test_list_sorted_by_recency():
     assert [w["id"] for w in workspace_store.list_workspaces()] == [a["id"], b["id"]]
 
 
+def test_delete_destroys_the_record_and_leaves_the_others():
+    """The record is the container (docs/specs/agreement-workspace): its
+    drafts, their logs and its document are inside the file, so unlinking it
+    ends all of them and touches nothing else."""
+    doomed = workspace_store.create_workspace(empty_configuration())
+    kept = workspace_store.create_workspace(empty_configuration())
+    config, _ = apply_choices(empty_configuration(), {"rated_load": "kg1000"}, "user")
+    _save(doomed["id"], config)
+
+    workspace_store.delete_workspace(doomed["id"])
+
+    assert not workspace_store._path(doomed["id"]).exists()
+    assert [w["id"] for w in workspace_store.list_workspaces()] == [kept["id"]]
+    with pytest.raises(KeyError):
+        workspace_store.get_workspace(doomed["id"])
+
+
+def test_deleting_what_is_not_there_raises():
+    """Twice is the ordinary case — two tabs on one list — and it has to refuse
+    rather than report a second success. The path-like id goes through the same
+    guard every other call does, which is why the destructive one is written
+    through `_path` too."""
+    record = workspace_store.create_workspace(empty_configuration())
+    workspace_store.delete_workspace(record["id"])
+    with pytest.raises(KeyError):
+        workspace_store.delete_workspace(record["id"])
+    with pytest.raises(KeyError):
+        workspace_store.delete_workspace("deadbeef")
+    with pytest.raises(KeyError):
+        workspace_store.delete_workspace("../escape")
+
+
 def test_unknown_workspace_raises():
     with pytest.raises(KeyError):
         workspace_store.get_workspace("deadbeef")

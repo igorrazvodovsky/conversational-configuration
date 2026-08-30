@@ -149,6 +149,16 @@ export function fetchWorkspace(id: string): Promise<WorkspaceRecord> {
   return request(`/api/workspaces/${encodeURIComponent(id)}`);
 }
 
+/** Destroy an elevator and everything it holds — its drafts, their record of
+ * what was done to them, and any document ingested for it
+ * (docs/specs/agreement-workspace). There is no archived state and no
+ * undelete, and the reply is the id that is gone. */
+export function deleteWorkspace(id: string): Promise<{ deleted: string }> {
+  return request(`/api/workspaces/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
 export function registerThread(
   workspaceId: string,
   threadId: string,

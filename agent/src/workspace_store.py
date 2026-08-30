@@ -438,6 +438,32 @@ def get_workspace(workspace_id: str) -> dict:
     return _read(path)
 
 
+def delete_workspace(workspace_id: str) -> None:
+    """Destroy a workspace and everything it holds
+    (docs/specs/agreement-workspace).
+
+    The record is the container: its drafts, their logs and entries, the
+    clauses of its document and the frozen document text are all inside the
+    file, so unlinking it ends all of them at once and nothing has to be
+    swept up afterwards. There is no archived state and no undelete — the log
+    a reversal walks is itself inside the record — which is why this is the
+    one store call with no `updatedAt` to stamp and no record to return.
+
+    Deliberately through `_path`: the id arrives from a URL, and the guard
+    there is what keeps a path-like one from unlinking a file that is not a
+    workspace.
+
+    What survives is the LangGraph checkpoints of the conversations that were
+    attached. They are the ephemeral half of the system and the store has never
+    owned them; after this they belong to nothing and are reachable from
+    nowhere in the app (docs/specs/ontology-of-phenomena, finding 13).
+    """
+    path = _path(workspace_id)
+    if not path.exists():
+        raise KeyError(f"no workspace {workspace_id!r}")
+    path.unlink()
+
+
 def list_workspaces() -> list[dict]:
     if not data_dir().exists():
         return []

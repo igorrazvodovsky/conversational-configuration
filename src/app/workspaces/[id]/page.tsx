@@ -104,6 +104,7 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
         <WorkspaceSplit
           canvas={
             <ConfigCanvas
+              workspaceId={workspaceId}
               workspaceName={workspaceName}
               workspaceLoaded={workspace !== null}
             />

@@ -34,6 +34,18 @@ def get_workspace(workspace_id: str) -> dict:
         raise HTTPException(status_code=404, detail=f"no workspace {workspace_id}")
 
 
+@app.delete("/workspaces/{workspace_id}")
+def delete_workspace(workspace_id: str) -> dict:
+    """Destroy the workspace and everything it holds. Answers with the id it
+    deleted rather than with no body, so the frontend's one request helper —
+    which reads every response as JSON — needs no second shape."""
+    try:
+        workspace_store.delete_workspace(workspace_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"no workspace {workspace_id}")
+    return {"deleted": workspace_id}
+
+
 @app.post("/workspaces/{workspace_id}/threads")
 def register_thread(workspace_id: str, body: RegisterThread) -> dict:
     try:

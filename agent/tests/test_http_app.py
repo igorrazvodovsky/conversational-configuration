@@ -1,6 +1,6 @@
 """The workspace HTTP routes (docs/specs/agreement-workspace).
 
-These four routes are the only contract the frontend has with the agent
+These routes are the only contract the frontend has with the agent
 process — `src/lib/workspaces.ts` calls them through the Next.js rewrite. The
 store beneath them is covered by `test_workspace_store.py`; what is checked
 here is what the routes add: the shape the frontend reads, and the mapping from
@@ -96,3 +96,21 @@ def test_a_path_like_workspace_id_does_not_escape_the_store(client):
     """Ids are uuid4 hex the store minted itself; anything path-like is
     refused rather than resolved."""
     assert client.get("/workspaces/..%2F..%2Fetc%2Fpasswd").status_code in (404, 422)
+
+
+def test_delete_removes_the_workspace_and_then_reports_it_gone(client):
+    record = client.post("/workspaces").json()
+
+    deleted = client.delete(f"/workspaces/{record['id']}")
+    assert deleted.status_code == 200
+    assert deleted.json() == {"deleted": record["id"]}
+
+    # Gone from the list, and its address reports that it does not exist
+    # rather than answering with an empty agreement.
+    assert client.get("/workspaces").json() == []
+    assert client.get(f"/workspaces/{record['id']}").status_code == 404
+    assert client.delete(f"/workspaces/{record['id']}").status_code == 404
+
+
+def test_delete_of_an_unknown_workspace_is_a_404(client):
+    assert client.delete("/workspaces/deadbeef").status_code == 404

@@ -1,6 +1,6 @@
 # Agreement workspace
 
-Status: requirements approved 2026-08-13; implemented 2026-08-13. The store shape changed under [parallel-drafts](../parallel-drafts/requirements.md), implemented 2026-08-17: the workspace's single `configuration` became several named drafts with one current, and these criteria read against the current draft. One agreement per workspace still holds — one agreement, drafted more than one way — and successive agreements stay out of scope.
+Status: requirements approved 2026-08-13; implemented 2026-08-13. The store shape changed under [parallel-drafts](../parallel-drafts/requirements.md), implemented 2026-08-17: the workspace's single `configuration` became several named drafts with one current, and these criteria read against the current draft. One agreement per workspace still holds — one agreement, drafted more than one way — and successive agreements stay out of scope. Deletion moved into scope 2026-08-30: an elevator can be destroyed, from the list or from the head of its own agreement, and that is the only thing that ends a workspace's life.
 
 Before this spec, the built system keyed the configuration to the conversation. `AgentState.configuration` lived in the thread's LangGraph checkpoint, so starting a new conversation silently started a new agreement, and the threads drawer stood in for choosing an agreement. This spec decouples them. A *workspace* is the durable home of one installation's service agreement — its drafts, each with its choices, candidate and history. Conversations are ephemeral views onto it, many per workspace. The journey starts at the workspace list, not at an empty chat.
 
@@ -10,6 +10,7 @@ Scope decisions:
 
 - *Identity and naming.* A workspace corresponds to one installation. The user sees it as an *elevator*, the concrete thing an operator points at, while code, store and routes keep the neutral term *workspace*. It is created unnamed: the list shows a placeholder, and the agent names it from the conversation the way chat apps title conversations — with the installation's identity when one emerges ("Riverside Tower — north lift"), descriptively otherwise — and renames it when better identity appears. The customer is never asked to invent a name. The agreement is the workspace's content, not its identity. One agreement per workspace evolves forever. Successive agreements about the same elevator — renewal as a new document, change of counterparty — are out of scope, mirroring the [service-agreement](../service-agreement/requirements.md) position that renewal is resumption plus revision. Keying by installation keeps agreements-as-versions an additive change later.
 - *Concurrency.* One conversation writes at a time, and the last write wins. Simultaneous conversations on one workspace aren't defended against (constitution #10).
+- *Deletion.* An elevator is deleted outright, not archived: the record is unlinked and everything it holds — its drafts, their logs, the clauses and the frozen document — goes with it. There is no trash, no undelete and no soft-deleted state, because a workspace nobody wants is not a state the prototype has to model (constitution #10). Nor is there a confirmation: the control says what it destroys and the click destroys it, which is the operator's decision recorded in the design rather than an oversight — a mis-click costs the agreement. Undo does not reach it either: the log a reversal walks lives *inside* the record being destroyed. Deletion is reached from the elevator list and from the head of the open agreement, and by no tool, so no conversation can destroy the agreement it is about; it is the same kind of move as creating a workspace.
 
 ## Stories
 
@@ -17,6 +18,7 @@ Scope decisions:
 - As an operator, I start a new conversation about an existing agreement. The agent already knows its current state and never re-asks what is settled, and every change made in this conversation lands on the same agreement.
 - As an operator, I reopen an earlier conversation to reread the negotiation. Its cards can't act on an agreement state that has since moved on, and they tell me that is why.
 - As a new customer, I start a new elevator with one click and begin talking. The entry names itself as the conversation reveals which installation it is.
+- As an operator, I delete an elevator I opened by mistake or no longer service. The list asks me once, naming the elevator and saying what goes with it, and then it is gone.
 
 ## Acceptance criteria
 
@@ -29,6 +31,12 @@ Scope decisions:
 - GIVEN two conversations of one workspace, WHEN a change is applied in one and the other is reopened, THEN the canvas shows the workspace's current state rather than the reopened thread's checkpoint, and all cards in the reopened transcript are inert whenever its checkpoint no longer matches the workspace state.
 - GIVEN a card made inert because the agreement moved on, WHEN the operator reads it, THEN it says so in words and not by dimming alone. A card inert for a reason the transcript already carries — spent by the operator's own click, overtaken by a later message — says nothing extra. Added 2026-08-16, built 2026-08-17 with [parallel-drafts](../parallel-drafts/requirements.md), which made the sentence specific: it names the draft the conversation was working on and the one that is current.
 - GIVEN a draft forked in one conversation, WHEN any other conversation of the same workspace runs, THEN that draft is available to switch to and compare, because drafts are workspace-level.
+- GIVEN a row of the elevator list, WHEN the operator acts on it, THEN deleting that elevator is offered there, and the row's ordinary click still opens the elevator.
+- GIVEN an open elevator, WHEN the operator deletes it from the head of its agreement, where the elevator's identity already is, THEN the record goes and the page leaves for the elevator list rather than staying on an agreement that no longer exists.
+- GIVEN the delete control, WHEN the operator reads it before clicking, THEN it names the elevator it deletes and says that the agreement and every draft of it go with it and that this cannot be undone. It asks nothing further: the click deletes.
+- GIVEN a delete, WHEN the store has carried it out, THEN the record and everything it holds cease, the list re-reads from the store without it, and opening that elevator's address afterwards reports that it does not exist rather than an empty agreement.
+- GIVEN an id that names no elevator, WHEN a delete arrives for it, THEN it is refused as not found and nothing else in the store is touched.
+- GIVEN a deleted elevator, WHEN its conversations are considered, THEN their LangGraph checkpoints are left where they are: they belong to nothing, are reachable from nowhere in the app, and are not what the agreement was read from.
 - GIVEN a dev-server restart, WHEN the app reloads, THEN workspaces, their agreements, and their conversation lists survive.
 - GIVEN an open workspace on a desktop viewport, WHEN it renders, THEN the agreement canvas holds the primary area with the chat beside it, the operator can drag the boundary between them, and neither can be dragged below the width at which it stops working. This is the default, and the state every load returns to. The operator can move the chat off it — float it, give it the screen, put it away — under the [chat-surface spec](../chat-surface/requirements.md), which owns those modes and leaves this one as it is.
 
@@ -40,4 +48,4 @@ Scope decisions:
 
 ## Out of scope
 
-Successive agreements per installation, as the scope decision explains. Concurrent-conversation conflict handling. Multi-user access and auth. Deleting or archiving workspaces and conversations. Migrating threads created before this feature, which don't appear in any workspace. Fleet views across installations.
+Successive agreements per installation, as the scope decision explains. Concurrent-conversation conflict handling, including an elevator deleted while another conversation has it open. Multi-user access and auth. Archiving an elevator, and deleting or archiving a conversation. Migrating threads created before this feature, which don't appear in any workspace. Fleet views across installations.

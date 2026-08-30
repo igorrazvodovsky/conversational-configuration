@@ -29,6 +29,7 @@ import {
   currentDraft,
   listWorkspaces,
 } from "@/lib/workspaces";
+import { DeleteElevator } from "@/components/workspace/delete-elevator";
 
 export default function HomePage() {
   const router = useRouter();
@@ -36,10 +37,15 @@ export default function HomePage() {
   const [error, setError] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
+  // Re-read rather than splice: the store owns the order, and a delete is the
+  // second thing that changes what this list holds.
+  const load = () =>
     listWorkspaces()
       .then(setWorkspaces)
       .catch(() => setError(true));
+
+  useEffect(() => {
+    load();
   }, []);
 
   const create = async () => {
@@ -88,53 +94,66 @@ export default function HomePage() {
 
         <ItemGroup className="gap-2">
           {workspaces?.map((workspace) => (
+            /* The row is no longer one anchor: it carries a delete control,
+               and a button inside a link is neither valid markup nor
+               clickable. The link covers the row through an overlay on the
+               name instead, so the ordinary click still opens the elevator
+               and the controls beside it are ordinary buttons. */
             <Item
               key={workspace.id}
-              asChild
               variant="outline"
               size="sm"
-              className="items-baseline hover:border-primary"
+              className="relative items-baseline hover:border-primary has-[a:focus-visible]:border-primary"
             >
-              <Link href={`/workspaces/${workspace.id}`}>
-                <ItemContent className="min-w-0 gap-0.5">
-                  {workspace.name ? (
-                    <ItemTitle className="max-w-full truncate">
-                      {workspace.name}
-                    </ItemTitle>
-                  ) : (
-                    <ItemTitle className="max-w-full truncate font-normal italic text-muted-foreground">
-                      {PLACEHOLDER_NAME}
-                    </ItemTitle>
-                  )}
-                  <ItemDescription className="text-xs">
-                    {workspace.threads.length === 1
-                      ? "1 conversation"
-                      : `${workspace.threads.length} conversations`}
-                    {" · last activity "}
-                    {new Date(workspace.updatedAt).toLocaleDateString("en-IE", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  {/* The current draft's figure: an elevator with two drafts is
-                      still one entry here, quoted at the one being worked on
-                      (docs/specs/parallel-drafts). */}
-                  {currentDraft(workspace).configuration.candidate ? (
-                    <span className="text-sm font-semibold tabular-nums">
-                      {formatMonthly(
-                        currentDraft(workspace).configuration.candidate!.price,
-                      )}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      no proposal yet
-                    </span>
-                  )}
-                </ItemActions>
-              </Link>
+              <ItemContent className="min-w-0 gap-0.5">
+                <ItemTitle
+                  className={
+                    workspace.name
+                      ? "max-w-full truncate"
+                      : "max-w-full truncate font-normal italic text-muted-foreground"
+                  }
+                >
+                  <Link
+                    href={`/workspaces/${workspace.id}`}
+                    className="outline-none after:absolute after:inset-0"
+                  >
+                    {workspace.name ?? PLACEHOLDER_NAME}
+                  </Link>
+                </ItemTitle>
+                <ItemDescription className="text-xs">
+                  {workspace.threads.length === 1
+                    ? "1 conversation"
+                    : `${workspace.threads.length} conversations`}
+                  {" · last activity "}
+                  {new Date(workspace.updatedAt).toLocaleDateString("en-IE", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </ItemDescription>
+              </ItemContent>
+              {/* `relative`, so the controls sit above the link's overlay. */}
+              <ItemActions className="relative items-baseline">
+                {/* The current draft's figure: an elevator with two drafts is
+                    still one entry here, quoted at the one being worked on
+                    (docs/specs/parallel-drafts). */}
+                {currentDraft(workspace).configuration.candidate ? (
+                  <span className="text-sm font-semibold tabular-nums">
+                    {formatMonthly(
+                      currentDraft(workspace).configuration.candidate!.price,
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    no proposal yet
+                  </span>
+                )}
+                <DeleteElevator
+                  workspaceId={workspace.id}
+                  name={workspace.name}
+                  onDeleted={load}
+                />
+              </ItemActions>
             </Item>
           ))}
         </ItemGroup>

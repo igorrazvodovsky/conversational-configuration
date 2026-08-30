@@ -30,6 +30,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Box, Redo2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription } from "@/components/ui/empty";
@@ -58,6 +59,7 @@ import {
   variablesByName,
 } from "@/lib/configurator";
 import { PLACEHOLDER_NAME } from "@/lib/workspaces";
+import { DeleteElevator } from "@/components/workspace/delete-elevator";
 import { cn } from "@/lib/utils";
 import type { DocumentView } from "./document-parts";
 import { DraftSwitcher } from "./draft-switcher";
@@ -86,14 +88,20 @@ const CarViewer = dynamic(() => import("./render"), { ssr: false });
 const REVEAL_FADE_MS = 6000;
 
 export function ConfigCanvas({
+  workspaceId,
   workspaceName,
   workspaceLoaded,
 }: {
+  /** Which elevator this agreement belongs to. Read by nothing that draws —
+   *  the delete control is the one thing here that addresses the record
+   *  itself (docs/specs/agreement-workspace). */
+  workspaceId: string;
   /** Resolved by use-workspace-attachment (agent state wins); null = unnamed. */
   workspaceName: string | null;
   /** False until the record arrives, so the placeholder is not shown too early. */
   workspaceLoaded: boolean;
 }) {
+  const router = useRouter();
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
   const config: Configuration = agent.state?.configuration ?? EMPTY;
@@ -314,10 +322,12 @@ export function ConfigCanvas({
           window's. */}
       <div ref={bodyRef} className="@container mx-auto max-w-3xl px-8 py-8">
         <header className="mb-8">
-          {/* The workspace's identity and the way out of it: the canvas is the
+          {/* The workspace's identity and the ways out of it — back to the
+              list, or ending the elevator altogether: the canvas is the
               surface present in every chat mode, so it carries them
-              (docs/specs/chat-surface, decision 8). A Link and a span mint no
-              ids, which is what makes this safe in the hydrated tree. */}
+              (docs/specs/chat-surface, decision 8). A Link, a span and a
+              button mint no ids, which is what makes all three safe in the
+              hydrated tree. */}
           <div className="mb-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
             <Button
               asChild
@@ -340,6 +350,14 @@ export function ConfigCanvas({
                 {workspaceLoaded ? PLACEHOLDER_NAME : "…"}
               </span>
             )}
+            {/* Deleting the elevator from inside it: the record goes on the
+                click, and with nothing left to render the page leaves for the
+                list (docs/specs/agreement-workspace). */}
+            <DeleteElevator
+              workspaceId={workspaceId}
+              name={workspaceName}
+              onDeleted={() => router.push("/")}
+            />
           </div>
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-xl font-semibold">Service agreement</h1>
