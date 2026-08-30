@@ -19,6 +19,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
+/**
+ * The tools that render as a card rather than as a compact tool row. This is
+ * the list `use-configurator-ui.tsx` registers a card renderer for, held here
+ * because the transcript needs to know which rows are cards without rendering
+ * them (docs/specs/chat-pane decision 8). `tests/couplings.test.ts` holds the
+ * two against each other.
+ */
+export const CARD_TOOLS: ReadonlySet<string> = new Set([
+  "ask_choices",
+  "revise_choices",
+  "reconcile_requirement",
+  "compare_drafts",
+]);
+
 /** What CopilotKit hands a tool renderer: the call to key staleness off
  * (`card-dispatch.ts`), its progress, and the result once there is one. */
 export interface CardProps {
@@ -37,11 +51,34 @@ export function CardPending({ children }: { children: ReactNode }) {
   );
 }
 
-/** The card itself, dimmed once it goes inert — spent, or overtaken by a later
+/**
+ * The card itself, marked once it goes inert — spent, or overtaken by a later
  * message, or belonging to a conversation the agreement has moved past. Only
  * that last condition has a cause outside the conversation, so only it passes
  * a `reason`, rendered as a line inside the card: the confusion happens at the
- * control the operator tried to use, which is where the sentence belongs. */
+ * control the operator tried to use, which is where the sentence belongs.
+ *
+ * Marked, and no longer faded. The card used to carry `opacity-60`, which
+ * multiplied against every opacity below it — an unavailable option at 0.4,
+ * its price at 0.7 — and put the staleness sentence at 2.3:1 in light theme.
+ * Raising the fade does not fix it: `--muted-foreground` on white is 4.83:1
+ * to begin with, so any card opacity at all takes the text below 4.5
+ * (docs/specs/accessible-surface, decision 2). A spent card is still the
+ * record of the turn it belongs to, and a record has to be readable.
+ *
+ * What says "inert" instead was already here and was being drowned by the
+ * fade: every control inside is genuinely `disabled`, which the browser
+ * exposes without being asked, and the `reason` sentence says in words what
+ * the grey said in grey. The edge goes dashed, which changes a boundary and
+ * no text.
+ *
+ * The edge carries that alone for two of the three conditions — a card just
+ * clicked and a card a later message overtook explain themselves from the
+ * transcript and pass no `reason` (`card-dispatch.ts`) — so it is the state
+ * indicator there and is held to 3:1 like one. `border-muted-foreground` is
+ * 6.74 against a card in dark and 4.83 in light; at `/50` it was 2.65 and
+ * 1.98, which is where the first draft of this left it.
+ */
 export function CardShell({
   inert,
   reason,
@@ -55,7 +92,13 @@ export function CardShell({
   children: ReactNode;
 }) {
   return (
-    <Card className={cn("my-2 gap-0 py-0 shadow-none", inert && "opacity-60")}>
+    <Card
+      data-inert={inert || undefined}
+      className={cn(
+        "my-2 gap-0 py-0 shadow-none",
+        inert && "border border-dashed border-muted-foreground ring-0",
+      )}
+    >
       <CardContent className={cn("p-3", className)}>
         {children}
         {reason && (

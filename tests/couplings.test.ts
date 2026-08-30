@@ -6,6 +6,10 @@
  * which the frontend addresses by name; and the shape of a configuration,
  * declared as a TypeScript interface here and as a TypedDict there.
  *
+ * One coupling here stays inside the frontend, because it is the same kind of
+ * thing: the list of tools that render as a card, which the transcript reads
+ * to decide what a row is and the chat registrations declare one at a time.
+ *
  * Two of the three copies of the grammar are code, so they are compared as
  * code: `agent/tests/grammar_dump.py` builds every sentence from the agent's
  * own helpers and prints them, and the same sentences are built here from the
@@ -25,6 +29,7 @@ import type {
   Source,
 } from "@/lib/configurator";
 import { layerOf, modelGroups, productModel, variablesByName } from "@/lib/configurator";
+import { CARD_TOOLS } from "@/components/generative-ui/card-shell";
 import { GEOMETRY_VARIABLES } from "@/components/config-canvas/render/geometry";
 import {
   REVERSAL_REACH,
@@ -750,5 +755,24 @@ describe("the ontology, as the vocabulary every artifact names by", () => {
     expect(rules).not.toBeNull();
     expect(Number(rules![1])).toBe(AGENT.ruleIds.length);
     expect(AGENT.ruleIds.every((id) => id.startsWith("R"))).toBe(true);
+  });
+});
+
+describe("the tools that render as a card, listed twice", () => {
+  // The transcript groups a run of tool rows and leaves a card alone
+  // (docs/specs/chat-pane decision 8), and it decides which a row is from the
+  // tool's name, having nothing else to read. `CARD_TOOLS` is that list;
+  // `use-configurator-ui.tsx` is where a card renderer is actually registered.
+  const REGISTRATIONS = readFileSync(
+    at("../src/hooks/use-configurator-ui.tsx"),
+    "utf8",
+  );
+
+  it("lists exactly the tools a card renderer is registered for", () => {
+    const registered = [...REGISTRATIONS.matchAll(/name:\s*"([a-z_]+)"/g)].map(
+      (match) => match[1],
+    );
+    expect(registered.length).toBeGreaterThan(0);
+    expect([...CARD_TOOLS].sort()).toEqual([...registered].sort());
   });
 });

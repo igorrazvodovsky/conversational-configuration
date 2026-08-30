@@ -19,6 +19,7 @@ import {
   MessageScrollerContent,
   MessageScrollerItem,
 } from "@/components/ui/message-scroller";
+import { CARD_TOOLS } from "@/components/generative-ui/card-shell";
 import { CANVAS_EDIT_PREFIX } from "@/lib/configurator";
 
 type ChatMessage = NonNullable<
@@ -111,31 +112,85 @@ function hiddenMessageIds(messages: ChatMessage[]): Set<string> {
   return hidden;
 }
 
+/**
+ * A turn that only calls a tool has no words of its own: it is the agent doing
+ * bookkeeping, and a run of them is one stretch of work rather than several
+ * turns. `gap-6` is the distance between turns (docs/specs/chat-pane decision
+ * 8), so inside such a run it is taken back out and the rows stand at their
+ * own margins instead.
+ *
+ * A card is left out of it. The message looks the same from here — no text,
+ * one tool call — so the tool's name is what tells them apart, and `CARD_TOOLS`
+ * is that list; a card is a box with an edge of its own, and pulling one under
+ * a status line reads as a collision rather than as a group.
+ */
+function toolRowMessageIds(messages: ChatMessage[]): Set<string> {
+  const rowIds = new Set<string>();
+  for (const message of messages) {
+    if (message.role !== "assistant") continue;
+    const { content } = message;
+    if (typeof content === "string" && content.trim().length > 0) continue;
+    const toolCalls = "toolCalls" in message ? message.toolCalls : undefined;
+    if (!toolCalls || toolCalls.length === 0) continue;
+    if (toolCalls.some((call) => CARD_TOOLS.has(call.function.name))) continue;
+    rowIds.add(message.id);
+  }
+  return rowIds;
+}
+
+/**
+ * The item's own `content-visibility: auto` also applies paint containment,
+ * which clips anything drawn outside its box — the hover toolbar hangs below
+ * one (docs/specs/chat-pane decision 7) and was rendered, revealed and never
+ * painted. It is turned off here rather than in the primitive, the way a
+ * literal `rounded-*` is; `contain-intrinsic-size` goes inert with it, which
+ * decision 2 already argues this transcript can afford. Important, because
+ * both are arbitrary-value utilities of equal weight.
+ */
+const ROW = "[content-visibility:visible]!";
+
+/**
+ * Pulls a row up by the transcript's own gap, leaving the two rows separated
+ * by their margins alone. Safe because a tool row carries no hover toolbar to
+ * hang into the gap being removed: CopilotKit shows one only on a message with
+ * text, and these have none.
+ */
+const GROUPED = "-mt-6";
+
 export const configuratorMessageView: CopilotChatMessageViewProps["children"] = ({
   messageElements,
   messages,
   interruptElement,
 }) => {
   const hidden = hiddenMessageIds(messages);
+  const toolRows = toolRowMessageIds(messages);
   const userTurns = new Set(
     messages.filter((message) => message.role === "user").map((m) => m.id),
   );
+  // Grouping runs over what is drawn, not over what was sent: a hidden canvas
+  // edit between two tool rows leaves them adjacent in the transcript.
+  const visible = rows(messageElements).filter((row) => !hidden.has(row.id));
 
   return (
     <MessageScrollerContent className="py-6">
-      {rows(messageElements).map((row) =>
-        hidden.has(row.id) ? null : (
+      {visible.map((row, index) => {
+        const grouped =
+          toolRows.has(row.id) &&
+          index > 0 &&
+          toolRows.has(visible[index - 1].id);
+        return (
           <MessageScrollerItem
             key={row.id}
             messageId={row.id}
+            className={grouped ? `${ROW} ${GROUPED}` : ROW}
             scrollAnchor={userTurns.has(row.id)}
           >
             {row.elements}
           </MessageScrollerItem>
-        ),
-      )}
+        );
+      })}
       {interruptElement && (
-        <MessageScrollerItem messageId="interrupt">
+        <MessageScrollerItem messageId="interrupt" className={ROW}>
           {interruptElement}
         </MessageScrollerItem>
       )}
