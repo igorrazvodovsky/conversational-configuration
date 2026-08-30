@@ -60,7 +60,9 @@ import {
 } from "@/lib/configurator";
 import { PLACEHOLDER_NAME } from "@/lib/workspaces";
 import { DeleteElevator } from "@/components/workspace/delete-elevator";
+import { RenameElevator } from "@/components/workspace/rename-elevator";
 import { cn } from "@/lib/utils";
+import { sayBusy } from "@/lib/say-why";
 import type { DocumentView } from "./document-parts";
 import { DraftSwitcher } from "./draft-switcher";
 import { Recitals } from "./recitals";
@@ -90,6 +92,7 @@ const REVEAL_FADE_MS = 6000;
 export function ConfigCanvas({
   workspaceId,
   workspaceName,
+  onRenamed,
   workspaceLoaded,
 }: {
   /** Which elevator this agreement belongs to. Read by nothing that draws —
@@ -98,6 +101,10 @@ export function ConfigCanvas({
   workspaceId: string;
   /** Resolved by use-workspace-attachment (agent state wins); null = unnamed. */
   workspaceName: string | null;
+  /** Told to the attachment hook when the operator renames it, so the display
+   *  name and the agent's mirror of it agree with the store immediately
+   *  (docs/specs/agreement-workspace, *Renaming*). */
+  onRenamed: (name: string) => void;
   /** False until the record arrives, so the placeholder is not shown too early. */
   workspaceLoaded: boolean;
 }) {
@@ -241,10 +248,22 @@ export function ConfigCanvas({
   // the turn where what the operator has open is most worth the agent knowing,
   // and the bare call sends an empty `context`.
   const dispatch = (content: string) => {
+    // The one guard on the sheet, and the reason nothing on it is disabled
+    // while a run is in flight (constitution #17). Every editable island, the
+    // draft moves and both history controls come through here, so the
+    // condition is stated once and answered in words rather than expressed as
+    // a dozen grey controls that explain nothing. Tools write through to the
+    // workspace store as they run, so a second turn started mid-run would act
+    // on an agreement the first is still changing.
+    if (isRunning) {
+      sayBusy();
+      return false;
+    }
     agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
     copilotkit.runAgent({ agent }).catch((error: unknown) => {
       console.error("canvas edit: runAgent failed", error);
     });
+    return true;
   };
 
   // The register, derived here from the frozen document block and the values
@@ -278,18 +297,23 @@ export function ConfigCanvas({
   // editable island in every layer routes through here, so where on the page
   // the click happened cannot change what the click means.
   const dispatchChoice = (variable: string, value: string) => {
-    setPending((p) => ({ ...p, [variable]: value }));
-    dispatch(
+    // The optimistic overlay records what was *sent*, so it is set from what
+    // `dispatch` reports rather than before calling it. A run in flight is
+    // answered in words and nothing is sent, and marking the clause anyway
+    // would show the customer their click landing when it did not — held on
+    // screen until the run ends, which is worse than the grey control this
+    // replaced (constitution #17).
+    const sent = dispatch(
       byVariable.has(variable)
         ? reviseRequirementMessage(variable, value)
         : canvasEditMessage([{ variable, value }]),
     );
+    if (sent) setPending((p) => ({ ...p, [variable]: value }));
   };
 
   const doc: DocumentView = {
     config,
     termMonths: termMonthsInEffect(config),
-    disabled: isRunning,
     pending,
     requirementsFor: (variable) => byVariable.get(variable),
     leftToUsFor: (variable) => leftToUs.get(variable),
@@ -341,14 +365,27 @@ export function ConfigCanvas({
               </Link>
             </Button>
             <span aria-hidden>/</span>
-            {workspaceName ? (
-              <span className="truncate" title={workspaceName}>
-                {workspaceName}
-              </span>
+            {/* The elevator's name, edited in the place it is written
+                (docs/specs/agreement-workspace). Not offered before the record
+                is here: there is nothing to rename yet, which is an absence
+                rather than a refusal. */}
+            {workspaceLoaded ? (
+              <RenameElevator
+                workspaceId={workspaceId}
+                name={workspaceName}
+                onRenamed={onRenamed}
+                className="min-w-0"
+              >
+                {workspaceName ? (
+                  <span className="truncate" title={workspaceName}>
+                    {workspaceName}
+                  </span>
+                ) : (
+                  <span className="truncate italic">{PLACEHOLDER_NAME}</span>
+                )}
+              </RenameElevator>
             ) : (
-              <span className="truncate italic">
-                {workspaceLoaded ? PLACEHOLDER_NAME : "…"}
-              </span>
+              <span className="truncate italic">…</span>
             )}
             {/* Deleting the elevator from inside it: the record goes on the
                 click, and with nothing left to render the page leaves for the
@@ -368,7 +405,6 @@ export function ConfigCanvas({
               <DraftSwitcher
                 drafts={draftState?.drafts ?? []}
                 currentDraftId={draftState?.current_draft_id}
-                disabled={isRunning}
                 onSwitch={(name) => dispatch(switchDraftMessage(name))}
                 onFork={() => dispatch(forkDraftMessage)}
                 onCompare={(name) => dispatch(compareDraftMessage(name))}
@@ -402,7 +438,6 @@ export function ConfigCanvas({
                   <Button
                     variant="ghost"
                     size="xs"
-                    disabled={isRunning}
                     onClick={() => dispatch(undoMessage)}
                     title="Reverse the last change to this agreement"
                     className="font-normal text-muted-foreground"
@@ -415,7 +450,6 @@ export function ConfigCanvas({
                   <Button
                     variant="ghost"
                     size="xs"
-                    disabled={isRunning}
                     onClick={() => dispatch(redoMessage)}
                     title="Put back the change that was undone"
                     className="font-normal text-muted-foreground"

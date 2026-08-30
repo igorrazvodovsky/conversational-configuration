@@ -15,6 +15,10 @@ class RegisterThread(BaseModel):
     threadId: str
 
 
+class Rename(BaseModel):
+    name: str
+
+
 @app.get("/workspaces")
 def list_workspaces() -> list[dict]:
     return workspace_store.list_workspaces()
@@ -32,6 +36,28 @@ def get_workspace(workspace_id: str) -> dict:
         return workspace_store.get_workspace(workspace_id)
     except KeyError:
         raise HTTPException(status_code=404, detail=f"no workspace {workspace_id}")
+
+
+@app.patch("/workspaces/{workspace_id}")
+def rename_workspace(workspace_id: str, body: Rename) -> dict:
+    """Rename the elevator, and answer with the record so the caller can render
+    the stored name rather than the one it sent.
+
+    This is the operator's door onto the fact the agent's `name_workspace` tool
+    already writes, and it is deliberately the same store call underneath, so
+    neither door can leave a name the other cannot read
+    (docs/specs/agreement-workspace).
+
+    An empty name is a 400 rather than a quiet no-op: the control that sent it
+    has a sentence to say about why the elevator kept its name, and a 200 would
+    make it report a rename that did not happen.
+    """
+    try:
+        return workspace_store.rename_workspace(workspace_id, body.name)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"no workspace {workspace_id}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.delete("/workspaces/{workspace_id}")

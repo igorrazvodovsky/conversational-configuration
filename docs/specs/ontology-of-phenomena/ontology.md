@@ -89,7 +89,7 @@ Computed by the solver from the asserted facts, and true whenever those are. No 
 | Fact | Reading |
 |---|---|
 | `status(Draft, Variable, Option, Status)` | whether this option is chosen, forced, ruled out or open. Carried in state as `statuses` |
-| `separates(Draft, Variable, Option, Rule)` | why an option cannot be taken. Computed with that variable's own choice lifted, so it answers the swap being weighed. Carried in state as `unavailable`, the variable → option → rules map ([agent-tools](../agent-tools/design.md)) |
+| `separates(Draft, Variable, Option, Rule)` | why an option cannot be taken *as the draft stands*. Computed with that variable's own choice lifted, so it answers the swap being weighed. Carried in state as `unavailable`, the variable → option → rules map ([agent-tools](../agent-tools/design.md)). It is not a fact about what may be asked for: every control that draws a separated option leaves it clickable, and asking for one is an ordinary `revises` that comes back with repairs (constitution #17) |
 | `undecided(Draft, Variable)` | neither chosen nor forced |
 | `candidate_value(Draft, Variable, Option)`, `candidate_price(Draft, EUR)`, `candidate_footprint(Draft, kg, kg, kg)`, `candidate_objective(Draft, Objective)` | the last completion proposed, and which objective it optimised |
 
@@ -219,11 +219,17 @@ An action whose entire content is that it occurred, which the paper admits and t
 
 ```
 create_workspace () : (workspace: Workspace)   POST /workspaces, from the list
+rename_workspace (workspace, name: Name)       PATCH /workspaces/{id}, from the list
+                                               or the agreement's own head
 delete_workspace (workspace)                   DELETE /workspaces/{id}, from the list
                                                or the agreement's own head
 register_thread (workspace, thread)            POST, on a conversation's first message
 attach_rfq (workspace, text)                   inside ingest_rfq only
 ```
+`rename_workspace` asserts `named(workspace, name)` — the same fact
+`name_workspace` asserts, reached by the operator rather than by the agent. It
+is the one fact in this vocabulary with two doors, and finding 14 says what
+that costs.
 `delete_workspace` destroys the Workspace and everything inside the record with
 it, writes no entry, and is reached by no tool: a conversation cannot destroy
 the agreement it is about. It is the only action with no undoing, because the
@@ -247,7 +253,7 @@ What the customer does, and the action it reaches. Every card click dispatches a
 
 | Gesture | Sentence | Action | In the transcript |
 |---|---|---|---|
-| Pick from an in-chat control | `Set <term> to <value> (term=value)` | `revise_choices` | visible |
+| Pick from an in-chat control | `Set <term> to <value> (term=value)` | `revise_choices` | hidden |
 | Edit a value on the sheet | `Canvas edit: Set …` | `revise_choices` | hidden |
 | Answer a deviation on the sheet | `Reconcile deviation: accept the offered …`, `Reconcile deviation: change … to …`, `Reconcile deviation: leave … open` | `reconcile_requirement` | visible |
 | Take a repair | `Apply repair: drop …; set …` | `revise_choices` | visible |
@@ -258,7 +264,10 @@ What the customer does, and the action it reaches. Every card click dispatches a
 | Type | ordinary prose | whatever the agent judges | visible |
 | Open an editor | — | none; publishes `editing(...)` | — |
 | Start an elevator | — | `create_workspace` | — |
+| Rename an elevator | — | `rename_workspace` | — |
 | Delete an elevator | — | `delete_workspace` | — |
+
+The two hidden rows are the two sentences that only set a value, and they are hidden for one reason: the surface that dispatched each is showing what it did, so a row restating it would be the chat doing that surface's job ([agreement-document](../agreement-document/design.md)). They differ in what follows. A sheet edit is answered with silence and its wordless turn is hidden too; a pick is answered in words, and the tool row after one stays.
 
 ## What the enumeration settles
 
@@ -299,3 +308,5 @@ Findings, not repairs. Each repair is a change to a surface or a tool, with its 
 12. *Nobody is an individual.* The prototype has no `Customer`, `Operator` or `Approver`. `Source` is a *value* — `user`, `agent`, `document` — so `attributed(Draft, Variable, Source)` says a choice came from the customer's side and cannot say which customer, and `moved_by(Entry, Source)` says the same of a move. The paper takes the other position: the actors that perform actions are usually represented as individuals (§4.1, note 7). Nothing here can be a fact about a person, which is the ontological shape of a gap the [phase plan](../../discovery/phase-plan.md) already records from the job crossing — the approver has two shapes, internal and external, and no artifact anywhere, and delegation is served only on the agent's side of the boundary. Until the individual exists, the constitution's *the customer* in #4 and *the user* in #5 name nothing this document carries, and they stand as they are rather than being reworded onto `Source`, which would say something false.
 
 13. *Deleting a workspace orphans its conversations.* The Conversation row above says a thread ceases never, and that stays true after `delete_workspace`: the LangGraph checkpoints of every conversation the workspace held survive it. What is destroyed is `belongs_to(Conversation, Workspace)`, so those threads exist and are reachable from nothing the app draws — the elevator list is the only door to a conversation, and the deleted elevator is not on it. This is the ephemeral half of the system outliving the durable half, which is the opposite of the order everything else here assumes. It is left as it is rather than repaired: the store has never owned thread storage ([agreement workspace](../agreement-workspace/design.md)), and reaching into LangGraph's checkpointer would be a second write path to a store the prototype otherwise only reads.
+
+14. *One fact, two actions with different names.* `named(Workspace, Name)` is asserted by `name_workspace`, which the agent calls as identity emerges, and by `rename_workspace`, which the operator reaches from the list or the head of the agreement ([agreement workspace](../agreement-workspace/design.md)). Everywhere else here a fact has one action that writes it, and constitution #15 asks that the software name a happening once. Two names for one assertion is the cost of the two doors, and it is paid rather than repaired: both names are already spent — `name_workspace` rides in thread checkpoints, `rename_workspace` is the store call underneath both — so unifying them would be a migration to remove a duplication that no caller can observe. What keeps the pair honest is that they reach one store call, so neither can leave a name the other reads differently, and neither is authoritative over the other: last write wins, as everywhere in this prototype where two conversations touch one record.

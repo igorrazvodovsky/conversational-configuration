@@ -149,6 +149,27 @@ export function fetchWorkspace(id: string): Promise<WorkspaceRecord> {
   return request(`/api/workspaces/${encodeURIComponent(id)}`);
 }
 
+/** Rename an elevator, and answer with the stored record.
+ *
+ * The operator's door onto the name the agent's `name_workspace` tool also
+ * writes (docs/specs/agreement-workspace). Both reach one store call, so the
+ * two cannot disagree about what the elevator is called; what they can disagree
+ * about is which of them wrote last, and last write wins.
+ *
+ * A name with nothing in it is refused by the store and arrives here as a 400,
+ * which `request` throws on. The caller says why the elevator kept its name.
+ */
+export function renameWorkspace(
+  id: string,
+  name: string,
+): Promise<WorkspaceRecord> {
+  return request(`/api/workspaces/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
 /** Destroy an elevator and everything it holds — its drafts, their record of
  * what was done to them, and any document ingested for it
  * (docs/specs/agreement-workspace). There is no archived state and no

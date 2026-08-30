@@ -75,6 +75,38 @@ def test_registering_a_thread_attaches_it_and_is_idempotent(client):
     assert [t["id"] for t in again.json()["threads"]] == ["thread-1"]
 
 
+def test_renaming_writes_the_name_and_answers_with_the_record(client):
+    """The operator's door onto the name the agent's tool also writes
+    (docs/specs/agreement-workspace). It answers with the whole record, so the
+    control can render the name the store kept rather than the one it sent."""
+    created = client.post("/workspaces").json()
+    response = client.patch(f"/workspaces/{created['id']}",
+                            json={"name": "  Riverside Tower — north lift "})
+    assert response.status_code == 200
+    assert response.json()["name"] == "Riverside Tower — north lift"
+    assert client.get(f"/workspaces/{created['id']}").json()["name"] == (
+        "Riverside Tower — north lift"
+    )
+
+
+def test_renaming_to_nothing_is_refused_and_the_name_stands(client):
+    """A 400 rather than a quiet 200: the control has a sentence to say about
+    why the elevator kept its name, and cannot say it if the route reports a
+    rename that did not happen."""
+    created = client.post("/workspaces").json()
+    client.patch(f"/workspaces/{created['id']}", json={"name": "Riverside Tower"})
+    response = client.patch(f"/workspaces/{created['id']}", json={"name": "   "})
+    assert response.status_code == 400
+    assert client.get(f"/workspaces/{created['id']}").json()["name"] == (
+        "Riverside Tower"
+    )
+
+
+def test_renaming_a_workspace_that_is_not_there_is_a_404(client):
+    response = client.patch("/workspaces/deadbeef", json={"name": "Tower"})
+    assert response.status_code == 404
+
+
 def test_a_workspace_that_is_not_there_is_a_404(client):
     response = client.get("/workspaces/does-not-exist")
     assert response.status_code == 404

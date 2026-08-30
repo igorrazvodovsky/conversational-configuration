@@ -56,7 +56,7 @@ export default function WorkspacePage({
 
 function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   useConfiguratorUI();
-  const { workspace, workspaceName, staleThread, notFound } =
+  const { workspace, workspaceName, renamed, staleThread, notFound } =
     useWorkspaceAttachment(workspaceId);
   // The second (and last) entry of the shared-attention read channel
   // (docs/specs/shared-attention): the staleness the attachment hook already
@@ -106,6 +106,7 @@ function WorkspaceView({ workspaceId }: { workspaceId: string }) {
             <ConfigCanvas
               workspaceId={workspaceId}
               workspaceName={workspaceName}
+              onRenamed={renamed}
               workspaceLoaded={workspace !== null}
             />
           }

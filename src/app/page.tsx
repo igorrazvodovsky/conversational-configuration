@@ -7,7 +7,7 @@
  * nameless — the agent names the entry from conversation.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -30,6 +30,8 @@ import {
   listWorkspaces,
 } from "@/lib/workspaces";
 import { DeleteElevator } from "@/components/workspace/delete-elevator";
+import { RenameElevator } from "@/components/workspace/rename-elevator";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function HomePage() {
   const router = useRouter();
@@ -48,14 +50,21 @@ export default function HomePage() {
     load();
   }, []);
 
+  // A ref as well as the state, because the state is read from a render's
+  // closure and a second click can land before React has re-rendered. The
+  // button is no longer disabled (constitution #17), so the handler is the
+  // whole guard on a non-idempotent action and has to hold synchronously.
+  const creatingNow = useRef(false);
   const create = async () => {
-    if (creating) return;
+    if (creatingNow.current) return;
+    creatingNow.current = true;
     setCreating(true);
     try {
       const workspace = await createWorkspace();
       router.push(`/workspaces/${workspace.id}`);
     } catch {
       setError(true);
+      creatingNow.current = false;
       setCreating(false);
     }
   };
@@ -71,9 +80,13 @@ export default function HomePage() {
               review or revise it, in conversation or directly.
             </p>
           </div>
-          <Button variant="outline" onClick={create} disabled={creating}>
-            <Plus />
-            New elevator
+          {/* Not disabled while it works (constitution #17). `create` already
+              returns early on a second call, so the attribute was never the
+              guard — it only took the control away and said nothing. What says
+              a creation is in flight is the spinner and the word. */}
+          <Button variant="outline" onClick={create}>
+            {creating ? <Spinner /> : <Plus />}
+            {creating ? "Creating…" : "New elevator"}
           </Button>
         </header>
 
@@ -103,23 +116,32 @@ export default function HomePage() {
               key={workspace.id}
               variant="outline"
               size="sm"
-              className="relative items-baseline hover:border-primary has-[a:focus-visible]:border-primary"
+              className="relative items-baseline hover:border-primary"
             >
               <ItemContent className="min-w-0 gap-0.5">
-                <ItemTitle
-                  className={
-                    workspace.name
-                      ? "max-w-full truncate"
-                      : "max-w-full truncate font-normal italic text-muted-foreground"
-                  }
+                {/* The name is edited where it is written (docs/specs/
+                    agreement-workspace): the control owns this spot and swaps
+                    the link below for a field when the operator asks. */}
+                <RenameElevator
+                  workspaceId={workspace.id}
+                  name={workspace.name}
+                  onRenamed={load}
                 >
-                  <Link
-                    href={`/workspaces/${workspace.id}`}
-                    className="outline-none after:absolute after:inset-0"
+                  <ItemTitle
+                    className={
+                      workspace.name
+                        ? "max-w-full truncate"
+                        : "max-w-full truncate font-normal italic text-muted-foreground"
+                    }
                   >
-                    {workspace.name ?? PLACEHOLDER_NAME}
-                  </Link>
-                </ItemTitle>
+                    <Link
+                      href={`/workspaces/${workspace.id}`}
+                      className="outline-none after:absolute after:inset-0"
+                    >
+                      {workspace.name ?? PLACEHOLDER_NAME}
+                    </Link>
+                  </ItemTitle>
+                </RenameElevator>
                 <ItemDescription className="text-xs">
                   {workspace.threads.length === 1
                     ? "1 conversation"

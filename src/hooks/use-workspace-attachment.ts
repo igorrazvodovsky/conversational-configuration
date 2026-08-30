@@ -40,7 +40,7 @@ import {
   useAgent,
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   WorkspaceRecord,
   currentDraft,
@@ -393,5 +393,24 @@ export function useWorkspaceAttachment(workspaceId: string) {
     workspace?.name ??
     null;
 
-  return { workspace, workspaceName, staleThread, notFound };
+  // The operator renamed it from the canvas, and the store already holds the
+  // new name (docs/specs/agreement-workspace, *Renaming*). Precedence is
+  // resolved here and nowhere else, which is why the mirror is corrected here
+  // too: a conversation in which the agent has already named the elevator
+  // carries `workspace_name` in agent state, and that beats the record, so
+  // writing only the record would persist a rename the canvas never shows.
+  // The mirror is touched only when it is there — an untouched conversation
+  // has no key to correct, and adding one would put a name into the next run's
+  // initial state that nothing asked for.
+  const renamed = useCallback(
+    (name: string) => {
+      setWorkspace((current) => (current ? { ...current, name } : current));
+      const state = agent.state as Record<string, unknown> | undefined;
+      if (state && "workspace_name" in state)
+        agent.setState({ ...state, workspace_name: name });
+    },
+    [agent],
+  );
+
+  return { workspace, workspaceName, renamed, staleThread, notFound };
 }
