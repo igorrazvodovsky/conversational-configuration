@@ -58,9 +58,12 @@ function ScheduleRow({
 
   return (
     <Collapsible
-      open={open && !doc.disabled && editable}
+      open={open && editable}
       onOpenChange={setOpen}
-      disabled={doc.disabled || !editable}
+      // A run in flight no longer collapses this. The disclosure is reading,
+      // not editing, and what an editor inside it dispatches is guarded once
+      // in the shell (constitution #17).
+      disabled={!editable}
       data-reveal={variable.name}
       className={cn(
         "px-3 py-2 transition-colors duration-1000",

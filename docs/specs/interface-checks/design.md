@@ -162,12 +162,30 @@ of the three controls a payload can ask for (constitution #16):
 - A refusal with no product rule to cite still says something, in the words
   `refusalText` gives it.
 
+`tests/interface/transcript.test.tsx`, on which messages the chat draws a row
+for and on the card that has to remember what the hidden one said
+([agreement-document](../agreement-document/design.md)):
+
+- A card pick and a sheet edit are hidden; a message the customer typed, opening
+  on the grammar's own word, is not.
+- The wordless tool call answering a pick still renders, which is the repair
+  card a conflict comes back as; the one answering a sheet edit does not, and an
+  explanation with text in it does either way.
+- A card renders the pick that answered it with nothing in component state, and
+  claims nothing from a `Canvas edit:` in that position.
+
+The first half calls `hiddenMessageIds` rather than rendering the pane, which
+this tier does not do; the second renders `AskChoices` against an agent whose
+messages are the reopened conversation. The selection is read off the scale
+control's `aria-checked`, because a chip carries the same state as a fill and
+this tier asserts on structure and text, never on style.
+
 Legibility itself is colour, which this tier asserts on nowhere by design.
 
 ## Verification
 
-- `npm test`: 194 passed across 8 files in about 6s — 187 in `offline`, 7 in
-  `interface`. `AGUIMock` starts in `beforeAll`, and a failure to start it
+- `npm test`: green across both projects in seconds. `AGUIMock` starts in
+  `beforeAll`, and a failure to start it
   surfaces as vitest's own suite-level error, naming the cause, rather than as
   failing assertions.
 - `npm run typecheck`: clean.

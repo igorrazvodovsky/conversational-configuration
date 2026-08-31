@@ -127,6 +127,27 @@ describe("the message grammar, built on both sides", () => {
     ]);
   });
 
+  it("reads a gesture out of exactly the sentences the agent refuses", () => {
+    // The grammar's fourth copy (docs/specs/one-gesture-one-action): the
+    // frontend reads the sentence as well as mints it, because the transcript
+    // draws no row for a gesture (docs/specs/agreement-document). Held against
+    // the agent's own predicate rather than against a list, so the two cannot
+    // drift into hiding a message the agent treats as prose.
+    const read = Object.keys(AGENT.grammar)
+      .filter((key) => configurator.isGesture(AGENT.grammar[key]))
+      .sort();
+    expect(read).toEqual([...AGENT.guarded].sort());
+  });
+
+  it("leaves the same prose alone on both sides", () => {
+    // The failure this guards is the customer's typed message disappearing
+    // from their own transcript.
+    expect(AGENT.prose.map((text) => configurator.isGesture(text))).toEqual(
+      AGENT.guardedProse,
+    );
+    expect(AGENT.guardedProse).toEqual([false, false, false, false]);
+  });
+
   it("lets prose through that opens on the grammar's own word", () => {
     // "Set up an elevator for a hospital" is a customer talking, and it goes
     // to set_choices with its partial semantics. The parenthesised code is

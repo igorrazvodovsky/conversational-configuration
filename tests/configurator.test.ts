@@ -21,6 +21,8 @@ import {
   formatCO2,
   formatMonthly,
   formatPrice,
+  gestureSelections,
+  isGesture,
   layerGroups,
   layerOf,
   layerVariables,
@@ -43,6 +45,7 @@ import {
   spokenText,
   switchDraftMessage,
   termMonthsInEffect,
+  undoMessage,
   variablesByName,
 } from "@/lib/configurator";
 import {
@@ -344,6 +347,39 @@ describe("the sentences a click dispatches", () => {
     expect(canvasEditMessage(selections)).toBe(
       CANVAS_EDIT_PREFIX + choiceMessage(selections),
     );
+  });
+
+  it("reads back the pairs it minted, from either form of the sentence", () => {
+    const selections = [
+      { variable: "building_type", value: "hospital" },
+      { variable: "region", value: "europe" },
+    ];
+    expect(gestureSelections(choiceMessage(selections))).toEqual(selections);
+    expect(gestureSelections(canvasEditMessage(selections))).toEqual(selections);
+  });
+
+  it("reads a gesture in the sentences that set a value, and nowhere else", () => {
+    const selections = [{ variable: "region", value: "europe" }];
+    expect(isGesture(choiceMessage(selections))).toBe(true);
+    expect(isGesture(canvasEditMessage(selections))).toBe(true);
+    // A repair and a reconciliation are negotiations and keep their row.
+    expect(isGesture(repairMessage([], selections))).toBe(false);
+    expect(isGesture(acceptOfferedMessage("region", "europe"))).toBe(false);
+    expect(isGesture(undoMessage)).toBe(false);
+  });
+
+  it("leaves prose alone, however it opens", () => {
+    // What separates the two is the parenthesised code, which no customer
+    // types. Held on both sides of the language boundary in couplings.test.ts.
+    expect(isGesture("Set up an elevator for a hospital")).toBe(false);
+    expect(isGesture("Set the speed to 3.0 m/s.")).toBe(false);
+    expect(isGesture("")).toBe(false);
+    // One dispatched line beside a sentence of the customer's own is prose.
+    expect(
+      isGesture(
+        `${choiceMessage([{ variable: "region", value: "europe" }])}\nand what does that cost?`,
+      ),
+    ).toBe(false);
   });
 
   it("carries a repair's drop list and its changes in one sentence", () => {

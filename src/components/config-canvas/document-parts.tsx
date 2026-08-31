@@ -40,7 +40,7 @@ import {
   rulesAgainst,
   variablesByName,
 } from "@/lib/configurator";
-import { KEEP_TITLE, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * Everything a layer needs to render and edit the agreement. Held by the
@@ -51,8 +51,6 @@ import { KEEP_TITLE, cn } from "@/lib/utils";
 export interface DocumentView {
   config: Configuration;
   termMonths: number;
-  /** the agent is running — every editor is inert until it finishes */
-  disabled: boolean;
   pending: Record<string, string>;
   requirementsFor: (variable: string) => RegisterEntry[] | undefined;
   /** the clauses the document left to us on this term, if any
@@ -119,11 +117,13 @@ export const KIND_BADGE: Partial<
 
 /**
  * The option list behind every editable value, wherever it is opened from.
- * Invalid options are unclickable and say why *on the page* rather than only
- * in a `title` a disabled control never raises for a keyboard or touch user
- * (constitution #16); deltas are monthly at the term
- * in effect; a value's situational gloss rides along as its title, so the
- * choice can be made in the building's language rather than the catalogue's.
+ * An invalid option says why *on the page* rather than only in a `title`
+ * (constitution #16), and stays clickable: picking it dispatches the same
+ * sentence any other option does, and the collision comes back as the repair
+ * paths that would admit it (constitution #17,
+ * docs/specs/one-gesture-one-action). Deltas are monthly at the term in
+ * effect; a value's situational gloss rides along as its title, so the choice
+ * can be made in the building's language rather than the catalogue's.
  */
 export function OptionEditor({
   variable,
@@ -179,7 +179,6 @@ export function OptionEditor({
             key={option.value}
             size="xs"
             variant={isCurrent ? "default" : "outline"}
-            disabled={invalid}
             title={rules ? refusalText(rules) : option.note}
             aria-describedby={
               invalid ? refusalId(scope, variable, option.value) : undefined
@@ -192,8 +191,10 @@ export function OptionEditor({
               invalid
                 ? // Muted and struck, never faded: the popover or clause above
                   // may carry a state of its own and two opacities over one
-                  // string multiply (constitution #16).
-                  `cursor-not-allowed text-muted-foreground line-through ${KEEP_TITLE}`
+                  // string multiply (constitution #16). No `cursor-not-allowed`
+                  // and no `KEEP_TITLE` — both were for a control that refuses
+                  // the click, and this one takes it (constitution #17).
+                  "font-normal text-muted-foreground line-through hover:border-primary"
                 : isCurrent
                   ? ""
                   : "font-normal hover:border-primary"
@@ -298,7 +299,7 @@ export function ValueToken({
   // premise is that it reads as a contract, and the margin's provenance badge
   // already answers it in the place this design puts attribution
   // (constitution #16).
-  if (display.kind === "forced" || doc.disabled) {
+  if (display.kind === "forced") {
     return (
       <span className={style} title={KIND_TITLE[display.kind]} data-reveal={variable}>
         {label}
@@ -501,7 +502,6 @@ export function DeviationMark({
           <Button
             size="xs"
             variant="outline"
-            disabled={doc.disabled}
             className="font-normal hover:border-primary"
             onClick={() =>
               doc.onDispatch(
@@ -515,7 +515,6 @@ export function DeviationMark({
         <Button
           size="xs"
           variant="ghost"
-          disabled={doc.disabled}
           className="font-normal text-muted-foreground"
           onClick={() => doc.onDispatch(leaveOpenMessage(first.variable))}
         >

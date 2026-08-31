@@ -3,12 +3,17 @@
 /**
  * Shared behavior for in-chat action cards (ask_choices, repair options,
  * frame comparison — docs/specs/agreement-document, docs/specs/nonlinear-interaction): a card goes inert once used or once the
- * conversation moves past it, and clicking dispatches a visible structured
- * user message that the agent maps onto one atomic tool call.
+ * conversation moves past it, and clicking dispatches a structured user
+ * message that the agent maps onto one atomic tool call. The message is
+ * visible where it carries a negotiation — a repair, a draft move — and
+ * hidden where it only sets a value, which is why the card also reads its own
+ * answer back out of the transcript.
  */
 
 import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { createContext, useContext, useMemo, useState } from "react";
+import { sayBusy } from "@/lib/say-why";
+import { CANVAS_EDIT_PREFIX, gestureSelections } from "@/lib/configurator";
 
 /**
  * Why the whole reopened conversation refers to an agreement state the
@@ -26,17 +31,32 @@ export function useCardDispatch(toolCallId: string) {
   const staleThread = useContext(StaleThreadContext);
   const [submitted, setSubmitted] = useState(false);
 
-  // Inert once any user message exists after the message carrying this call.
-  const stale = useMemo(() => {
+  // Inert once any user message exists after the message carrying this call —
+  // and that same message is the card's answer, when what it carries is a
+  // gesture. The transcript renders no row for one (docs/specs/agreement-
+  // document), so the card is what remembers the pick, and the pick has to
+  // survive the component state a reopened conversation does not restore.
+  // Only the bare grammar counts: a `Canvas edit:` in that position is the
+  // customer working on the sheet instead of answering the card.
+  const { stale, answer } = useMemo(() => {
     const messages = agent.messages as Array<{
       role?: string;
+      content?: unknown;
       toolCalls?: Array<{ id: string }>;
     }>;
     const myIndex = messages.findIndex((m) =>
       m.toolCalls?.some((tc) => tc.id === toolCallId),
     );
-    if (myIndex === -1) return false;
-    return messages.slice(myIndex + 1).some((m) => m.role === "user");
+    if (myIndex === -1) return { stale: false, answer: null };
+    const next = messages.slice(myIndex + 1).find((m) => m.role === "user");
+    if (!next) return { stale: false, answer: null };
+    const content = typeof next.content === "string" ? next.content : "";
+    return {
+      stale: true,
+      answer: content.startsWith(CANVAS_EDIT_PREFIX)
+        ? null
+        : gestureSelections(content),
+    };
   }, [agent.messages, toolCallId]);
 
   // NOT gated on agent.isRunning: this subtree doesn't re-render when the run
@@ -52,7 +72,14 @@ export function useCardDispatch(toolCallId: string) {
   // kind of turn it was. The core also owns frontend-tool execution, follow-up
   // runs, the suggestion reload and the run-failed error path.
   const dispatch = (content: string) => {
-    if (agent.isRunning) return;
+    // Answered rather than swallowed (constitution #17). The controls stay
+    // live through a run — baking `isRunning` into the render leaves a card
+    // stuck, per the note above — so the click arrives here, and returning
+    // silently was a click that did nothing and said nothing.
+    if (agent.isRunning) {
+      sayBusy();
+      return;
+    }
     setSubmitted(true);
     agent.addMessage({ id: crypto.randomUUID(), role: "user", content });
     copilotkit.runAgent({ agent }).catch((error: unknown) => {
@@ -64,11 +91,13 @@ export function useCardDispatch(toolCallId: string) {
   };
 
   // The reason rides beside `inert` and only for the third condition: the two
-  // the transcript accounts for — the card just clicked, the card a later
-  // message overtook — explain themselves where it does not.
+  // the card accounts for itself — the card just clicked, which shows the
+  // pick, and the card a later message overtook — explain themselves where it
+  // does not.
   return {
     inert: stale || submitted || staleThread !== null,
     reason: staleThread,
+    answer,
     dispatch,
   };
 }

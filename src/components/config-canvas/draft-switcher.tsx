@@ -33,11 +33,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DraftSummary, formatMonthly } from "@/lib/configurator";
+import { sayNoPrice } from "@/lib/say-why";
 
 export function DraftSwitcher({
   drafts,
   currentDraftId,
-  disabled,
   onSwitch,
   onFork,
   onCompare,
@@ -45,7 +45,6 @@ export function DraftSwitcher({
 }: {
   drafts: DraftSummary[];
   currentDraftId: string | undefined;
-  disabled: boolean;
   onSwitch: (name: string) => void;
   onFork: () => void;
   onCompare: (name: string) => void;
@@ -79,7 +78,7 @@ export function DraftSwitcher({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild disabled={disabled}>
+      <DropdownMenuTrigger asChild>
         {trigger}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
@@ -117,14 +116,17 @@ export function DraftSwitcher({
             (docs/discovery/models/Comparison view.md).
 
             `compare_drafts` needs a priced candidate on both sides, and a
-            draft edited since its last completion has none, so an unguarded
-            item offers a move that returns an error. The menu already shows
-            which drafts lack a price by omitting it; the compare item says the
-            same thing where the move is, and stays visible rather than
-            vanishing — a move that disappeared between two openings of the
-            same menu reads as a bug. */}
+            draft edited since its last completion has none, so the move would
+            return an error. The item says so where the move is, and stays
+            visible rather than vanishing — a move that disappeared between two
+            openings of the same menu reads as a bug.
+
+            Live rather than disabled (constitution #17): "no price" beside the
+            name is what the reader sees, and the sentence on the click is what
+            it means, since nothing on the menu says why a draft has no price
+            or how it gets one. */}
         {current.price === null ? (
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem onSelect={() => sayNoPrice(current.name)}>
             <Columns2 />
             <span className="truncate">Compare</span>
             <span className="ml-auto shrink-0 pl-2 text-xs whitespace-nowrap text-muted-foreground">
@@ -135,8 +137,11 @@ export function DraftSwitcher({
           others.map((draft) => (
             <DropdownMenuItem
               key={`compare-${draft.id}`}
-              disabled={draft.price === null}
-              onSelect={() => onCompare(draft.name)}
+              onSelect={() =>
+                draft.price === null
+                  ? sayNoPrice(draft.name)
+                  : onCompare(draft.name)
+              }
             >
               <Columns2 />
               <span className="truncate">Compare with {draft.name}</span>

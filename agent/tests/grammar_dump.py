@@ -203,6 +203,11 @@ def dump() -> dict:
         "guarded": sorted(k for k, v in grammar_sentences().items() if is_gesture(v)),
         # Prose that opens on the same word, which must not be refused.
         "guardedProse": [is_gesture(text) for text in NOT_GESTURES],
+        # The prose itself, because the frontend runs the same predicate to
+        # decide which messages the transcript draws no row for
+        # (docs/specs/agreement-document): a rule that grew there would take a
+        # customer's typed message off the screen.
+        "prose": NOT_GESTURES,
         # The keys a configuration declares, and the keys one the agent
         # actually built carries — an optional field is in the first and not
         # the second, and the frontend has to read both.

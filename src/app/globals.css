@@ -183,6 +183,79 @@ html {
 }
 
 /*
+ * And it is the *only* indicator, which takes the four rules below. The rule
+ * above wins over everything, including the suppressions the primitives write
+ * on purpose, so it arrived on top of marks that were already there rather
+ * than in place of them: a focused button carried a recoloured border, a 1px
+ * ring and this outline, three concentric marks for one state.
+ *
+ * The ring goes, drawn by Tailwind through `--tw-ring-shadow`, which is a
+ * custom property and so loses to an unlayered declaration of the same name.
+ * `--tw-shadow` is untouched, so a popover keeps its elevation. Held off an
+ * invalid control, where the ring is the *other* state and the two are meant
+ * to be legible together. `focus-visible:border-ring` stays on a control:
+ * the unfocused colour can't be recovered generically, and a recoloured edge
+ * is a colour change on a border already occupying space rather than a second
+ * box. A field is the exception, in the last rule here.
+ */
+:focus-visible:not([aria-invalid="true"]) {
+  --tw-ring-shadow: 0 0 #0000;
+}
+
+/*
+ * Two composites are one control to the reader and several to the DOM, so the
+ * mark goes round the whole of the composite and the element that actually
+ * holds focus gives its own up. Both are named here rather than at the call
+ * site because the suppression has to be unlayered to reach a control that
+ * already sets `outline-none` from the utilities layer.
+ *
+ * `InputGroup` is the border the composer's field appears to have; its
+ * textarea has none of its own, so an outline on the textarea drew a second
+ * box inside the first. The elevator row's title link is a zero-area anchor
+ * whose hit area is an `after:inset-0` overlay over the whole row, so an
+ * outline on the anchor marked the title's text where the click takes the
+ * row; the row's own `has-[a:focus-visible]:border-primary` was already
+ * reaching for this and now says it in the one colour focus is said in.
+ */
+[data-slot="input-group"]:has([data-slot="input-group-control"]:focus-visible),
+[data-slot="item"]:has([data-slot="item-content"] a:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  --tw-ring-shadow: 0 0 #0000;
+}
+[data-slot="input-group"] [data-slot="input-group-control"]:focus-visible,
+[data-slot="item"] [data-slot="item-content"] a:focus-visible {
+  outline: none;
+}
+
+/*
+ * A field's border is its own edge and stays that. `focus-visible:border-ring`
+ * is a colour change on a border a button is already drawing, and against a
+ * filled chip it is the fallback wherever an outline is clipped, so it stays
+ * everywhere else. On a field it recolours a prominent 1px edge to the same
+ * `--ring` the outline is drawn in, 2px inside it and at the same weight, and
+ * on a box the size of the composer that reads as two rectangles.
+ */
+[data-slot="input-group"]:has([data-slot="input-group-control"]:focus-visible),
+input[data-slot="input"]:focus-visible,
+textarea[data-slot="textarea"]:focus-visible {
+  border-color: var(--input);
+}
+
+/*
+ * Inside a menu the outline is drawn *inside* the border box. Menu content is
+ * `overflow-hidden` and a scrolling group inside it is `overflow: hidden
+ * auto`, so an outline set outside an item is clipped on the edges that carry
+ * it. Highlighting the row with `focus:bg-accent` alone is not the answer:
+ * accent against popover is well under the 3:1 a state indicator is held to.
+ */
+[role="menuitem"]:focus-visible,
+[role="menuitemradio"]:focus-visible,
+[role="menuitemcheckbox"]:focus-visible {
+  outline-offset: -2px;
+}
+
+/*
  * Showcase highlight for suggestion pills.
  * Applied via className in use-example-suggestions.tsx when showcase.json
  * is set to a non-default mode (e.g. "a2ui", "opengenui").

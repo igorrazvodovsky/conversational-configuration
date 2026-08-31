@@ -4,9 +4,10 @@
  * The composer (docs/specs/chat-pane).
  *
  * The leaf slots are plain textarea and button props, so this project's field
- * and button take them unchanged — handlers, disabled state, Enter-to-send and
- * the stop button all still CopilotKit's. What is ours is the arrangement: one
- * `InputGroup` holding the queued files, the field and the controls.
+ * and button take them unchanged — handlers, Enter-to-send and the stop button
+ * all still CopilotKit's. What is ours is the arrangement: one `InputGroup`
+ * holding the queued files, the field and the controls, and one prop the send
+ * button does not take unchanged, below.
  */
 
 import { forwardRef, type ComponentProps } from "react";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import { sayWhy } from "@/lib/say-why";
 import { ComposerAttachments } from "./attachments";
 import { CHAT_COLUMN } from "./column";
 
@@ -43,12 +45,42 @@ const ComposerTextArea = forwardRef<
   );
 });
 
+/**
+ * The one library prop this composer intercepts (constitution #17).
+ *
+ * `CopilotChatInput` computes `disabled: isProcessing ? !canStop : !canSend`,
+ * and `canSend` is `resolvedValue.trim().length > 0 && !!onSubmitMessage`. The
+ * second conjunct is always true here and `onStop` is always wired, so the one
+ * state that ever reaches this button is *the field is empty* — the case the
+ * rule exists for, and the most-seen disabled control in the app.
+ *
+ * The attribute is dropped and the click is answered instead. The library's
+ * own `send()` is never reached in that state: `onClick` returns before
+ * calling through, so nothing submits an empty message. `aria-disabled` would
+ * be wrong for the opposite reason to a ruled-out option — that control acts,
+ * and this one is genuinely inoperable — but announcing it would put the
+ * button back outside the reach of somebody who wants to press it and find
+ * out why, which is the whole of the rule.
+ */
 function ComposerSendButton({
   children,
+  disabled,
+  onClick,
   ...props
 }: ComponentProps<typeof CopilotChatInput.SendButton>) {
   return (
-    <Button size="icon-xs" aria-label="Send" {...props}>
+    <Button
+      size="icon-xs"
+      aria-label="Send"
+      onClick={(event) => {
+        if (disabled) {
+          sayWhy("nothing-to-send", "Nothing to send yet — type a message first.");
+          return;
+        }
+        onClick?.(event);
+      }}
+      {...props}
+    >
       {children ?? <ArrowUpIcon />}
     </Button>
   );

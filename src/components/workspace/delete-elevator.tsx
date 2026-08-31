@@ -19,10 +19,11 @@
  * (docs/specs/chat-surface).
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { deleteWorkspace } from "@/lib/workspaces";
 
@@ -44,8 +45,14 @@ export function DeleteElevator({
   const [deleting, setDeleting] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  // A ref beside the state, for the reason `page.tsx` records: the button is
+  // no longer disabled (constitution #17), so the handler is the whole guard
+  // on a deletion that cannot be undone, and `deleting` is read from a
+  // render's closure.
+  const deletingNow = useRef(false);
   const remove = async () => {
-    if (deleting) return;
+    if (deletingNow.current) return;
+    deletingNow.current = true;
     setDeleting(true);
     setFailed(false);
     try {
@@ -56,6 +63,7 @@ export function DeleteElevator({
       // rather than reporting a deletion that did not happen.
       setFailed(true);
     } finally {
+      deletingNow.current = false;
       setDeleting(false);
     }
   };
@@ -66,7 +74,9 @@ export function DeleteElevator({
     <Button
       variant="ghost"
       size="xs"
-      disabled={deleting}
+      // Live while it works (constitution #17): `remove` already returns early
+      // on a second call, so the attribute guarded nothing and explained
+      // nothing. The spinner is what says the deletion is in flight.
       onClick={remove}
       title={
         failed
@@ -79,8 +89,8 @@ export function DeleteElevator({
         className,
       )}
     >
-      <Trash2 />
-      <span className="sr-only">{label}</span>
+      {deleting ? <Spinner /> : <Trash2 />}
+      <span className="sr-only">{deleting ? "Deleting…" : label}</span>
     </Button>
   );
 }

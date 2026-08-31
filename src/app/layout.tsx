@@ -5,6 +5,7 @@ import "@copilotkit/react-core/v2/styles.css";
 
 import { CopilotKit } from "@copilotkit/react-core/v2";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 // A2UI catalog: definitions + renderers in ./declarative-generative-ui/
 import { demonstrationCatalog } from "./declarative-generative-ui/renderers";
@@ -65,6 +66,19 @@ export default function RootLayout({
             >
               {children}
             </CopilotKit>
+            {/*
+              Where a click that cannot do what it looks like it does gets its
+              answer (constitution #17, and `src/lib/say-why.ts`). Mounted once
+              at the root because the sentences it carries come from three
+              different surfaces, and mounted inside `ThemeProvider` because
+              the toast reads the theme from it.
+
+              It is safe in the hydrated tree, which
+              docs/specs/chat-surface/design.md is otherwise strict about:
+              sonner mints no React id — `useId` appears nowhere in its bundle
+              — so it shifts nothing below it.
+            */}
+            <Toaster position="bottom-right" />
           </TooltipProvider>
         </ThemeProvider>
       </body>

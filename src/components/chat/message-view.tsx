@@ -22,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { CHAT_COLUMN } from "./column";
 import { CARD_TOOLS } from "@/components/generative-ui/card-shell";
-import { CANVAS_EDIT_PREFIX } from "@/lib/configurator";
+import { CANVAS_EDIT_PREFIX, isGesture } from "@/lib/configurator";
 
 type ChatMessage = NonNullable<
   ComponentProps<typeof CopilotChatMessageView>["messages"]
@@ -75,25 +75,34 @@ function rows(messageElements: ReactElement[]): Row[] {
 }
 
 /**
- * Canvas edits round-trip through the conversation but are not part of it
- * (docs/specs/agreement-document design): the sheet is the record of the
- * edit, so the chat renders neither the structured message that carries it nor
- * the agent's wordless bookkeeping in reply. An assistant message that does
- * carry text (a forced cascade, a conflict) still shows — the chat keeps the
- * explanation and drops the paperwork. Content-based, so a reopened
- * conversation hides the same rows.
+ * A gesture round-trips through the conversation but is not part of it
+ * (docs/specs/agreement-document design): the surface that dispatched it is
+ * already showing what it did — the sheet for a canvas edit, the card for a
+ * pick — and a sentence restating it puts the customer's own click in their
+ * mouth a second time. So the chat renders no row for either. Content-based,
+ * so a reopened conversation hides the same rows.
+ *
+ * Only the canvas edit takes the agent's wordless bookkeeping down with it.
+ * That is what `quiet` holds and why it is a set of its own: the agent is
+ * instructed to end a clean sheet edit with empty text, so a text-less turn
+ * there is paperwork, while a card pick is answered in words and a text-less
+ * turn after one is a tool call worth seeing — a `revise_choices` that came
+ * back with repair options is exactly that, and hiding it would swallow the
+ * card the customer is waiting for. An assistant message that carries text
+ * always shows: the chat keeps the explanation and drops the paperwork.
  *
  * A turn that produced nothing at all is dropped too: it would otherwise take
  * a row of its own and open a gap around nothing.
  */
-function hiddenMessageIds(messages: ChatMessage[]): Set<string> {
+export function hiddenMessageIds(messages: ChatMessage[]): Set<string> {
   const hidden = new Set<string>();
+  const quiet = new Set<string>();
   messages.forEach((message, index) => {
     if (message.role === "user") {
       const { content } = message;
-      if (typeof content === "string" && content.startsWith(CANVAS_EDIT_PREFIX)) {
-        hidden.add(message.id);
-      }
+      if (typeof content !== "string" || !isGesture(content)) return;
+      hidden.add(message.id);
+      if (content.startsWith(CANVAS_EDIT_PREFIX)) quiet.add(message.id);
       return;
     }
     if (message.role !== "assistant") return;
@@ -107,7 +116,7 @@ function hiddenMessageIds(messages: ChatMessage[]): Set<string> {
     }
     for (let i = index - 1; i >= 0; i--) {
       if (messages[i].role !== "user") continue;
-      if (hidden.has(messages[i].id)) hidden.add(message.id);
+      if (quiet.has(messages[i].id)) hidden.add(message.id);
       break;
     }
   });
@@ -170,8 +179,8 @@ export const configuratorMessageView: CopilotChatMessageViewProps["children"] = 
   const userTurns = new Set(
     messages.filter((message) => message.role === "user").map((m) => m.id),
   );
-  // Grouping runs over what is drawn, not over what was sent: a hidden canvas
-  // edit between two tool rows leaves them adjacent in the transcript.
+  // Grouping runs over what is drawn, not over what was sent: a hidden gesture
+  // between two tool rows leaves them adjacent in the transcript.
   const visible = rows(messageElements).filter((row) => !hidden.has(row.id));
 
   return (

@@ -19,7 +19,7 @@ The pane swaps the contents of each slot. It kept CopilotKit's own layout as wel
 | `userMessage`'s `children` | `Bubble` / `BubbleContent` | its toolbar and branch-navigation elements are placed, not rebuilt |
 | `reasoningMessage`'s `header` / `contentView` / `toggle` | dressed to match the `Collapsible` disclosure in `tool-rendering.tsx` | a three-part disclosure, filled slot by slot rather than replaced wholesale |
 | `input`'s `children` | `InputGroup` + `InputGroupTextarea` + `InputGroupAddon` | the composer becomes the same field vocabulary as the rest of the app |
-| `sendButton`, `addMenuButton`, the transcribe buttons | `Button` | each of these slots is typed `ButtonHTMLAttributes`, so a shadcn `Button` receives its handlers and disabled state unchanged |
+| `sendButton`, `addMenuButton`, the transcribe buttons | `Button` | each of these slots is typed `ButtonHTMLAttributes`, so a shadcn `Button` receives its handlers unchanged. `sendButton` is the one exception, and it is the only prop this pane intercepts: see below |
 | `suggestionView`'s `container` and `suggestion` | a `div` in `CHAT_COLUMN`, and `Button variant="outline" size="xs"` | the chip vocabulary the canvas uses; the container is replaced rather than dressed, for the reason the note after this table gives |
 | `welcomeScreen` | `Empty`, and the `suggestionView` prop passed through | already installed, already the empty state everywhere else; the strip is the whole point of an empty workspace ([suggested moves](../suggested-moves/design.md)) |
 | `chatView` | a wrapper that renders `CopilotChatView` with a `children` render-prop and lays the pane out around it | the vertical stack and the drag handlers; see decisions 9 and 6 |
@@ -62,6 +62,8 @@ The markdown keeps CopilotKit's prose, at this app's size. Their renderer sets 1
 
 The size is 14px. It was 12px, on the reasoning that the canvas is 12px, and the canvas's *reading matter* — its clauses, recitals and schedule rows — is and always was `text-sm`; 12px is this app's size for chrome. The [component library](../ui-component-library/design.md) decision 3 states that split, and constitution #16 puts the floor under it.
 
+The wrapper also restores prose's own outer-margin reset one level down. Prose zeroes the leading and trailing margin of its *direct* children, and its direct child is Streamdown's container rather than the paragraph inside it, so a message carried 17.5px of margin above its first block and below its last — space no background makes sense of, on top of the row's own 8px. Streamdown declares that reset itself, in Tailwind utilities this app never generates because it does not scan `node_modules`; two arbitrary variants on the wrapper say the same thing, and win on specificity without `!` because prose's rule is a class and a `:where()`. The margins between blocks are untouched and still collapse to one 17.5px gap.
+
 ## Decision 6: attachments get the shadcn vocabulary in both places
 
 The [chat-attachments spec](../chat-attachments/requirements.md) makes the agent read a file, so the paperclip leads somewhere and the queue has a purpose. A file then shows up twice, and both places become the `Attachment` family.
@@ -97,7 +99,7 @@ Between them these accounted for every gap in the transcript wider than `gap-6`.
 
 `gap-6` is the distance between *turns*, and an assistant turn that only calls a tool is not one — it has no words, and a run of them is one stretch of the agent working that the transcript was breaking into separate paragraphs. Two tool rows stood 36px apart: the gap plus each row's own `my-1.5`. Inside such a run the gap is taken back out, with `-mt-6` on the second row and every row after it, leaving the rows separated by their own margins alone: 12px, half the transcript's rhythm.
 
-The test is the one `hiddenMessageIds` already makes — no text, at least one tool call — and it is applied to the emitted list rather than to `messages`, because a hidden canvas edit between two such rows leaves them adjacent on screen. Only a run of them tightens: a user turn or an assistant turn with prose on either side keeps `gap-6`, and no anchored row is ever pulled up, since only user turns anchor.
+The test is the one `hiddenMessageIds` already makes — no text, at least one tool call — and it is applied to the emitted list rather than to `messages`, because a hidden gesture between two such rows leaves them adjacent on screen. Only a run of them tightens: a user turn or an assistant turn with prose on either side keeps `gap-6`, and no anchored row is ever pulled up, since only user turns anchor.
 
 Removing the gap is safe against decision 7's toolbar because these rows have none. CopilotKit computes `toolbarVisible && hasContent`, and `hasContent` is the message's own text being non-empty, so the rows whose gap this closes are exactly the rows that end at their tool line with nothing following it.
 
@@ -121,6 +123,14 @@ Three things follow, and then the general question this is one instance of.
 
 *Where the two libraries meet.* CopilotKit owns behaviour and binding: the stream, markdown, transcription, interrupts, tool-call rendering, and which elements exist for a given message. This pane owns layout, and where a shadcn primitive documents a composition the pane doesn't use, the pane's use decides and the difference is recorded here. `MessageFooter` was the standing case for a while, used as a positioned overlay against its documented in-flow composition, and decision 7 has since given that up: it is the primitive's own arrangement that the pane uses, and `MessageAvatar`'s 32px lift when a footer is present is now compensation for a row this pane really draws rather than a hazard waiting for the first avatar.
 
+## Decision 10: the send button is the one library prop this pane intercepts
+
+`CopilotChatInput` computes its send button's disabled state as `isProcessing ? !canStop : !canSend`, with `canSend = resolvedValue.trim().length > 0 && !!onSubmitMessage` — read out of the installed bundle, on the same basis as [the CopilotKit surface note](../../research/copilotkit-surface.md). `onSubmitMessage` and `onStop` are both wired here, so exactly one state ever reaches the button: the field is empty.
+
+Constitution #17 takes the attribute off it. `ComposerSendButton` destructures `disabled` and `onClick` out of the slot props, drops the first, and wraps the second: in the disabled state it says *nothing to send yet — type a message first* through `sayWhy` and returns without calling through, so the library's `send()` is never reached with an empty value. This is the most-seen disabled control in the app and the textbook case of the rule — a control that says no in a channel with no words in it.
+
+Everything else in the slot table is still taken unchanged. Intercepting a computed prop is a coupling to a library internal, so it is written down here rather than left in the component: if a future version changes what `canSend` means, the sentence stops being true before anything fails.
+
 ## Verification
 
 Constitution #9: UI is verified by running the app. The slots carry behaviour and not only appearance, so the check is behavioural as well as visual: a reply long enough to scroll, read while it streams; a card clicked and its dispatched string confirmed verbatim; a thread switched while the pane is scrolled back; a file dragged onto the pane and dropped; the strip's departure at the start of a run and its return at the end, with the composer watched rather than the strip; both themes, and a pane wide enough for the column's maximum to bind.
@@ -136,6 +146,7 @@ Constitution #9: UI is verified by running the app. The slots carry behaviour an
 - Decision 9 was measured on 2026-08-30 against the same reopened conversations, in both themes and at two pane widths. What it fixed: the chips now start on the messages' left edge and end on their right, the transcript ends 24px above them and the composer 16px below them, and all four pills are reachable where two used to be behind the composer. What it left alone: every gap between rows is still 24px, a run of tool rows still stands at 0 plus its own margins, the hover toolbar still paints into the gap below its row — including the last row's, which now hangs into the transcript's own bottom padding — and the transcript still lands with its last turn in view. The welcome screen and the message state now put the strip and the composer at the same coordinates, which is what the entry-prompt note under decision 1 always claimed and only now is true.
 - Decision 8 came from the same screenshot habit, on 2026-08-30: two consecutive tool rows read as two turns. Measured on the same reopened conversation — a user turn to the first tool row 24px, tool row to tool row 0 plus their 12px of margin, and the `ask_choices` card that closes the run back at 24px. The card was grouped in the first cut of this, which is how the exclusion above was decided: 8px between a status line and a card's edge is what settled it.
 - CopilotKit's slash-command menu and its feather gradient aren't reachable from the slots this composition uses. Neither is configured, and since decision 9 the composer no longer floats over anything for a feather to soften. Virtualization is off, as decision 2 anticipated.
+- Decision 5's outer-margin reset was found from a screenshot on 2026-08-31 and measured in the browser on a reopened conversation. The assistant's prose box was 194.25px around 159.25px of text; it is now 159.25px, and the copy button under it stands at the row's own 8px rather than 25.5px. A three-block body — two paragraphs and a list — keeps 17.5px between blocks and zero outside them, the trailing list included.
 
 ## Known defect
 

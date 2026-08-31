@@ -3,22 +3,41 @@
 /**
  * In-chat controls for the agent's ask_choices tool (docs/specs/agreement-document).
  *
- * The payload is computed server-side from solver state — valid options only
- * are selectable; invalid values render struck through in place, with the rules
- * that ruled them out listed underneath where every input device reaches them
- * (constitution #16). Option prices are
+ * The payload is computed server-side from solver state. An invalid value
+ * renders struck through in place, with the rules that ruled it out listed
+ * underneath where every input device reaches them (constitution #16), and it
+ * stays clickable: asking for it dispatches the same sentence any other option
+ * does and comes back with the repair paths that would admit it
+ * (constitution #17, docs/specs/one-gesture-one-action). Option prices are
  * monthly deltas at the term in effect (docs/specs/service-agreement). Controls go
- * inert once the conversation moves past them or after submission.
+ * inert once the conversation moves past them or after submission, and the
+ * spent card shows what it was answered with: the pick leaves no message of
+ * its own in the transcript, so this card is the record of it.
  */
 
 import { useState } from "react";
 import { BadgePercent } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemTitle,
+} from "@/components/ui/item";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Rule, choiceMessage, formatMonthly, refusalText } from "@/lib/configurator";
-import { Refusal, RefusalList, refusalId } from "@/components/refusals";
-import { KEEP_TITLE } from "@/lib/utils";
+import {
+  Rule,
+  choiceMessage,
+  formatMonthly,
+  refusalText,
+} from "@/lib/configurator";
+import {
+  REFUSAL_AFFORDANCE,
+  Refusal,
+  RefusalList,
+  refusalId,
+} from "@/components/refusals";
+import { sayWhy } from "@/lib/say-why";
 import { useCardDispatch } from "./card-dispatch";
 import { CardPending, CardProps, CardShell, parsePayload } from "./card-shell";
 
@@ -47,7 +66,7 @@ interface Payload {
 }
 
 export function AskChoices({ toolCallId, status, result }: CardProps) {
-  const { inert, reason, dispatch: send } = useCardDispatch(toolCallId);
+  const { inert, reason, answer, dispatch: send } = useCardDispatch(toolCallId);
   const [selections, setSelections] = useState<Record<string, string>>({});
 
   if (status !== "complete" || !result) {
@@ -61,6 +80,28 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
   if (!payload) return null; // ERROR results are relayed by the agent in text
 
   const multi = payload.variables.length > 1;
+
+  // What this card was answered with, whether the answer is still in component
+  // state or only in the transcript. The gesture leaves no row of its own
+  // (docs/specs/agreement-document), so the card is the record of the pick,
+  // and a reopened conversation restores it from the message rather than from
+  // state that did not survive. Restricted to the terms this card asked
+  // about: a pick on a term it never raised is some other card's.
+  const asked = new Set(payload.variables.map((variable) => variable.name));
+  const picked: Record<string, string> = {};
+  for (const { variable, value } of answer ?? []) {
+    if (asked.has(variable)) picked[variable] = value;
+  }
+  // The two agree whenever the card is live — the message that supplies an
+  // answer is the same message that makes the card inert — so the merge
+  // matters only for the batch that was just applied.
+  //
+  // What this shows when the pick did not land is the pick: a ruled-out option
+  // is clickable (constitution #17), so a customer can ask for one and get
+  // repair paths back, and the card is the record of what they asked for
+  // rather than of what the agreement says. The agreement is on the sheet.
+  Object.assign(picked, selections);
+  const pickedCount = Object.keys(picked).length;
 
   const dispatch = (picks: { variable: string; value: string }[]) =>
     send(choiceMessage(picks));
@@ -81,7 +122,7 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
           </div>
           <Control
             variable={variable}
-            selected={selections[variable.name]}
+            selected={picked[variable.name]}
             inert={inert}
             onSelect={select}
             scope={toolCallId}
@@ -91,18 +132,39 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
       {multi && (
         <Button
           size="sm"
-          disabled={inert || Object.keys(selections).length === 0}
-          onClick={() =>
+          // Live with nothing picked, and it says which terms are still
+          // waiting when it is pressed that way (constitution #17). A button
+          // that greys itself makes the reader compare a form against its own
+          // controls to find out what is missing, which is the work the button
+          // is in a position to do for them.
+          disabled={inert}
+          onClick={() => {
+            // Nothing picked is the only case this answers instead of
+            // dispatching. A card may ask about several terms and take a pick
+            // on one of them: the batch is what was picked, as it always was,
+            // and a partial batch is a valid gesture rather than an omission.
+            if (pickedCount === 0) {
+              sayWhy(
+                `${toolCallId}-unpicked`,
+                `Pick a value for ${payload.variables
+                  .map((v) => v.label)
+                  .join(" or ")} first, then apply.`,
+              );
+              return;
+            }
+            // From what the card displays, not from component state: the
+            // two agree on a live card, and dispatching from the other one
+            // would make that agreement a thing to remember.
             dispatch(
-              Object.entries(selections).map(([variable, value]) => ({
+              Object.entries(picked).map(([variable, value]) => ({
                 variable,
                 value,
               })),
-            )
-          }
+            );
+          }}
         >
-          Apply {Object.keys(selections).length || ""} choice
-          {Object.keys(selections).length === 1 ? "" : "s"}
+          Apply {pickedCount || ""} choice
+          {pickedCount === 1 ? "" : "s"}
         </Button>
       )}
     </CardShell>
@@ -134,14 +196,19 @@ function Control(props: ControlProps) {
 }
 
 function optionState(o: PayloadOption, selected?: string) {
-  const active = selected ? selected === o.value : o.status === "chosen" || o.status === "forced";
-  const disabled = o.status === "invalid";
-  // An unavailable option says which rules made it unavailable. Older tool
-  // results carry no rules, and fall back to the wording they shipped with.
+  const active = selected
+    ? selected === o.value
+    : o.status === "chosen" || o.status === "forced";
+  // `refused`, not `disabled`: the rules separate this option from the
+  // agreement as it stands, and the control for it is still operable
+  // (constitution #17). An unavailable option says which rules made it
+  // unavailable; older tool results carry no rules, and fall back to the
+  // wording they shipped with.
+  const refused = o.status === "invalid";
   return {
     active,
-    disabled,
-    why: disabled ? refusalText(o.rules ?? []) : undefined,
+    refused,
+    why: refused ? refusalText(o.rules ?? []) : undefined,
   };
 }
 
@@ -150,7 +217,7 @@ function optionState(o: PayloadOption, selected?: string) {
  * for the mouse on top of it (constitution #16). */
 function refusalsOf(variable: PayloadVariable, selected?: string): Refusal[] {
   return variable.options
-    .filter((o) => optionState(o, selected).disabled)
+    .filter((o) => optionState(o, selected).refused)
     .map((o) => ({ value: o.value, label: o.label, rules: o.rules ?? [] }));
 }
 
@@ -158,8 +225,14 @@ function refusalsOf(variable: PayloadVariable, selected?: string): Refusal[] {
  * Unavailability is a muted foreground and a strike, never an opacity: the
  * card above may carry a state of its own, and two opacities over one string
  * multiply (constitution #16).
+ *
+ * No `cursor-not-allowed`, and no `KEEP_TITLE`. Both were written for a
+ * control that refuses the click. This one takes it — the cursor is a pointer
+ * because there is a pointer's worth of action behind it, and the `title`
+ * raises on hover and on focus without a workaround now that the element is
+ * neither disabled nor out of the tab order.
  */
-const UNAVAILABLE = `cursor-not-allowed text-muted-foreground line-through ${KEEP_TITLE}`;
+const UNAVAILABLE = "text-muted-foreground line-through";
 
 function CheapestMark() {
   return (
@@ -176,20 +249,24 @@ function ChipRow({ variable, selected, inert, onSelect, scope }: ControlProps) {
     <div>
       <div className="flex flex-wrap gap-1.5">
         {variable.options.map((o) => {
-          const { active, disabled, why } = optionState(o, selected);
+          const { active, refused, why } = optionState(o, selected);
           return (
             <Button
               key={o.value}
               size="sm"
               variant={active ? "default" : "outline"}
-              disabled={disabled || inert}
+              // Only the spent card disables anything here: a repair or a pick
+              // computed against an agreement that has moved would apply the
+              // wrong change, which is the one thing a sentence cannot guard
+              // (constitution #17, docs/specs/ui-component-library decision 8).
+              disabled={inert}
               onClick={() => onSelect(variable.name, o.value)}
               title={why}
               aria-describedby={
-                disabled ? refusalId(scope, variable.name, o.value) : undefined
+                refused ? refusalId(scope, variable.name, o.value) : undefined
               }
               className={`font-normal ${
-                disabled ? UNAVAILABLE : active ? "" : "hover:border-primary"
+                refused ? UNAVAILABLE : active ? "" : "hover:border-primary"
               }`}
             >
               {o.label} {o.cheapest && <CheapestMark />}
@@ -211,7 +288,13 @@ function ChipRow({ variable, selected, inert, onSelect, scope }: ControlProps) {
   );
 }
 
-function ScaleControl({ variable, selected, inert, onSelect, scope }: ControlProps) {
+function ScaleControl({
+  variable,
+  selected,
+  inert,
+  onSelect,
+  scope,
+}: ControlProps) {
   const active = variable.options.find(
     (o) => optionState(o, selected).active,
   )?.value;
@@ -230,17 +313,17 @@ function ScaleControl({ variable, selected, inert, onSelect, scope }: ControlPro
         className="w-full"
       >
         {variable.options.map((o) => {
-          const { disabled, why } = optionState(o, selected);
+          const { refused, why } = optionState(o, selected);
           return (
             <ToggleGroupItem
               key={o.value}
               value={o.value}
-              disabled={disabled || inert}
+              disabled={inert}
               title={
                 why ?? (o.price > 0 ? `+${formatMonthly(o.price)}` : undefined)
               }
               aria-describedby={
-                disabled ? refusalId(scope, variable.name, o.value) : undefined
+                refused ? refusalId(scope, variable.name, o.value) : undefined
               }
               // h-auto + whitespace-normal: toggle items are nowrap and fixed
               // height by default, which makes long scale labels ("630 kg /
@@ -251,7 +334,7 @@ function ScaleControl({ variable, selected, inert, onSelect, scope }: ControlPro
               // not by a background tint: no tint reaches 3:1 against the card
               // (constitution #16).
               className={`h-auto min-w-0 flex-1 px-1 py-1.5 text-xs leading-tight whitespace-normal data-[state=on]:bg-primary data-[state=on]:text-primary-foreground ${
-                disabled ? `border-dashed ${UNAVAILABLE}` : ""
+                refused ? `border-dashed ${UNAVAILABLE}` : ""
               }`}
             >
               {o.label} {o.cheapest && <CheapestMark />}
@@ -271,63 +354,81 @@ function ScaleControl({ variable, selected, inert, onSelect, scope }: ControlPro
   );
 }
 
-function OptionList({ variable, selected, inert, onSelect, scope }: ControlProps) {
+function OptionList({
+  variable,
+  selected,
+  inert,
+  onSelect,
+  scope,
+}: ControlProps) {
+  const refused = refusalsOf(variable, selected).length > 0;
   return (
-    <div className="divide-y border">
-      {variable.options.map((o) => {
-        const { active, disabled, why } = optionState(o, selected);
-        return (
-          <Item
-            key={o.value}
-            asChild
-            size="sm"
-            className={`px-3 py-2 ${
-              active
-                ? "bg-secondary font-medium"
-                : disabled
-                  ? "text-muted-foreground"
-                  : "hover:bg-secondary"
-            }`}
-          >
-            <button
-              type="button"
-              disabled={disabled || inert}
-              onClick={() => onSelect(variable.name, o.value)}
-              title={why}
-              aria-describedby={
-                disabled ? refusalId(scope, variable.name, o.value) : undefined
-              }
-              className={`w-full text-left disabled:cursor-not-allowed ${disabled ? KEEP_TITLE : ""}`}
+    <div>
+      <div className="divide-y border">
+        {variable.options.map((o) => {
+          const { active, refused, why } = optionState(o, selected);
+          return (
+            <Item
+              key={o.value}
+              asChild
+              size="sm"
+              className={`px-3 py-2 ${
+                active
+                  ? "bg-secondary font-medium"
+                  : refused
+                    ? "text-muted-foreground hover:bg-secondary"
+                    : "hover:bg-secondary"
+              }`}
             >
-              <ItemContent>
-                <ItemTitle
-                  className={`font-[inherit] ${disabled ? "line-through" : ""}`}
-                >
-                  {o.label} {o.cheapest && <CheapestMark />}
-                </ItemTitle>
-              </ItemContent>
-              <ItemActions className="text-xs text-muted-foreground">
-                {disabled ? (
-                  /* This list is the one control that always showed its
+              <button
+                type="button"
+                disabled={inert}
+                onClick={() => onSelect(variable.name, o.value)}
+                title={why}
+                aria-describedby={
+                  refused ? refusalId(scope, variable.name, o.value) : undefined
+                }
+                className="w-full text-left"
+              >
+                <ItemContent>
+                  <ItemTitle
+                    className={`font-[inherit] ${refused ? "line-through" : ""}`}
+                  >
+                    {o.label} {o.cheapest && <CheapestMark />}
+                  </ItemTitle>
+                </ItemContent>
+                <ItemActions className="text-xs text-muted-foreground">
+                  {refused ? (
+                    /* This list is the one control that always showed its
                      reasons, and it keeps doing so in place. The id is here so
                      `aria-describedby` points at the visible sentence rather
                      than at a second copy of it. */
-                  <span
-                    id={refusalId(scope, variable.name, o.value)}
-                    className="max-w-[18rem] text-right"
-                  >
-                    {why}
-                  </span>
-                ) : (
-                  <span className="tabular-nums">
-                    {o.price > 0 ? `+${formatMonthly(o.price)}` : "included"}
-                  </span>
-                )}
-              </ItemActions>
-            </button>
-          </Item>
-        );
-      })}
+                    <span
+                      id={refusalId(scope, variable.name, o.value)}
+                      className="max-w-[18rem] text-right"
+                    >
+                      {why}
+                    </span>
+                  ) : (
+                    <span className="tabular-nums">
+                      {o.price > 0 ? `+${formatMonthly(o.price)}` : "included"}
+                    </span>
+                  )}
+                </ItemActions>
+              </button>
+            </Item>
+          );
+        })}
+      </div>
+      {/* This control shows each reason on its own row, so it needs the line the
+        shared list carries underneath rather than the list itself — the rules
+        are already in place, and repeating them would put two copies of one
+        sentence on the page (constitution #17). */}
+      {refused && (
+        <p className="mt-1.5 text-xs italic text-muted-foreground">
+          {REFUSAL_AFFORDANCE}
+        </p>
+      )}
     </div>
   );
 }

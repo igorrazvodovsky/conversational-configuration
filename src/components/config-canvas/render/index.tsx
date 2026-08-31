@@ -35,6 +35,7 @@ import {
   carGeometry,
   shaftGeometry,
 } from "./geometry";
+import { sayWhy } from "@/lib/say-why";
 import { CarScene } from "./scene";
 import { DEFAULT_VIEWPOINT, VIEWPOINTS, Viewpoint } from "./viewpoints";
 
@@ -134,7 +135,18 @@ export default function CarViewer({
             value={viewpoint.id}
             onValueChange={(id) => {
               const next = VIEWPOINTS.find((v) => v.id === id);
-              if (next) setViewpoint(next);
+              if (!next) return;
+              // Answered, and not also acted on. The item stays live
+              // (constitution #17) and says why; moving to the view as well
+              // would answer the click with a sentence and an empty picture.
+              if (next.id === "shaft" && !shaft) {
+                sayWhy(
+                  "no-shaft",
+                  "The agreement does not state a shaft yet. Set the shaft width and depth and this view draws it.",
+                );
+                return;
+              }
+              setViewpoint(next);
             }}
           >
             {VIEWPOINTS.map((v) => (
@@ -142,7 +154,10 @@ export default function CarViewer({
                 key={v.id}
                 value={v.id}
                 title={v.hint}
-                disabled={v.id === "shaft" && !shaft}
+                // Live even when there is nothing to look at: the group's
+                // `onValueChange` above answers it (constitution #17).
+                // "Shaft" greyed out names neither the missing values nor how
+                // to state them.
               >
                 {v.label}
               </ToggleGroupItem>

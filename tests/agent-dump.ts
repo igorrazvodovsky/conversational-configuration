@@ -36,6 +36,8 @@ export interface AgentDump {
   guarded: string[];
   /** Whether the guard fires on prose opening on the same word. */
   guardedProse: boolean[];
+  /** That prose, for the frontend's copy of the predicate to be run over. */
+  prose: string[];
   configurationKeys: string[];
   emptyConfigurationKeys: string[];
   sourceValues: string[];

@@ -27,7 +27,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { KEEP_TITLE } from "@/lib/utils";
+import { sayWhy } from "@/lib/say-why";
 import type { WorkspaceRecord } from "@/lib/workspaces";
 
 const LOCALE = "en-IE";
@@ -155,11 +155,18 @@ export function ConversationMenu({
       <Button
         variant="ghost"
         size="icon-xs"
-        onClick={onNew}
-        // Already in a fresh, unregistered conversation — nothing to start.
-        disabled={!active}
+        // Live in a fresh, unregistered conversation too, where there is
+        // nothing to start: it answers instead of greying itself
+        // (constitution #17).
+        onClick={() =>
+          active
+            ? onNew()
+            : sayWhy(
+                "already-new",
+                "This conversation is already a new one — it joins the list on its first message.",
+              )
+        }
         title={active ? "New conversation" : "you're in a new conversation now"}
-        className={KEEP_TITLE}
       >
         <MessageSquarePlus />
         <span className="sr-only">New conversation</span>

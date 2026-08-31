@@ -413,6 +413,50 @@ export function canvasEditMessage(
 }
 
 /**
+ * The grammar read rather than minted: the `(term=value)` pairs a gesture
+ * carries, or null when the message is not one.
+ *
+ * A fourth copy of the sentence's shape, and deliberately the agent's own —
+ * `is_gesture` in `agent/src/configuration.py` matches this pattern to refuse
+ * a gesture in `set_choices`, and `tests/couplings.test.ts` holds the two
+ * predicates equal over every sentence the grammar builds
+ * (docs/specs/one-gesture-one-action). Matched on shape rather than on the
+ * first word: "Set up an elevator for a hospital" is prose, and the
+ * parenthesised code is what no customer types.
+ */
+const SET_LINE = /^Set .+ to .+ \(([a-z][a-z0-9_]*)=([a-z0-9_]+)\)$/;
+
+export function gestureSelections(
+  content: string,
+): { variable: string; value: string }[] | null {
+  const body = content.startsWith(CANVAS_EDIT_PREFIX)
+    ? content.slice(CANVAS_EDIT_PREFIX.length)
+    : content;
+  const lines = body.split("\n").filter((line) => line.trim().length > 0);
+  if (lines.length === 0) return null;
+  const selections = [];
+  for (const line of lines) {
+    const match = SET_LINE.exec(line);
+    if (!match) return null;
+    selections.push({ variable: match[1], value: match[2] });
+  }
+  return selections;
+}
+
+/**
+ * Whether this message is the customer setting a value themselves rather than
+ * telling the agent something — the sheet's edit and the card's pick, and
+ * nothing else the grammar builds. The chat renders no row for one
+ * (docs/specs/agreement-document): the surface that dispatched it is its
+ * record.
+ */
+export function isGesture(content: string): boolean {
+  return (
+    content.startsWith(CANVAS_EDIT_PREFIX) || gestureSelections(content) !== null
+  );
+}
+
+/**
  * Structured messages for the docs/specs/nonlinear-interaction cards. Same principle as
  * choiceMessage: a visible user message the agent maps onto one atomic tool
  * call (revise_choices with drop+changes).
