@@ -6,7 +6,7 @@ Rules the chat's geometry and the workspace page's tree: one mount and four geom
 
 `ChatSurfaceMode = "sidebar" | "floating" | "fullscreen" | "hidden"` lives in `useState` on the workspace page and is passed down. It isn't agent state: constitution #3 puts *shared configuration* in the agent, and how wide a pane is drawn isn't configuration. The agent must not be able to read it, and nothing the agent returns may change it, which the requirements forbid outright. It isn't URL state either, because a link to a workspace names the agreement, not a layout.
 
-It also isn't persisted, per the acceptance criterion. `localStorage` is invisible to the server, so restoring on mount is the same hydration mismatch `workspace-split.tsx` already refuses for the panel split. The mode resets to sidebar on reload, which is also the safest default for the one guard the discovery amendment rests on: the app never opens anyone in a transcript.
+It also isn't persisted, per the acceptance criterion. The mode resets to sidebar on reload, which is the one guard the discovery amendment rests on: the app never opens anyone in a transcript. That reason is the whole of it now. Restoring a mode on mount from `localStorage` would be a hydration mismatch, but the panel split next door is remembered without one, through a cookie the server reads before it renders ([remembered split](../remembered-split/design.md)). What rules the mode out is the guard, not the storage.
 
 ## Decision 2: one chat mount, four geometries, switched by class
 
@@ -65,7 +65,7 @@ While hidden, the agent can still speak: a repair proposal, a rejected `Canvas e
 
 ## Decision 6: what stays untouched
 
-Sidebar mode is byte for byte the split the [agreement workspace](../agreement-workspace/design.md) specifies: same 62/38 default, same 360px pixel floors, same vertical stack under `lg`, still unpersisted. What left the page is the fixed navigation column beside that split, in decisions 7 and 8, rather than anything the panel group does. The other three modes bypass the group's sizing entirely, so its floors and its stacking behaviour don't apply to them. Under `lg`, floating and fullscreen render as they do at desktop width, and floating's fixed 400px is narrower than the viewport at every width the app is verified in.
+Sidebar mode is byte for byte the split the [agreement workspace](../agreement-workspace/design.md) specifies: same 360px pixel floors, same vertical stack under `lg`, and the same 62/38, which is now the division an operator gets before they have dragged the handle rather than the one they get on every load ([remembered split](../remembered-split/design.md)). What left the page is the fixed navigation column beside that split, in decisions 7 and 8, rather than anything the panel group does. The other three modes bypass the group's sizing entirely, so its floors and its stacking behaviour don't apply to them. Under `lg`, floating and fullscreen render as they do at desktop width, and floating's fixed 400px is narrower than the viewport at every width the app is verified in.
 
 The dispatch grammar is untouched. Cards, canvas edits and the `Canvas edit:` filter behave identically in all four modes, because none of them re-render the chat's contents.
 
