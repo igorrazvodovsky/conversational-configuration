@@ -1,15 +1,7 @@
 "use client";
 
-/**
- * Operative terms — the commitments (docs/specs/agreement-document; canvas
- * anatomy, *The anatomy*). The `agreement` group and the headline performance
- * outcomes as numbered clauses, above the consideration: monthly price and
- * modelled lifetime footprint.
- *
- * This is the negotiation surface. Provenance and the deviation register's
- * marks sit in the margin, beside the clause they qualify, which is where the
- * genre puts them.
- */
+// docs/specs/agreement-document/design.md. The negotiation surface: provenance
+// and the register's marks sit in the margin, beside the clause they qualify.
 
 import {
   Candidate,
@@ -77,12 +69,8 @@ function TermClause({
   );
 }
 
-/**
- * The consideration: what the operator pays, and what the agreement costs the
- * atmosphere. Its provenance is the completion the solver returned — the
- * objective it was optimised for — which is why the figure is labelled with it
- * rather than with a chooser.
- */
+/** Labelled with the objective the solver optimised for rather than with a
+ * chooser. */
 function Consideration({ doc }: { doc: DocumentView }) {
   const candidate = doc.config.candidate;
   if (!candidate) {
@@ -119,13 +107,9 @@ function Consideration({ doc }: { doc: DocumentView }) {
   );
 }
 
-/**
- * Cumulative lifetime footprint with the assessment assumptions behind it on
- * demand (docs/specs/environmental-footprint decision 6): whole-configuration
- * total only — no per-option carbon badges anywhere — and every number
- * labelled as modelled. All values read from agent state and the model JSON;
- * nothing is derived here.
- */
+/** Whole-configuration total only, every number labelled as modelled
+ * (docs/specs/environmental-footprint/design.md decision 6). All values read
+ * from agent state and the model JSON. */
 function FootprintSentence({
   config,
   candidate,

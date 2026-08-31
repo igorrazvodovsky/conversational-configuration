@@ -1,10 +1,8 @@
 "use client"
 
-// Departure from the registry's own file: the theme comes from this app's
-// `ThemeProvider`, not from `next-themes`, which nothing here mounts. The two
-// hooks have the same shape and the same three values, and reading the wrong
-// one would leave a toast on the system theme while the rest of the page
-// followed an explicit choice (docs/specs/ui-component-library decision 7).
+// The one edit to a registry file: the theme comes from this app's own hook,
+// not from `next-themes`, which nothing here mounts
+// (docs/specs/ui-component-library/design.md decision 7).
 import { useTheme } from "@/hooks/use-theme"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"

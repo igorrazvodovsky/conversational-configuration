@@ -1,28 +1,15 @@
-/**
- * Chat attachment transport (docs/specs/chat-attachments).
- *
- * The composer accepts what the agent can actually read, and the upload
- * handler carries the filename to it. Two facts drive the shape of this file:
- * CopilotKit derives an attachment's modality from the browser's MIME type,
- * which disagrees with itself about markdown; and the `metadata` the client
- * sends alongside the attachment does not survive the trip to the agent, so
- * the name rides in the MIME type instead — see the spec's design.
- */
+// docs/specs/chat-attachments/design.md
 
-/** Types the agent can read, plus the images that already worked. */
 export const ATTACHMENT_ACCEPT =
   "text/plain,text/markdown,text/csv,application/json,image/*," +
   ".txt,.md,.markdown,.csv,.json";
 
-/** 1 MB. A document larger than this is not a brief; it is a corpus. */
+/** 1 MB. */
 export const ATTACHMENT_MAX_SIZE = 1024 * 1024;
 
-/**
- * Browsers disagree on markdown (`text/markdown`, `text/plain`, or nothing at
- * all depending on the OS registry), and an empty type reaches the agent as an
- * unreadable one. The extension is the more reliable signal for exactly the
- * types we accept.
- */
+/** Browsers disagree on markdown — `text/markdown`, `text/plain`, or nothing
+ * at all depending on the OS registry — and an empty type reaches the agent as
+ * an unreadable one. */
 const MIME_BY_EXTENSION: Record<string, string> = {
   txt: "text/plain",
   md: "text/markdown",
@@ -49,12 +36,9 @@ function readAsBase64(file: File): Promise<string> {
 }
 
 // `AttachmentUploadResult` lives in @copilotkit/shared, which is not a direct
-// dependency, so the shape is asserted here rather than imported through one.
-/**
- * CopilotKit's own rejection message lists the MIME filter verbatim, which
- * reads as configuration rather than as an answer. This says what to do
- * instead.
- */
+// dependency, so the shape is asserted here rather than imported.
+/** CopilotKit's own rejection message lists the MIME filter verbatim, which
+ * reads as configuration rather than as an answer. */
 export function describeUploadFailure(failure: {
   reason: string;
   file: { name: string };
@@ -70,7 +54,6 @@ export function describeUploadFailure(failure: {
   }
 }
 
-/** One attached file as the transcript needs to show it. */
 export type MessageAttachment = {
   id: string;
   mimeType: string;
@@ -91,14 +74,12 @@ function sourceUrl(
 }
 
 /**
- * An attachment comes back from the agent as an `image` part whatever it was —
- * the same conversion the agent has to undo (docs/specs/chat-attachments) — so
- * the part's own type says nothing and the MIME type is the only signal.
+ * An attachment comes back from the agent as an `image` part whatever it was,
+ * so the MIME type is the only signal.
  *
  * The filename survives on the message just sent, in the `name=` parameter the
- * upload puts on that MIME type. A message read back from the thread has lost
- * it: the AG-UI conversion keeps only the bare type, so a reopened
- * conversation has a file to show and no name to call it by.
+ * upload puts on that type. A message read back from the thread has lost it:
+ * the AG-UI conversion keeps only the bare type.
  */
 export function messageAttachments(content: unknown): MessageAttachment[] {
   if (!Array.isArray(content)) return [];
@@ -137,7 +118,6 @@ const FILE_LABELS: Record<string, string> = {
   "application/json": "JSON",
 };
 
-/** A short badge for a file with no preview: its kind, in three or four letters. */
 export function fileLabel(mimeType: string): string {
   return (
     FILE_LABELS[mimeType] ?? (mimeType.split("/")[1] ?? "file").slice(0, 4).toUpperCase()
@@ -149,10 +129,10 @@ export async function uploadWithFilename(file: File) {
   return {
     type: "data" as const,
     value: await readAsBase64(file),
-    // Only files the agent rewrites carry the name: an image reaches OpenAI as
-    // the data URL it is, and a parameter on that URL is rejected outright
-    // ("You uploaded an unsupported image"). `;` and `,` terminate the header,
-    // so a filename carrying either would truncate the payload, not name it.
+      // Only files the agent rewrites carry the name: an image reaches OpenAI as
+      // the data URL it is, and a parameter on that URL is rejected outright.
+      // `;` and `,` terminate the header, so a filename carrying either would
+      // truncate the payload.
     mimeType: mimeType.startsWith("image/")
       ? mimeType
       : `${mimeType};name=${file.name.replace(/[;,]/g, "_")}`,

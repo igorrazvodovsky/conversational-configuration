@@ -1,9 +1,6 @@
-/**
- * An agreement to check the projection helpers against (docs/specs/offline-checks).
- *
- * Built here rather than fetched, because these checks run offline. The shape
- * is the one the agent writes; `couplings.test.ts` asserts that it still is.
- */
+// docs/specs/offline-checks/design.md. Built here rather than fetched, because
+// these checks run offline; `couplings.test.ts` asserts the shape is still the
+// agent's.
 import type {
   Candidate,
   Choice,
@@ -17,7 +14,6 @@ import type {
 } from "@/lib/configurator";
 import { productModel } from "@/lib/configurator";
 
-/** Every option of every variable open, as a fresh agreement carries them. */
 export function openStatuses(): Record<string, Record<string, OptionStatus>> {
   const statuses: Record<string, Record<string, OptionStatus>> = {};
   for (const variable of productModel.variables) {
@@ -28,12 +24,8 @@ export function openStatuses(): Record<string, Record<string, OptionStatus>> {
   return statuses;
 }
 
-/**
- * Statuses as the solver produces them once a variable is decided: the value
- * carries `kind`, and every sibling is invalid — never left open, which is a
- * state no real agreement is ever in. `couplings.test.ts` reads that invariant
- * off agreements the agent actually built and asserts it of everything here.
- */
+/** As the solver produces them once a variable is decided: the value carries
+ * `kind` and every sibling is invalid, never left open. */
 function decide(
   statuses: Record<string, Record<string, OptionStatus>>,
   values: Record<string, string>,
@@ -54,12 +46,8 @@ function decide(
   return decided;
 }
 
-/**
- * `statuses` is derived from `choices` unless given explicitly, so the two
- * cannot be handed in disagreeing with each other — a recorded choice sitting
- * beside statuses that call every option open is the impossible fixture this
- * helper exists to prevent.
- */
+/** Derived from `choices` unless given explicitly, so a recorded choice cannot
+ * sit beside statuses that call every option open. */
 export function agreement(
   overrides: Partial<Configuration> = {},
 ): Configuration {
@@ -71,13 +59,12 @@ export function agreement(
     candidate: null,
     ...overrides,
     choices,
-    // Applied over any statuses handed in, so a fixture that sets a forced
-    // value and records a choice gets both, each solver-shaped.
+  // Applied over any statuses handed in, so a fixture that forces a value and
+  // records a choice gets both.
     statuses: decide(overrides.statuses ?? openStatuses(), chosen, "chosen"),
   };
 }
 
-/** Recorded choices, all from one source. */
 export function chose(
   values: Record<string, string>,
   source: Source = "user",
@@ -90,10 +77,7 @@ export function chose(
   );
 }
 
-/**
- * Statuses with one variable's value marked as the rules forced it — and its
- * siblings invalid, because a value the rules force is the only one left.
- */
+/** Siblings invalid, because a value the rules force is the only one left. */
 export function forcing(
   values: Record<string, string>,
 ): Record<string, Record<string, OptionStatus>> {
@@ -126,8 +110,6 @@ export function requirement(
   };
 }
 
-/** A clause the document leaves to us: it carries a variable and asks for no
- * value (docs/specs/document-clauses). */
 export function leftToUs(
   variable: string,
   overrides: Partial<Clause> = {},

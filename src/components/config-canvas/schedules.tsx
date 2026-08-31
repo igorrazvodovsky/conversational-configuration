@@ -1,21 +1,6 @@
 "use client";
 
-/**
- * Schedules — the derived hardware (docs/specs/agreement-document; canvas
- * anatomy, *The anatomy*). The remaining groups as the sheet they have always
- * been, one row per variable, demoted to collapsible annexes and collapsed by
- * default.
- *
- * This is where the genre wins the scale argument the flat sheet loses: a real
- * platform's parameters cannot fit one screen, but annexes collapse. It is also
- * the delivery lead's reading — complete, tabular, unambiguous — so nothing is
- * abbreviated here.
- *
- * Collapse state is component state with a constant default. It is never read
- * from storage: the server cannot see storage, so a remembered default renders
- * one tree on the server and another on hydration, which is the mismatch
- * `workspace-split.tsx` documents.
- */
+// docs/specs/agreement-document/design.md
 
 import { useEffect, useState } from "react";
 
@@ -60,14 +45,12 @@ function ScheduleRow({
     <Collapsible
       open={open && editable}
       onOpenChange={setOpen}
-      // A run in flight no longer collapses this. The disclosure is reading,
-      // not editing, and what an editor inside it dispatches is guarded once
-      // in the shell (constitution #17).
+      // A run in flight does not collapse this: what an editor inside
+      // dispatches is guarded once in the shell.
       disabled={!editable}
       data-reveal={variable.name}
       className={cn(
         "px-3 py-2 transition-colors duration-1000",
-        // The transient reveal mark (docs/specs/shared-attention).
         doc.revealed.has(variable.name) && "bg-primary/10",
       )}
     >
@@ -128,30 +111,16 @@ function Schedule({
   doc: DocumentView;
   index: number;
 }) {
-  // Untouched until the user says otherwise, and while untouched it follows
-  // the register: a schedule with an unanswered requirement of the customer's
-  // document opens itself, because a deviation the operator cannot see is a
-  // deviation they cannot answer, and an annex is the one place the document
-  // can hide one. Undefined rather than a computed initial value — the state
-  // initializer does not re-run when the register arrives, and a default read
-  // from anything the server cannot see is the hydration mismatch
-  // `workspace-split.tsx` documents.
+  // `undefined` means untouched. A computed initial value would not re-run when
+  // the register arrives and would mismatch on hydration
+  // (docs/specs/shared-attention/design.md decision 4).
   const [open, setOpen] = useState<boolean | undefined>(undefined);
   const deviating = group.variables.some(
     (v) => unmetFor(doc, v.name) !== undefined,
   );
-  // A reveal (docs/specs/shared-attention) is the same argument as the
-  // deviation fallback, applied to the agent's own moves: a change the
-  // operator cannot see is a change they cannot react to. An untouched
-  // schedule holding a revealed value opens in the reveal's own render (the
-  // shell's scroll fires in that commit and needs the rows in the DOM); an
-  // explicitly collapsed one stays collapsed and the header carries the mark.
   const holdsReveal = group.variables.some((v) => doc.revealed.has(v.name));
   const expanded = open ?? (deviating || holdsReveal);
-  // The expansion must outlive the mark — a schedule that re-collapsed when
-  // the mark faded would be the reveal hiding things, which it may never do.
-  // Latching also keeps the operator in charge: from here on the header obeys
-  // them exactly as if they had opened it themselves.
+  // The expansion outlives the mark, or the reveal would hide something.
   useEffect(() => {
     if (holdsReveal) setOpen((o) => o ?? true);
   }, [holdsReveal]);

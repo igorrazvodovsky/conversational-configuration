@@ -1,12 +1,4 @@
-/**
- * The workspace record as the frontend reads it (docs/specs/agreement-workspace,
- * docs/specs/parallel-drafts; checked per docs/specs/offline-checks).
- *
- * These are the readers the page seeds itself from before agent state arrives.
- * Each has a fallback for a record written before the feature that added its
- * field, and none of them may be the read path that throws — a workspace that
- * cannot be opened is a workspace that is lost.
- */
+// docs/specs/agreement-workspace/design.md, docs/specs/parallel-drafts/design.md
 import { describe, expect, it } from "vitest";
 
 import {
@@ -31,8 +23,6 @@ function draft(overrides: Partial<DraftRecord> = {}): DraftRecord {
   };
 }
 
-/** One log entry, at a standing and with or without facts — the two things the
- * frontend reads of one (docs/specs/action-log). */
 function entry(
   standing: LogEntry["standing"] = "applied",
   withFacts = true,
@@ -122,9 +112,8 @@ describe("what the canvas chrome reads off the record", () => {
   });
 
   it("offers no reversal of an action that asserted nothing", () => {
-    // A declined change, or a batch that re-recorded what the agreement
-    // already held: an occurrence worth keeping and no step back to anywhere
-    // (docs/specs/action-log).
+    // A declined change, or a batch that re-recorded what the agreement already
+    // held: an occurrence worth keeping and no step back to anywhere.
     const drafts = [draft({ log: [entry(), entry("applied", false)] })];
     expect(historyDepths(record({ drafts }))).toEqual({ undo: 1, redo: 0 });
   });

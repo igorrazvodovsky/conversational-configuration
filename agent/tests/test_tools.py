@@ -1,17 +1,15 @@
-"""Acceptance tests for the agent tool layer (docs/specs/agent-tools).
+"""Acceptance tests for the agent tool layer (docs/specs/agent-tools/design.md).
 
-The pure state transitions these tools call are covered by
-`test_configuration.py` and the durable store by `test_workspace_store.py`.
-What is checked here is the seam between them — the write-through to the
-workspace, the state mirrors the canvas renders its chrome from
-(docs/specs/parallel-drafts, docs/specs/undo), and the branches a conversation
-can take when there is no workspace, the store refuses, or the solver does.
+`test_configuration.py` covers the pure state transitions and
+`test_workspace_store.py` the durable store; what is checked here is the seam
+between them — the write-through to the workspace, the state mirrors the canvas
+renders its chrome from, and the branches taken when there is no workspace, the
+store refuses, or the solver does.
 
 A tool's body is called directly with a hand-built `ToolRuntime`, and `advance`
-does to the state what the graph would do with the returned `Command`. The
-tools' wording is not asserted beyond the facts it must carry: the conversation
-checks own conversational behavior, and constitution #9 keeps prose out of
-both.
+does to the state what the graph would do with the returned `Command`. Wording
+is not asserted beyond the facts it must carry: the conversation checks own
+conversational behavior (constitution #9).
 """
 
 import json

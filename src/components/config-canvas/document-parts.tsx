@@ -1,16 +1,6 @@
 "use client";
 
-/**
- * The pieces every layer of the agreement document is built from
- * (docs/specs/agreement-document).
- *
- * One option editor, one dispatch path, one value resolver. Recitals prose,
- * operative-term clauses and schedule rows all edit through the parts here, so
- * an inline token in a sentence and a row in the annex reach the solver by
- * exactly the same route — including the choice between a hidden `Canvas edit:`
- * and a visible `Reconcile deviation:` message, which the shell decides per
- * variable and none of the layers may bypass.
- */
+// docs/specs/agreement-document/design.md
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Check, FileText, Lock, Sparkles, User } from "lucide-react";
@@ -42,53 +32,31 @@ import {
 } from "@/lib/configurator";
 import { cn } from "@/lib/utils";
 
-/**
- * Everything a layer needs to render and edit the agreement. Held by the
- * shell and threaded down whole — in particular the optimistic `pending`
- * overlay, which has to reach the deepest inline token or a click in prose
- * would show nothing until the run ends.
- */
+/** The optimistic `pending` overlay has to reach the deepest inline token, or
+ * a click in prose shows nothing until the run ends. */
 export interface DocumentView {
   config: Configuration;
   termMonths: number;
   pending: Record<string, string>;
   requirementsFor: (variable: string) => RegisterEntry[] | undefined;
-  /** the clauses the document left to us on this term, if any
-   * (docs/specs/document-clauses) */
   leftToUsFor: (variable: string) => DocumentClause[] | undefined;
-  /** the shell's routed dispatch — canvas edit or reconciliation, per variable */
+  /** The shell's routed dispatch: canvas edit or reconciliation, per variable. */
   onSelect: (variable: string, value: string) => void;
   onDispatch: (content: string) => void;
-  /** Values the last run changed, marked transiently on the document and
-   * discarded when the mark fades (docs/specs/shared-attention). */
   revealed: ReadonlySet<string>;
-  /** Editor lifecycle, reported from OptionEditor's mount/unmount — the read
-   * half of docs/specs/shared-attention. The shell keeps the last one open. */
   onEditorOpen: (variable: string) => void;
   onEditorClose: (variable: string) => void;
-  /** Switches the canvas to the render (docs/specs/visual-configuration).
-   * Only the schedules layer offers it, because that is the layer whose
-   * content the render depicts. */
   onEnterRender: () => void;
 }
 
 /**
- * How a layer's heading is set: small capitals over the section, the three
- * layers marked identically because they are peers.
- *
- * Shared as a class string and deliberately *not* as a `<LayerHeading>`
- * component. A component would be a fiber, and a fiber inserted above the
- * schedules' Radix collapsibles shifts the `useId` values the whole page
- * derives — server and client then disagree and hydration breaks on every
- * load, measured, not guessed (docs/specs/chat-surface/design.md owns this
- * rule; the [component library](docs/specs/ui-component-library/design.md)
- * records this instance). A constant costs the same duplication in markup and
- * none in tree shape.
+ * A class string rather than a `<LayerHeading>` component: a fiber inserted
+ * above the schedules' Radix collapsibles shifts the `useId` values the whole
+ * page derives (docs/specs/chat-surface/design.md).
  */
 export const LAYER_HEADING =
   "mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
-/** The resolved value with the optimistic overlay laid over it. */
 export function displayOf(doc: DocumentView, variable: string): ResolvedValue {
   const pending = doc.pending[variable];
   return pending
@@ -115,16 +83,6 @@ export const KIND_BADGE: Partial<
   proposed: { label: "proposed" },
 };
 
-/**
- * The option list behind every editable value, wherever it is opened from.
- * An invalid option says why *on the page* rather than only in a `title`
- * (constitution #16), and stays clickable: picking it dispatches the same
- * sentence any other option does, and the collision comes back as the repair
- * paths that would admit it (constitution #17,
- * docs/specs/one-gesture-one-action). Deltas are monthly at the term in
- * effect; a value's situational gloss rides along as its title, so the choice
- * can be made in the building's language rather than the catalogue's.
- */
 export function OptionEditor({
   variable,
   doc,
@@ -134,16 +92,12 @@ export function OptionEditor({
   variable: string;
   doc: DocumentView;
   onDone?: () => void;
-  /** what makes this editor's refusal ids unique on the page. The layer that
-   * mounted it, because two layers can hold an editor for one variable open at
-   * the same time — a prose token's popover and a schedule row's disclosure are
-   * independent — and duplicate ids would send both controls' `aria-describedby`
-   * to whichever line rendered first. */
+  /** What makes this editor's refusal ids unique: two layers can hold an editor
+   * for one variable open at the same time. */
   scope: string;
 }) {
-  // Every layer's editor renders this component exactly while it is open —
-  // schedule rows and prose tokens alike — so its mount is the single place
-  // the operator's open editor can be read from (docs/specs/shared-attention).
+  // Rendered exactly while an editor is open, so its mount is the single place
+  // the operator's open editor can be read from.
   const { onEditorOpen, onEditorClose } = doc;
   useEffect(() => {
     onEditorOpen(variable);
@@ -154,8 +108,6 @@ export function OptionEditor({
   if (!model) return null;
   const display = displayOf(doc, variable);
 
-  // The refusals of this variable, gathered once so the list underneath and
-  // each control's `aria-describedby` quote one sentence rather than two.
   const refusals: Refusal[] = model.options.flatMap((option) => {
     const rules = rulesAgainst(doc.config, variable, option.value);
     return rules === null
@@ -167,9 +119,8 @@ export function OptionEditor({
     <div>
     <div className="flex flex-wrap gap-1.5">
       {model.options.map((option) => {
-        // Availability is a swap question — could this value be taken instead
-        // of the one recorded? — which `statuses` cannot answer for a decided
-        // term (docs/specs/agreement-document). The rules come with the answer.
+          // A swap question — could this be taken instead of the one recorded?
+          // — which `statuses` cannot answer for a decided term.
         const rules = rulesAgainst(doc.config, variable, option.value);
         const invalid = rules !== null;
         const isCurrent = display.value === option.value;
@@ -190,10 +141,6 @@ export function OptionEditor({
             className={
               invalid
                 ? // Muted and struck, never faded: the popover or clause above
-                  // may carry a state of its own and two opacities over one
-                  // string multiply (constitution #16). No `cursor-not-allowed`
-                  // and no `KEEP_TITLE` — both were for a control that refuses
-                  // the click, and this one takes it (constitution #17).
                   "font-normal text-muted-foreground line-through hover:border-primary"
                 : isCurrent
                   ? ""
@@ -216,21 +163,7 @@ export function OptionEditor({
   );
 }
 
-/**
- * Two renderings, because two is what an underline inside a sentence can
- * actually draw: *the agreement states this* against *this is not settled*.
- *
- * There were six, and four of them — `user`, `agent`, `document`, `forced` —
- * were identical apart from an `opacity-90`, while `proposed` and `open` split
- * on dotted against dashed at 40% alpha, which at this size is not a
- * difference anyone perceives. The sheet was claiming six distinctions and
- * drawing at most three (constitution #16).
- *
- * Who chose a value is not dropped; it moves entirely to `ProvenanceBadge`,
- * which carries an icon and a word, and to the `sr-only` sentence every token
- * below now names its kind with. That is where docs/specs/choice-provenance
- * puts provenance anyway.
- */
+/** Two, because two is what an underline inside a sentence can draw. */
 const TOKEN_STYLE: Record<ValueKind, string> = {
   user: "font-medium text-foreground decoration-solid",
   agent: "font-medium text-foreground decoration-solid",
@@ -240,15 +173,6 @@ const TOKEN_STYLE: Record<ValueKind, string> = {
   open: "italic text-muted-foreground decoration-dashed",
 };
 
-/**
- * A configurable value rendered inside running text, editable in place: the
- * document's editable island (canvas anatomy, *Editability*). It opens the
- * same option editor a schedule row does, and dispatches through the same
- * routed handler — the document genre costs no revision access.
- *
- * A rule-forced value is not editable, exactly as on the sheet: it is a
- * consequence of other choices, and the chat explains it.
- */
 export function ValueToken({
   variable,
   doc,
@@ -259,22 +183,11 @@ export function ValueToken({
   variable: string;
   doc: DocumentView;
   placeholder?: string;
-  /**
-   * Which layer wrote this token, for the refusal ids its editor mints.
-   * Three agreement-group values — term, service level, usage profile — are
-   * restated in the recitals as well as stated in the terms, so one variable
-   * has two tokens on one page and their editors would collide on an id
-   * (docs/specs/agreement-document, *Marks in the margin*). Recitals pass
-   * `"recital"`; every other token is the default.
-   */
+  /** Three agreement-group values appear in both the recitals and the terms, so
+   * one variable has two tokens on one page whose editors would collide. */
   scope?: string;
-  /**
-   * How this value reads in running text, when the catalogue's label does not
-   * fit a sentence — "Office" is a column heading, "an office building" is
-   * prose. A total function over the model's values, written beside the
-   * sentence it serves; the token still edits the same variable, and a value
-   * with no phrasing falls back to its label.
-   */
+  /** How this value reads in running text, when the catalogue's label does not
+   * fit a sentence. Falls back to the label. */
   phrasing?: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
@@ -286,19 +199,10 @@ export function ValueToken({
   const style = cn(
     TOKEN_STYLE[display.kind],
     "underline underline-offset-4 decoration-muted-foreground/40",
-    // The transient reveal mark (docs/specs/shared-attention): highlighted
-    // while the value is in the last run's changed set, faded by transition
-    // when the shell drops the set.
     "transition-colors duration-1000",
     doc.revealed.has(variable) && "bg-primary/10",
   );
 
-  // A value that cannot be edited says nothing extra. The kind belongs on the
-  // control below, where it describes an affordance somebody is about to use;
-  // here it would interpolate into every sentence of a document whose whole
-  // premise is that it reads as a contract, and the margin's provenance badge
-  // already answers it in the place this design puts attribution
-  // (constitution #16).
   if (display.kind === "forced") {
     return (
       <span className={style} title={KIND_TITLE[display.kind]} data-reveal={variable}>
@@ -338,9 +242,6 @@ export function ValueToken({
   );
 }
 
-/** The situational gloss for whatever value is currently shown, when the model
- * carries one — sense-making attached to the thing being explained, and never
- * composed at render time (canvas anatomy, *The anatomy*). */
 export function Gloss({
   variable,
   doc,
@@ -360,11 +261,6 @@ export function Gloss({
   );
 }
 
-/**
- * "Why is this value here?" answered with "your document, clause N" — the
- * third provenance source's popover (docs/specs/rfq-reconciliation). The
- * clause and its quote are the frozen block's own words; nothing is derived.
- */
 function ClausePopover({
   entries,
   children,
@@ -392,7 +288,6 @@ function ClausePopover({
   );
 }
 
-/** Who put this value here, as a mark rather than a column. */
 export function ProvenanceBadge({
   variable,
   doc,
@@ -429,20 +324,6 @@ export function ProvenanceBadge({
   );
 }
 
-/**
- * What the customer's document asked, against what the agreement now says, the
- * rules that separate them, and the moves that answer it. Shown while the
- * requirement is an open deviation, while it is waived and while it is
- * revised: a mark is not a reason to stop showing the document's ask.
- *
- * The rules are the solver's own, read from `unavailable` in state
- * (constitution #6). They used to be spoken only in chat, which left the
- * durable record of a negotiation carrying the ask and the offer with nothing
- * to check them against once the conversation had scrolled away.
- *
- * In the document this is a margin mark on the affected term
- * (docs/specs/agreement-document); the schedules keep it as a row strip.
- */
 export function DeviationMark({
   entries,
   doc,
@@ -452,9 +333,8 @@ export function DeviationMark({
 }) {
   const first = entries[0];
   const waived = first.status === "waived";
-  // Grouped by requested value, never flattened onto the first one: a document
-  // may ask two different values of one term, and joining every clause number
-  // under one label would misquote the customer's own document.
+  // Grouped by requested value, never flattened: a document may ask two
+  // different values of one term.
   const asks = [...new Set(entries.map((e) => e.value))].map((value) => ({
     value,
     clauses: entries
@@ -525,14 +405,6 @@ export function DeviationMark({
   );
 }
 
-/**
- * What the customer's document left to us on this term
- * (docs/specs/document-clauses). A mark rather than a register row, because a
- * clause that asks for nothing has nothing to compare: no requested value, no
- * offered value, no rule between them, and no move that answers it here. What
- * answers it is the conversation the agent opens, so the mark says which
- * clause is waiting and stops there.
- */
 export function LeftToUsMark({ clauses }: { clauses: DocumentClause[] }) {
   const cited = clauses.map((c) => c.clause).filter(Boolean);
   return (
@@ -544,9 +416,7 @@ export function LeftToUsMark({ clauses }: { clauses: DocumentClause[] }) {
   );
 }
 
-/** Every requirement of the customer's document the agreement does not
- * currently meet, however it was answered: waived and revised requirements are
- * answered, never forgotten. */
+/** Waived and revised requirements are answered, never forgotten. */
 export function unmetFor(
   doc: DocumentView,
   variable: string,
@@ -556,20 +426,11 @@ export function unmetFor(
 }
 
 /**
- * The document's two-column body: the clause and its margin. The margin is
- * where the genre puts attribution and tracked changes, so that is where
- * provenance badges and deviation marks go — beside the term they qualify,
- * out of the reading line. It only becomes a column when the canvas is wide
- * enough to spare one; narrower, the marks flow under the clause they mark.
- * A container query, not a viewport one: the canvas is a resizable panel.
+ * The margin becomes a column only when the canvas is wide enough. A container
+ * query, not a viewport one, because the canvas is a resizable panel.
  *
- * While it is a column it has an edge: a shrink-wrapped mark flushes to the
- * right of the sheet, so the badges make one edge against the ends of the
- * dividing rules rather than a ragged one against nothing. Marks that are
- * blocks of prose declare `w-full` and keep their own left edge, which is what
- * holds the marks' border rules in one line down the page. Below the container
- * query nothing flushes: a badge at the far right of a
- * full-width row is no longer beside the term it attributes.
+ * While it is a column a shrink-wrapped mark flushes right; marks that are
+ * blocks of prose declare `w-full` and keep their own left edge.
  */
 export function Clause({
   children,

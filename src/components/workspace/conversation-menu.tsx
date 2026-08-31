@@ -1,20 +1,6 @@
 "use client";
 
-/**
- * Workspace-scoped conversation list (docs/specs/agreement-workspace), drawn in
- * the chat's own header (docs/specs/chat-surface, decision 7) — the list is a
- * view onto the pane it changes, so it travels with that pane instead of
- * holding a column of its own. It replaces the global CopilotThreadsDrawer,
- * which lists every thread and so stands in for the wrong entity.
- *
- * Conversations are ephemeral views onto the agreement; rows are labelled by
- * when they started, because the negotiation — not the conversation — is the
- * thing with a name.
- *
- * Props only, and deliberately: this sits beside the header's mode controls,
- * which re-render on every streamed token through `useAgent`. Nothing here may
- * call that hook (chat-surface design 7).
- */
+// docs/specs/agreement-workspace/design.md, docs/specs/chat-surface/design.md
 
 import { ChevronDownIcon, MessageSquarePlus } from "lucide-react";
 
@@ -32,7 +18,6 @@ import type { WorkspaceRecord } from "@/lib/workspaces";
 
 const LOCALE = "en-IE";
 
-/** The trigger's label: which conversation this is, in full. */
 function conversationLabel(createdAt: string): string {
   return new Date(createdAt).toLocaleString(LOCALE, {
     day: "numeric",
@@ -43,7 +28,7 @@ function conversationLabel(createdAt: string): string {
   });
 }
 
-/** Inside a day's group the date is the heading, so a row is just its time. */
+/** Inside a day's group the date is the heading. */
 function timeLabel(createdAt: string): string {
   return new Date(createdAt).toLocaleTimeString(LOCALE, {
     hour: "2-digit",
@@ -75,7 +60,7 @@ export function ConversationMenu({
   onSelect,
   onNew,
   /** False until hydration: a Radix menu in the hydrated tree shifts `useId`
-   *  values page-wide (chat-surface design 4). Until then, a plain button. */
+   * values page-wide (docs/specs/chat-surface/design.md decision 4). */
   interactive,
 }: {
   workspace: WorkspaceRecord | null;
@@ -84,11 +69,10 @@ export function ConversationMenu({
   onNew: () => void;
   interactive: boolean;
 }) {
-  // Newest first; the store appends in creation order.
+  // The store appends in creation order.
   const threads = [...(workspace?.threads ?? [])].reverse();
   const active = threads.find((t) => t.id === activeThreadId);
 
-  // Grouped in list order, so a day's heading appears once, where it starts.
   const now = new Date();
   const groups: { heading: string; threads: typeof threads }[] = [];
   for (const thread of threads) {
@@ -155,9 +139,6 @@ export function ConversationMenu({
       <Button
         variant="ghost"
         size="icon-xs"
-        // Live in a fresh, unregistered conversation too, where there is
-        // nothing to start: it answers instead of greying itself
-        // (constitution #17).
         onClick={() =>
           active
             ? onNew()

@@ -1,14 +1,6 @@
 "use client";
 
-/**
- * The composer (docs/specs/chat-pane).
- *
- * The leaf slots are plain textarea and button props, so this project's field
- * and button take them unchanged — handlers, Enter-to-send and the stop button
- * all still CopilotKit's. What is ours is the arrangement: one `InputGroup`
- * holding the queued files, the field and the controls, and one prop the send
- * button does not take unchanged, below.
- */
+// docs/specs/chat-pane/design.md
 
 import { forwardRef, type ComponentProps } from "react";
 import { ArrowUpIcon, MicIcon, PaperclipIcon } from "lucide-react";
@@ -26,10 +18,8 @@ import { sayWhy } from "@/lib/say-why";
 import { ComposerAttachments } from "./attachments";
 import { CHAT_COLUMN } from "./column";
 
-/**
- * The placeholder is passed explicitly: CopilotKit's own textarea reads it
- * from the chat labels, and this one is not that textarea.
- */
+/** Passed explicitly: CopilotKit's own textarea reads it from the chat labels,
+ * and this one is not that textarea. */
 const ComposerTextArea = forwardRef<
   HTMLTextAreaElement,
   ComponentProps<typeof CopilotChatInput.TextArea>
@@ -46,21 +36,14 @@ const ComposerTextArea = forwardRef<
 });
 
 /**
- * The one library prop this composer intercepts (constitution #17).
+ * The one library prop this composer intercepts
+ * (docs/specs/chat-pane/design.md decision 10).
  *
  * `CopilotChatInput` computes `disabled: isProcessing ? !canStop : !canSend`,
- * and `canSend` is `resolvedValue.trim().length > 0 && !!onSubmitMessage`. The
- * second conjunct is always true here and `onStop` is always wired, so the one
- * state that ever reaches this button is *the field is empty* — the case the
- * rule exists for, and the most-seen disabled control in the app.
- *
- * The attribute is dropped and the click is answered instead. The library's
- * own `send()` is never reached in that state: `onClick` returns before
- * calling through, so nothing submits an empty message. `aria-disabled` would
- * be wrong for the opposite reason to a ruled-out option — that control acts,
- * and this one is genuinely inoperable — but announcing it would put the
- * button back outside the reach of somebody who wants to press it and find
- * out why, which is the whole of the rule.
+ * and the only state that reaches this button is *the field is empty*.
+ * `onClick` returns before calling through, so the library's `send()` is never
+ * reached. No `aria-disabled` either: announcing it would put the button back
+ * out of reach of somebody who wants to press it and find out why.
  */
 function ComposerSendButton({
   children,
@@ -135,13 +118,7 @@ export const configuratorInput = {
   }: Parameters<
     NonNullable<ComponentProps<typeof CopilotChatInput>["children"]>
   >[0]) => (
-    /*
-      The composer stands at the foot of the pane rather than floating over the
-      transcript (docs/specs/chat-pane, decision 9), so it needs neither the
-      opaque background that kept rows from showing through nor the
-      `pointer-events-auto` that opted back out of the overlay it sat in. The
-      bottom padding is CopilotKit's reservation for its licence banner.
-    */
+    /* The bottom padding is CopilotKit's reservation for its licence banner. */
     <div
       className={cn(CHAT_COLUMN, "pt-2")}
       style={{ paddingBottom: "var(--copilotkit-license-banner-offset, 1rem)" }}

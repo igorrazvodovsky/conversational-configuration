@@ -1,16 +1,8 @@
 "use client";
 
-/**
- * One workspace: the agreement canvas plus its conversations
- * (docs/specs/agreement-workspace/design.md). The canvas renders from workspace
- * state whether or not a conversation is active; chat is optional for the
- * returning operator.
- *
- * Everything the page does, apart from reading the remembered split from the
- * request cookie, which `page.tsx` does on the server and which is why
- * `WorkspaceRoot` stands exactly where the page component stood
- * (docs/specs/remembered-split/design.md decision 2).
- */
+// docs/specs/agreement-workspace/design.md. `WorkspaceRoot` stands exactly
+// where the page component stood (docs/specs/remembered-split/design.md
+// decision 2).
 
 import Link from "next/link";
 import {
@@ -69,10 +61,9 @@ function WorkspaceView({
   useConfiguratorUI();
   const { workspace, workspaceName, renamed, staleThread, notFound } =
     useWorkspaceAttachment(workspaceId);
-  // The second and last entry of the shared-attention read channel
-  // (docs/specs/shared-attention/design.md): the staleness the attachment hook
-  // computes, so the agent does not reason from a transcript the agreement has
-  // moved past. The canvas publishes the first entry, the open editor.
+  // The second and last entry of the shared-attention read channel: the
+  // staleness the attachment hook computes, so the agent does not reason from a
+  // transcript the agreement has moved past.
   useAgentContext({
     description:
       "Conversation staleness: whether the transcript above predates the current agreement.",
@@ -81,9 +72,8 @@ function WorkspaceView({
       : "current",
   });
   const configuration = useCopilotChatConfiguration();
-  // The chat's geometry is the user's and only the user's
-  // (docs/specs/chat-surface/design.md): nothing below may set it, and it is not
-  // remembered across a reload.
+  // The chat's geometry is the user's and only the user's: nothing below may
+  // set it, and it is not remembered across a reload.
   const chatSurface = useChatSurface();
 
   if (notFound) {

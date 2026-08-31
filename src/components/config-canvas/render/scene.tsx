@@ -1,16 +1,10 @@
 "use client";
 
-/**
- * The car, computed from the configuration (docs/specs/visual-configuration).
- * A rectangular box whose every dimension is a millimetre value the agreement
- * already states, so there is no mesh to author and no cabin that disagrees
- * with the document.
- *
- * The origin is the centre of the car floor; the entrance is on the +z face.
- * Every mesh sits inside a `<Part>`, which stamps the part id and the
- * variables it depicts onto the group — the seam a hit test would later read
- * (design decision 3).
- */
+// docs/specs/visual-configuration/design.md
+//
+// The origin is the centre of the car floor and the entrance is on the +z face.
+// Every mesh sits inside a `<Part>`, which stamps the part id and the variables
+// it depicts onto the group — the seam a hit test would read.
 
 import { useEffect, type ReactNode } from "react";
 import { ContactShadows, Environment, MeshReflectorMaterial } from "@react-three/drei";
@@ -36,7 +30,6 @@ import {
 } from "./materials";
 import { partsById } from "./parts";
 
-/** A named part of the car, carrying the variables it stands for. */
 function Part({
   id,
   hidden,
@@ -55,18 +48,10 @@ function Part({
   );
 }
 
-/**
- * Asks for frames, because `frameloop="demand"` draws none on its own.
- * A commit inside the canvas is the signal: the configuration changed, or a
- * texture or the environment map has just resolved and the scene finally has
- * something to show. Without this the first frame is drawn while the loaders
- * are still suspended and the panel stays black — measured, and the reason
- * demand mode needs it at all.
- *
- * A short burst rather than one frame: the mirror's reflection and the contact
- * shadows are built during rendering and need more than a single pass to
- * settle. Five frames, and then nothing until the next commit.
- */
+/** `frameloop="demand"` draws no frames on its own, and without this the first
+ * one is drawn while the loaders are still suspended and the panel stays black.
+ * A burst rather than a single frame: the mirror's reflection and the contact
+ * shadows need more than one pass to settle. */
 function Redraw() {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
@@ -82,7 +67,7 @@ function Redraw() {
   return null;
 }
 
-/** The shaft is drawn as an enclosure to look through, not a solid. */
+/** An enclosure to look through, not a solid. */
 function ShaftMaterial() {
   return (
     <meshStandardMaterial
@@ -124,9 +109,8 @@ export function CarScene({
   car: CarGeometry;
   shaft: ShaftGeometry | null;
   hidden: ReadonlySet<string>;
-  /** Called once the suspended loaders have resolved and there is something to
-   * look at — this component does not mount until then, which is what makes it
-   * the honest signal to drop the loading line. */
+  /** This component does not mount until the suspended loaders resolve, which
+   * is what makes it the honest signal to drop the loading line. */
   onReady: () => void;
 }) {
   const { width: W, depth: D, height: H, doorWidth: OW, doorHeight: DH } = car;
@@ -139,7 +123,6 @@ export function CarScene({
   const panoramic = wallFinish === "glass_panoramic";
   useEffect(onReady, [onReady]);
 
-  /** the width of the car front left standing each side of the opening */
   const returnWidth = Math.max((W - OW) / 2, 0.02);
   const frontZ = D / 2 + WALL / 2;
 

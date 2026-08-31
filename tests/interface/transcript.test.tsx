@@ -1,22 +1,9 @@
-/**
- * A gesture leaves no row, and the surface that dispatched it is the record.
- *
- * The transcript hides both forms of the sentence that sets a value
- * (docs/specs/agreement-document): the sheet's `Canvas edit:` and the card's
- * bare pick. What separates them is what the agent's reply is allowed to be.
- * A clean sheet edit ends in silence by instruction, so the wordless turn
- * after one is paperwork and goes with it; a pick is answered in words, and a
- * wordless turn after one is a tool call worth seeing — the `revise_choices`
- * that came back with repair options is exactly that, and this file holds the
- * cascade off it.
- *
- * The other half is the card: with the echo gone it has to say what it was
- * answered with, including in a conversation reopened after the component
- * state that held the pick is gone. Asserted through the scale control,
- * because a segment is a radio and carries its selection as `aria-checked`
- * rather than as a fill (docs/specs/interface-checks: text and structure,
- * never style).
- */
+// docs/specs/agreement-document/design.md
+//
+// A clean sheet edit ends in silence by instruction, so the wordless turn after
+// one is paperwork; a wordless turn after a card pick is the `revise_choices`
+// that came back with repair options. Asserted through the scale control,
+// because a segment carries its selection as `aria-checked` rather than a fill.
 
 import { CopilotKit, HttpAgent } from "@copilotkit/react-core/v2";
 import { AGUIMock } from "@copilotkit/aimock";
@@ -37,7 +24,6 @@ beforeAll(async () => {
 afterAll(async () => await mock.stop());
 afterEach(cleanup);
 
-/** The messages a transcript holds, in the shape the view reads them. */
 const hidden = (messages: object[]) =>
   hiddenMessageIds(messages as Parameters<typeof hiddenMessageIds>[0]);
 
@@ -71,9 +57,8 @@ describe("the rows a gesture leaves behind", () => {
   });
 
   it("keeps the wordless tool call that answers a pick", () => {
-    // The repair card the customer is waiting for arrives on a turn that has
-    // no text of its own. Taking it down with the gesture would answer a
-    // conflict with an empty screen.
+    // The repair card arrives on a turn with no text of its own. Taking it
+    // down with the gesture would answer a conflict with an empty screen.
     const ids = hidden([
       calls("a1", "ask_choices"),
       user("u1", PICK),
@@ -115,8 +100,8 @@ const payload = JSON.stringify({
   ],
 });
 
-/** The card as a reopened conversation renders it: the tool call it was drawn
- * from, and the pick that answered it, with nothing in component state. */
+/** As a reopened conversation renders it: the tool call and the pick that
+ * answered it, with nothing in component state. */
 function drawAnswered(answer: string) {
   const agent = new HttpAgent({ url });
   agent.state = { configuration: {} };
@@ -151,16 +136,14 @@ describe("the card as the record of its own answer", () => {
   });
 
   it("records the pick even where the payload had ruled it out", () => {
-    // Asking for a ruled-out option is an ordinary move (constitution #17) and
-    // comes back with repair paths. What the card is the record of is what was
-    // asked for; what the agreement says is on the sheet.
+    // The card records what was asked for; what the agreement says is on the
+    // sheet.
     drawAnswered(choiceMessage([{ variable: "travel", value: "high_30_50" }]));
     expect(segment("30–50 m")!.getAttribute("aria-checked")).toBe("true");
   });
 
   it("claims nothing from an edit the customer made on the sheet", () => {
-    // A `Canvas edit:` in that position is the customer working elsewhere, not
-    // answering this card, so the card stays as its payload drew it.
+    // A `Canvas edit:` in that position is the customer working elsewhere.
     drawAnswered(
       canvasEditMessage([{ variable: "travel", value: "mid_15_30" }]),
     );

@@ -25,11 +25,9 @@ _HERE = Path(__file__).resolve().parent
 
 
 def _load_sibling(name):
-    """Load a module from *this* directory by path.
-
-    Comparison mode puts the tree under test first on `sys.path`, which is what
-    we want for `main` and `src` and emphatically not for the harness's own
-    modules — an older checkout may define them differently or not at all.
+    """Comparison mode puts the tree under test first on `sys.path`, which is right
+    for `main` and `src` and wrong for the harness's own modules: an older checkout
+    may define them differently or not at all.
     """
     spec = importlib.util.spec_from_file_location(name, _HERE / f"{name}.py")
     module = importlib.util.module_from_spec(spec)
@@ -46,11 +44,9 @@ class ScenarioError(RuntimeError):
 
 
 def load_agent(agent_dir: Path):
-    """Import the graph from a given checkout, with its workspaces isolated.
-
-    Once per process: everything here is process-global, so a second call is a
-    no-op rather than a second chdir. Scenarios get their isolation from a
-    fresh `Conversation`, not from reloading the agent.
+    """Once per process: everything here is process-global, so a second call is a
+    no-op rather than a second chdir. Scenarios get their isolation from a fresh
+    `Conversation`.
     """
     if not os.environ.get("WORKSPACE_STORE_DIR"):
         os.environ["WORKSPACE_STORE_DIR"] = tempfile.mkdtemp(
@@ -91,11 +87,9 @@ class Conversation:
         _OPENED.append(self)
 
     def hydrate(self, workspace_id=None) -> dict:
-        """What `use-workspace-attachment` seeds into agent state on attach: the
-        current draft's configuration and the chrome mirrors beside it. The
-        mirrors matter here because only a committing tool writes them, so a
-        resumed conversation whose first turn only reads state would otherwise
-        report no drafts at all — an artifact of the harness, not of the app.
+        """What `use-workspace-attachment` seeds on attach. The mirrors matter because
+        only a committing tool writes them, so a resumed conversation whose first turn
+        only reads state would otherwise report no drafts at all.
         """
         record = self.store.get_workspace(
             workspace_id or self.state["workspace_id"])
@@ -111,11 +105,9 @@ class Conversation:
         }
 
     def resume(self, thread_id: str) -> "Conversation":
-        """A new session onto the same agreement, the way the stack provides
-        one: a fresh thread whose state carries this transcript's messages and
-        the configuration hydrated from the store (docs/specs/conversation-checks
-        design, *renewal scenario mechanics*). The drafts come from the store
-        rather than the checkpoint, so the workspace id is what carries them.
+        """A fresh thread whose state carries this transcript's messages and the
+        configuration hydrated from the store. The drafts come from the store rather
+        than the checkpoint, so the workspace id is what carries them.
         """
         return Conversation(self.ctx, thread_id,
                             workspace_id=self.state["workspace_id"],
@@ -144,18 +136,17 @@ class Conversation:
                 results.append(m.content if isinstance(m.content, str)
                                else str(m.content))
         # `drafts` and `current_draft_id` are mirrors on the state root, not
-        # inside the configuration — the chrome the canvas head renders from
-        # (docs/specs/parallel-drafts), and the only place a scenario can read
-        # the name the agent gave a fork.
+        # inside the configuration, and the only place a scenario can read the
+        # name the agent gave a fork.
         return {"calls": calls, "results": results, "text": "\n".join(texts),
                 "configuration": self.state["configuration"],
                 "drafts": self.state.get("drafts") or [],
                 "current_draft_id": self.state.get("current_draft_id")}
 
     def _invoke(self, tries=6):
-        """A turn costs ~16k prompt tokens (describe_product puts the whole
-        catalog in the transcript), so a sweep meets the account's per-minute
-        ceiling. Back off; if it still cannot finish, fail loudly."""
+        """A turn costs ~16k prompt tokens, so a sweep meets the account's per-minute
+        ceiling. Back off; if it still cannot finish, fail loudly.
+        """
         delay = 8
         for attempt in range(tries):
             try:
@@ -206,10 +197,10 @@ def chosen(turn) -> dict[str, str]:
 
 
 def agreement(turn) -> tuple[dict[str, str], dict | None]:
-    """What the customer would see moved: the recorded choices *and* the priced
-    whole beside them. Asserting on choices alone missed a real regression —
-    an abandon answered with undo_change left every choice in place and threw
-    the candidate away, price and all (docs/specs/conversation-checks)."""
+    """The recorded choices *and* the priced whole beside them. Asserting on choices
+    alone missed a regression where an abandon answered with undo_change left every
+    choice in place and threw the candidate away.
+    """
     candidate = turn["configuration"].get("candidate")
     return chosen(turn), candidate and {
         "price": candidate["price"], "assignment": candidate["assignment"]}
@@ -220,18 +211,12 @@ def sources(turn) -> dict[str, str]:
 
 
 def clauses(rfq: dict) -> list[dict]:
-    """The document's clauses, from either shape the record has held.
+    """Comparison mode runs this tree's assertions against the other tree's agent, so
+    indexing `rfq["clauses"]` would crash the arm whose agent predates
+    docs/specs/document-clauses/design.md.
 
-    Comparison mode runs *this tree's* assertions against the other tree's
-    agent, so an assertion that indexes `rfq["clauses"]` crashes the arm whose
-    agent predates docs/specs/document-clauses and writes `requirements` and
-    `unmapped` instead. That is the same rule `report_trace` follows for a ref
-    predating the log: the harness reads what the older tree can say, and the
-    comparison is about what moved rather than about which shape said it.
-
-    A view for reading, not a lift — no identity is minted, because nothing
-    here needs one. Every assertion reads the citation, the quote, the variable,
-    the value and the mark, and both shapes carry all five.
+    A view for reading, not a lift: no identity is minted, and both shapes carry
+    the five facts every assertion reads.
     """
     if "clauses" in rfq:
         return rfq["clauses"]
@@ -243,9 +228,9 @@ def called(turn, name: str) -> list[dict]:
 
 
 def did(turn) -> str:
-    """What the turn called, with arguments. A failure that names only the tool
-    leaves the next reader re-running the suite to find out what it was given,
-    and the suite costs money per run."""
+    """With arguments: a failure that names only the tool leaves the next reader
+    re-running a suite that costs money per run.
+    """
     return "; ".join(f"{c['name']}({c['args']})" for c in turn["calls"]) or "nothing"
 
 
@@ -307,10 +292,8 @@ def scenario_needs_not_nomenclature(ctx) -> Checks:
         c.that("candidate_is_priced", bool(candidate.get("price")),
                f"price: {candidate.get('price')}")
         assignment = candidate["assignment"]
-        # The hospital cascade, read off the priced whole rather than the
-        # recorded choices: R15 (bed-depth car), R16 (stretcher doors), R17
-        # (accessibility). Which values satisfy them is asked of the model, not
-        # copied from it.
+    # The hospital cascade, read off the priced whole rather than the recorded
+    # choices: R15, R16, R17. Which values satisfy them is asked of the model.
         bed_cars = {o.value for o in MODEL.variables["car_size"].options
                     if _depth_mm(o.value) >= 2300}
         c.that("cascade_forces_a_bed_car",
@@ -363,23 +346,16 @@ def scenario_needs_not_nomenclature(ctx) -> Checks:
 
 
 def _internal_vocabulary(MODEL) -> set[str]:
-    """The model's names for things that the customer has no way to arrive at.
-
-    Not every code is one: `hospital` and `laminate` are the words on their own
-    labels, and a customer saying them is speaking the building's vocabulary,
-    which is the point rather than a violation of it. A code the customer could
-    not have read off a label — `brushed_ss`, `kg1600`, `t1_1800x1700`,
-    `car_size` — is the thing this scenario claims never has to be typed, so
-    the test is whether the token is a word of the label it belongs to.
+    """Not every code is one: `hospital` and `laminate` are the words on their own
+    labels. A code the customer could not have read off a label is the thing this
+    scenario claims never has to be typed.
     """
     def opaque(token: str, label: str) -> bool:
         return not re.search(rf"(?<![\w.]){re.escape(token)}(?![\w])",
                              label, re.IGNORECASE)
 
-    # A token is judged over every label it appears under, not the first: the
-    # value `none` is the whole of "None" on one variable and buried in "No
-    # fire rating" on another, and one opaque use must not make the word
-    # itself off limits.
+    # A token is judged over every label it appears under, not the first: one
+    # opaque use must not make the word itself off limits.
     opaque_tokens, transparent = set(), set()
     for name, var in MODEL.variables.items():
         for token, label in ([(name, var.label)]
@@ -416,10 +392,9 @@ def _other_valid_value(MODEL, choices: dict[str, str], variable: str):
 
 
 # -- mid-contract revision -------------------------------------------------
-# docs/discovery/scenarios/mid-contract-revision.md. Deliberately the first one
-# implemented: it is the flow a prompt change already broke once, when the
-# agent recorded a revision with set_choices and the repair cards never
-# appeared (docs/specs/agent-tools design, *revise over record*).
+# docs/discovery/scenarios/mid-contract-revision.md. The flow a prompt change
+# already broke once, when the agent recorded a revision with set_choices and
+# the repair cards never appeared.
 
 def scenario_mid_contract_revision(ctx) -> Checks:
     agent, MODEL, empty_configuration, workspace_store = ctx
@@ -483,10 +458,9 @@ def scenario_mid_contract_revision(ctx) -> Checks:
              if called(turn, name)]
     c.that("abandon_calls_no_state_tool", not moved, f"called: {moved}")
 
-    # Ask again — this time from the sheet, so the second ask also checks that
-    # a dispatched gesture reaches the repair path rather than the partial one
-    # (docs/specs/one-gesture-one-action). The first ask stays prose, where
-    # which action to call is still the agent's judgment.
+    # Ask again, this time from the sheet, so the second ask also checks that a
+    # dispatched gesture reaches the repair path rather than the partial one.
+    # The first ask stays prose, where the action is the agent's judgment.
     turn = convo.say(grammar.canvas_edit_message(MODEL, [("rated_speed", "mps3_0")]))
     c.that("sheet_edit_uses_revise_choices",
            bool(called(turn, "revise_choices")) and not called(turn, "set_choices"),
@@ -511,14 +485,9 @@ def scenario_mid_contract_revision(ctx) -> Checks:
            _completable(after),
            "solver could not complete the repaired choices")
 
-    # Undo (docs/specs/undo). This is the storyboard's F7 case, so the
-    # reversal is asserted here rather than in a scenario of its own: the
-    # customer's change, what it dropped and what it rippled go back together.
-    # Both assertions assume the repair turn committed exactly one batch. If
-    # the agent also proposed a completion in that turn — which the prompt
-    # encourages once the essentials are known — the undo reverses that
-    # instead, the choices do not move, and the failure detail below says so
-    # rather than reading as a broken undo.
+    # Undo: the storyboard's F7 case, asserted here rather than in a scenario of
+    # its own, so the customer's change, what it dropped and what it rippled go
+    # back together.
     turn = convo.say(grammar.UNDO_MESSAGE)
     names = [call["name"] for call in turn["calls"]]
     c.that("undo_uses_undo_change", "undo_change" in names, f"calls: {names}")
@@ -536,15 +505,13 @@ def scenario_mid_contract_revision(ctx) -> Checks:
     return c
 
 
-# -- the shared office setup ----------------------------------------------
-# Comparing agreements and renewal as revision both need an agreement that exists before their own move
-# begins. Both build it the same way and state-critically, so neither spends
-# assertions on getting there.
+# -- the shared office setup -----------------------------------------------
+# Comparing agreements and renewal as revision both need one, state-critically.
 
 def _office_essentials(rated_load: str) -> list[tuple[str, str]]:
-    """The rated load is the parameter because it is the one variable the two
-    scenarios need to differ on: R01 and R02 tie load to car and car to shaft,
-    so it decides whether the renewal's bare shaft statement lands or collides.
+    """The rated load is the parameter because R01 and R02 tie load to car and car to
+    shaft, so it decides whether the renewal's bare shaft statement lands or
+    collides.
     """
     return [
         ("building_type", "office"), ("region", "europe"),
@@ -574,9 +541,9 @@ def _priced_office(convo, MODEL, c, prefix: str, essentials) -> dict:
 
 
 def _fork_name(turn, fallback_names: list[str]) -> str | None:
-    """The name the agent gave the fork. Never guessed: the prompt forbids
-    asking the customer for one and forbids announcing it, so the call's own
-    argument is where it is written down."""
+    """Never guessed: the prompt forbids asking the customer for one and forbids
+    announcing it, so the call's own argument is where it is written down.
+    """
     for args in called(turn, "fork_draft"):
         if args.get("name"):
             return args["name"]
@@ -586,10 +553,8 @@ def _fork_name(turn, fallback_names: list[str]) -> str | None:
 
 
 # -- comparing agreements --------------------------------------------------
-# docs/discovery/scenarios/comparing-agreements.md. The turn order matters and is not incidental: a draft
-# is compared by its stored candidate, and any edit after a completion drops
-# it, so the premium draft has to be priced again before the comparison can
-# see it at all.
+# docs/discovery/scenarios/comparing-agreements.md. A draft is compared by its
+# stored candidate, and any edit after a completion drops it.
 
 
 def scenario_comparing_agreements(ctx) -> Checks:
@@ -675,10 +640,8 @@ def scenario_comparing_agreements(ctx) -> Checks:
     kept = {v: ch["value"] for v, ch in aside["configuration"]["choices"].items()}
     c.that("it_keeps_its_own_choices", kept == premium,
            f"{premium} -> {kept}")
-    # Not a type check: `adopt_frame` used to re-source a whole document to
-    # `user` on the way across, and switching is what replaced it
-    # (docs/specs/parallel-drafts). The comparison is against who chose what on
-    # this draft before the switch, so that regression would fail here.
+        # Not a type check: `adopt_frame` used to re-source a whole draft to
+        # `user` on the way across, and switching is what replaced it.
     c.that("it_keeps_its_own_sources",
            {v: ch["source"] for v, ch in aside["configuration"]["choices"].items()}
            == premium_sources,
@@ -691,9 +654,8 @@ def scenario_comparing_agreements(ctx) -> Checks:
 
 
 # -- renewal as revision ---------------------------------------------------
-# docs/discovery/scenarios/renewal-as-revision.md.
-# The browser cannot be reloaded here, so the session break is simulated the
-# way the stack actually provides one — see `Conversation.resume`.
+# docs/discovery/scenarios/renewal-as-revision.md. The browser cannot be
+# reloaded here, so the session break is built the way the stack provides one.
 
 
 def scenario_renewal_as_revision(ctx) -> Checks:
@@ -703,10 +665,8 @@ def scenario_renewal_as_revision(ctx) -> Checks:
     original = workspace_store.current_draft(
         workspace_store.get_workspace(convo.state["workspace_id"]))["name"]
 
-    # A 630 kg car so that the bare shaft statement below is a choice the
-    # rules allow. Mid-contract revision is where a colliding revision is exercised;
-    # this scenario is about an unmediated entry point landing on the right
-    # variable at all, and a manufactured collision would test that instead.
+    # A 630 kg car so the bare shaft statement below is one the rules allow:
+    # this scenario is about an unmediated entry point landing at all.
     _priced_office(convo, MODEL, c, "yesterdays_agreement",
                    _office_essentials("kg630"))
     turn = convo.say("Before we stop — keep this and put a premium version on "
@@ -723,11 +683,8 @@ def scenario_renewal_as_revision(ctx) -> Checks:
 
     # -- the interruption ---------------------------------------------------
     convo = convo.resume("scenario-renewal-next-day")
-    # "What's left" is the question the transcript cannot answer: the undecided
-    # list is computed from the agreement, and yesterday's conversation never
-    # stated it. Asking only "where were we?" is answered from the restored
-    # messages, which the checkpoint carries too — a true answer, and not the
-    # one this criterion is about.
+    # "What's left" is a question the transcript cannot answer: the list is
+    # computed from the agreement, not from yesterday's messages.
     turn = convo.say("Where were we, and what's still open on this one?")
     names = [x["name"] for x in turn["calls"]]
     c.that("whats_left_comes_from_state", "get_configuration" in names,
@@ -745,12 +702,8 @@ def scenario_renewal_as_revision(ctx) -> Checks:
     c.that("nothing_settled_is_re_elicited", not (asked_about(turn) & settled),
            f"re-asked: {sorted(asked_about(turn) & settled)}")
 
-    # -- the unusual entry point --------------------------------------------
-    # A bare dimension statement, free-form on purpose: an unmediated entry is
-    # what [configuration can start from any variable, in any order] claims,
-    # and the structured grammar would mediate it. Against this agreement the
-    # statement collides (R01/R02 put a 1000 kg car in a wider shaft), so the
-    # turn is a revision with repairs — never a restart either way.
+# -- the unusual entry point -----------------------------------------------
+# A bare dimension statement, free-form on purpose.
     turn = convo.say("The shaft is 1800 by 1700.")
     repairs = payload(turn, "repairs")
     landed = chosen(turn).get("shaft") == "t1_1800x1700"
@@ -786,9 +739,8 @@ def scenario_renewal_as_revision(ctx) -> Checks:
 
 
 # -- tender as entrance ----------------------------------------------------
-# docs/discovery/scenarios/tender-as-entrance.md. The fixture is loaded from beside the harness rather
-# than from the tree under test, so both arms of a comparison ingest the same
-# document even if one of them predates the fixture.
+# docs/discovery/scenarios/tender-as-entrance.md. The fixture is the harness's
+# own, so both arms of a comparison read the same document.
 
 RFQ_FIXTURE = _HERE.parent / "fixtures" / "rfq" / "office-tower-modernization.txt"
 
@@ -844,13 +796,9 @@ def scenario_tender_as_entrance(ctx) -> Checks:
     c.that("the_register_is_the_solvers_partition",
            chosen(turn) == dict(seeded.kept),
            f"recorded {chosen(turn)}, solver kept {dict(seeded.kept)}")
-    # Two claims, deliberately separated. That the fixture cannot be satisfied
-    # whole is a property of the document and the rules — clause 1.2 keeps the
-    # existing shaft, clause 3.1 asks 3.0 m/s, and R04 with R28 will not have
-    # both. That the register shows it is a claim about what the agent read out
-    # of the document. Separated so a failure says which one moved: a run where
-    # the agent simply never mapped one of the two clauses is an extraction
-    # miss, not a model change, and reads as one here.
+    # Two claims, deliberately separated: that the fixture cannot be met as a
+    # whole is a property of the document and the rules, and that the register
+    # says so is the agent's account of it.
     read = {(r["variable"], r["value"]) for r in asked}
     conflicting = {("installation", "modernization"), ("rated_speed", "mps3_0")}
     c.that("the_conflicting_clauses_were_read", conflicting <= read,
@@ -885,11 +833,9 @@ def scenario_tender_as_entrance(ctx) -> Checks:
            f"entries on {accepted.variable}: "
            f"{[(r['clause'], r.get('reconciliation')) for r in waived]}")
 
-    # -- revise another requirement, through the ordinary repair flow -------
-    # A requirement, not necessarily a deviation: the customer changing their
-    # own mind about a clause the agreement already meets is the same move on
-    # the same path, and this document deviates on too few variables to pick a
-    # second one from.
+# -- revise another requirement, through the ordinary revision path ---------
+# A requirement, not necessarily a deviation: the customer changing their own
+# mind about a clause the agreement already meets takes the same path.
     revisable, target = _revisable_requirement(
         MODEL, turn["configuration"]["rfq"], chosen(turn), skip=accepted.variable)
     if c.that("a_revisable_requirement_exists", target is not None,
@@ -916,10 +862,8 @@ def scenario_tender_as_entrance(ctx) -> Checks:
                    chosen(turn).get(revisable) == target,
                    f"{revisable}: {chosen(turn).get(revisable)}")
 
-    # -- what is still undecided, and the closing state ----------------------
-    # `undecided` is the ontology's name for what ingestion reports as still
-    # open; *gap* named this and the clause left to us, and was retired
-    # (docs/specs/document-clauses, decision 7).
+# -- what is still undecided, and the closing state ------------------------
+# `undecided` is the ontology's name for what ingestion left open.
     settled = set(chosen(turn))
     turn = convo.say("What's still open at your end?")
     c.that("open_questions_are_only_about_undecided_terms",
@@ -936,10 +880,10 @@ def scenario_tender_as_entrance(ctx) -> Checks:
 
 
 def _revisable_requirement(MODEL, rfq, choices, skip):
-    """A requirement of the document the customer could change their mind
-    about, and a value to change it to. Prefers one the rules still allow, so
-    the turn is about the reconciliation move; falls back to any alternative,
-    which reaches the same tool through its repair path."""
+    """Prefers one the rules still allow, so the turn is about the reconciliation
+    move; falls back to any alternative, which reaches the same tool through its
+    repair path.
+    """
     fallback = (None, None)
     for r in clauses(rfq):
         variable = r.get("variable")
@@ -967,14 +911,8 @@ SCENARIOS = {
 
 
 def trace() -> list[str]:
-    """What the running scenario left on the agreements' own records: every
-    action taken on every draft, in order (docs/specs/action-log).
-
-    Comparison mode reports this beside the assertions, so two arms diverge at
-    an action or they do not. Read from the store rather than from the turns,
-    which is what makes it a comparison of the record: an arm whose tree
-    predates the log reports nothing here, and the report says so rather than
-    inventing an agreement between the two.
+    """Read from the store rather than from the turns, which is what makes it a
+    comparison of the record. An arm whose tree predates the log reports nothing.
     """
     seen, actions = [], []
     for convo in _OPENED:

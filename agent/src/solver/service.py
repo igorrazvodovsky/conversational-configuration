@@ -53,8 +53,9 @@ class Repair:
 
 @dataclass(frozen=True)
 class Deviation:
-    """One requested (variable, value) the seeded whole cannot satisfy, with
-    what it offers instead and the rules separating the two."""
+    """One requested (variable, value) the seeded whole cannot satisfy, with what it
+    offers instead and the rules separating the two.
+    """
     variable: str
     requested: str
     offered: str
@@ -121,17 +122,18 @@ class ConfigSolver:
         return [self.sel[(var, val)] for var, val in choices.items()]
 
     def _optimizer(self) -> Optimize:
-        """A fresh Optimize carrying the model. Rules go in untracked: the
-        persistent solver is the one that produces unsat cores, and an
-        optimization run has no core to explain."""
+        """Rules go in untracked: the persistent solver is the one that produces unsat
+        cores, and an optimization run has no core to explain.
+        """
         opt = Optimize()
         self._add_structure(opt)
         self._add_rules(opt, tracked=False)
         return opt
 
     def _require_feasible(self, choices: dict[str, str]) -> None:
-        """Every operation refuses to work from an infeasible starting point,
-        and says which choices cannot hold together."""
+        """Every operation refuses to work from an infeasible starting point, and says
+        which choices cannot hold together.
+        """
         conflict = self.explain(choices)
         if conflict is not None:
             raise ConflictError(conflict, conflict.describe(self.model))
@@ -207,14 +209,11 @@ class ConfigSolver:
     def repairs(
         self, choices: dict[str, str], changes: dict[str, str], limit: int = 3
     ) -> list[Repair]:
-        """Repair options for a revision that collides with existing choices.
-
-        `changes` are held hard; the existing `choices` (minus any overridden
-        by `changes`) are soft. Returns up to `limit` repairs ordered by how
-        many existing choices they keep (max-retention first, found via
-        Optimize soft constraints, then blocked to surface alternatives).
-        Returns [] when the revision is compatible with everything — no repair
-        needed. Raises ConflictError if `changes` alone are infeasible.
+        """`changes` are held hard; the existing `choices` minus any overridden are soft.
+        Returns up to `limit` repairs ordered by how many existing choices they keep —
+        max-retention first, via Optimize soft constraints, then blocked to surface
+        alternatives. [] when the revision is compatible with everything. Raises
+        ConflictError if `changes` alone are infeasible.
         """
         self._require_feasible(changes)
 
@@ -260,22 +259,16 @@ class ConfigSolver:
     def seed(
         self, requirements: list[tuple[str, str]], limit: int = 5
     ) -> Seed:
-        """A valid whole satisfying a maximal subset of `requirements`
-        (docs/specs/rfq-reconciliation).
+        """Every requirement is soft with weight 1 and nothing is held hard, so the
+        optimum keeps as many as can hold together. Equal-count optima are enumerated
+        with the same blocking loop `repairs()` uses, bounded by `limit`, and the one
+        whose cheapest-monthly completion is cheapest wins; equal prices go to the
+        lexicographically first dropped set, so the result never depends on Z3's
+        enumeration order.
 
-        Every requirement is soft with weight 1 and nothing is held hard, so
-        the optimum keeps as many as can hold together — *fewest deviations
-        first*. Ties are real, so equal-count optima are enumerated with the
-        same blocking loop `repairs()` uses (bounded by `limit`) and the one
-        whose cheapest-monthly completion is cheapest wins; equal prices go to
-        the lexicographically first dropped set, so the result never depends
-        on Z3's enumeration order.
-
-        Duplicate pairs are collapsed before weighting — several clauses may
-        bear on the same (variable, value), and counting it twice would
-        distort "fewest deviations". Two clauses asking *different* values of
-        one variable are kept as two pairs; the exactly-one structure then
-        drops one of them, with no named rule to cite.
+        Duplicate pairs are collapsed before weighting, since counting one twice would
+        distort "fewest deviations". Two clauses asking different values of one
+        variable stay two pairs.
         """
         pairs = list(dict.fromkeys(requirements))  # dedupe, order-stable
         unknown = [p for p in pairs if p not in self.sel]
@@ -335,10 +328,10 @@ class ConfigSolver:
         )
 
     def _lifetime_co2_grams(self):
-        """Lifetime CO2e in grams as a Z3 integer term: embodied is separable
-        per option (co2 × fabrication multiplier); use-phase belongs to the
-        (energy class, usage profile, travel band) trio, one If-term per
-        annual_kwh cell (docs/specs/environmental-footprint)."""
+        """Embodied is separable per option (co2 × fabrication multiplier); use-phase
+        belongs to the (energy class, usage profile, travel band) trio, one If-term per
+        `annual_kwh` cell.
+        """
         fb = self.model.footprint_block
         mult_g = round(fb.fabrication_multiplier * 1000)
         embodied = sum(
@@ -367,28 +360,20 @@ class ConfigSolver:
         prefer: dict[str, str] | None = None,
     ) -> tuple[dict[str, str], int]:
         """Cheapest-monthly (objective="price") or lowest-lifetime-footprint
-        (objective="co2") full valid configuration extending `choices`.
-        Returns (assignment, monthly fee in EUR/month) either way; the caller
-        derives the footprint from the model.
+        (objective="co2") full valid configuration extending `choices`. Returns
+        (assignment, monthly fee in EUR/month) either way.
 
-        `prefer` breaks ties toward an assignment the customer has already
-        seen. Cost-free variables leave many equally optimal completions and
-        the objective cannot separate them, so re-completing an agreement
-        after an edit used to flip car height, shaft size or pit depth —
-        values nobody touched — for no reason the customer could see. The
-        preference is the last objective declared, so it never buys a worse
-        price or footprint: it only decides between optima.
+        `prefer` is the last objective declared, so it never buys a worse price or
+        footprint: it only decides between optima that the objective cannot separate.
 
-        For a fixed contract term, minimizing the monthly fee is the linear
-        objective Σ cost_basis × financing_factor + months × Σ monthly_price
-        (scaled to integers). When the term is unchosen, each term the solver
-        hasn't ruled out is solved separately (≤ len(domain) Optimize calls)
-        and the lowest monthly wins; ties go to the shorter term.
+        For a fixed term, minimizing the monthly fee is the linear objective
+        Σ cost_basis × financing_factor + months × Σ monthly_price, scaled to integers.
+        When the term is unchosen, each term the solver has not ruled out is solved
+        separately and the lowest monthly wins, ties to the shorter term.
 
-        The co2 objective minimizes lexicographically: lifetime CO2e first,
-        the monthly fee second (CO2e is term-independent, so the secondary
-        objective is what makes the result deterministic); across terms the
-        best (co2, monthly) pair wins, ties to the shorter term.
+        The co2 objective minimizes lexicographically: lifetime CO2e first, the monthly
+        fee second, since CO2e is term-independent and the secondary objective is what
+        makes the result deterministic.
         """
         if objective not in ("price", "co2"):
             raise ValueError(f"unknown objective {objective!r}")

@@ -1,17 +1,9 @@
 "use client";
 
-/**
- * The finishes as materials (docs/specs/visual-configuration design decision
- * 5). Painted steel, laminate, brushed stainless, PVC and the door finishes
- * are colour, roughness and metalness under the environment map — which is
- * what makes brushed steel read as brushed steel. Two surfaces get a real
- * texture because their identity is the pattern rather than the shade: the
- * studded rubber floor and the granite composite one.
- *
- * A finish this file does not know renders as painted steel rather than as
- * nothing: the model may gain an option before the render does, and a missing
- * car would be a worse answer than a plain one.
- */
+// docs/specs/visual-configuration/design.md decision 5
+//
+// A finish this file does not know renders as painted steel rather than as
+// nothing, since the model may gain an option before the render does.
 
 import { useEffect } from "react";
 import { useTexture } from "@react-three/drei";
@@ -27,8 +19,7 @@ const WALL: Record<string, Standard> = {
   painted_steel: { color: "#d6d8da", roughness: 0.62, metalness: 0.12 },
   laminate: { color: "#c0a888", roughness: 0.74, metalness: 0.0 },
   brushed_ss: { color: "#b6babf", roughness: 0.3, metalness: 1.0 },
-  // the panoramic option is glass on the back wall only; the rest of the car
-  // keeps the painted finish it would have had
+  // Glass on the back wall only; the rest of the car keeps the painted finish.
   glass_panoramic: { color: "#d6d8da", roughness: 0.62, metalness: 0.12 },
 };
 
@@ -113,11 +104,8 @@ export function CopMaterial({ cop }: { cop: string | null }) {
   return <meshStandardMaterial {...(COP_PLATE[cop ?? ""] ?? COP_PLATE.standard)} />;
 }
 
-/**
- * The transmissive glass the panoramic wall and the framed glass doors are
- * made of. Transmission rather than plain transparency because the point of
- * the option is that the lobby stays in view through it.
- */
+/** Transmission rather than plain transparency, because the point of the option
+ * is that the lobby stays in view through it. */
 export function GlassMaterial({ tint = "#cdd8dc" }: { tint?: string }) {
   return (
     <meshPhysicalMaterial
@@ -133,8 +121,7 @@ export function GlassMaterial({ tint = "#cdd8dc" }: { tint?: string }) {
   );
 }
 
-/** The car's structural shell — frame edges, door sills, the parts no finish
- * variable speaks to. */
+/** Frame edges, door sills, the parts no finish variable speaks to. */
 export const STRUCTURE: Standard = {
   color: "#7d8288",
   roughness: 0.55,

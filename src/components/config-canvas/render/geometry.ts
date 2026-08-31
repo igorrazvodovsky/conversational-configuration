@@ -1,12 +1,7 @@
-/**
- * The scene's dimensions, computed from the configuration
- * (docs/specs/visual-configuration). Every number the render needs is already
- * a literal millimetre value in the product model, so nothing here is authored
- * and nothing is a mesh: the codes are parsed and divided into scene metres.
- *
- * Codes are parsed, never labels — a label is display text and may be
- * rewritten; `c1600x1400` is the model's own datum.
- */
+// docs/specs/visual-configuration/design.md
+//
+// Codes are parsed, never labels: a label is display text and may be rewritten,
+// where `c1600x1400` is the model's own datum.
 
 import { Configuration, liveValue } from "@/lib/configurator";
 
@@ -16,25 +11,24 @@ const M = 1000;
 export type DoorType = "telescopic_2" | "center_2" | "center_4";
 
 export interface CarGeometry {
-  /** interior clear dimensions, metres */
+  /** metres */
   width: number;
   depth: number;
   height: number;
-  /** the door opening, metres */
+  /** metres */
   doorWidth: number;
   doorHeight: number;
   doorType: DoorType;
 }
 
-/** The shaft around the car, when the agreement states one. */
 export interface ShaftGeometry {
   width: number;
   depth: number;
   pit: number;
 }
 
-/** Panel and slab thickness. Walls are boxes rather than planes so the
- * cutaway viewpoint has an edge to read. */
+/** Walls are boxes rather than planes so the cutaway viewpoint has an edge to
+ * read. */
 export const WALL = 0.05;
 export const LEAF = 0.035;
 
@@ -48,16 +42,12 @@ function single(code: string | null, re: RegExp): number | null {
   return m ? Number(m[1]) / M : null;
 }
 
-/**
- * Door height is derived from cabin height rather than asked for: 2000 mm
- * under the two lower cabins, 2100 under the tallest. One less term the
- * customer has to decide, and no second variable to keep consistent.
- */
+/** Derived from cabin height rather than asked for: one less term the customer
+ * has to decide, and no second variable to keep consistent. */
 function doorHeightFor(carHeight: number): number {
   return carHeight >= 2.4 ? 2.1 : 2.0;
 }
 
-/** The variables without which no honest car can be drawn. */
 export const GEOMETRY_VARIABLES = [
   "car_size",
   "car_height",
@@ -65,10 +55,8 @@ export const GEOMETRY_VARIABLES = [
   "door_type",
 ] as const;
 
-/**
- * The car, or null when the agreement has not yet said enough to draw one.
- * Never a guess: a missing value is an empty state, not a default cabin.
- */
+/** Null when the agreement has not said enough. Never a guess: a missing value
+ * is an empty state, not a default cabin. */
 export function carGeometry(config: Configuration): CarGeometry | null {
   const size = pair(liveValue(config, "car_size"), /^c(\d+)x(\d+)$/);
   const height = single(liveValue(config, "car_height"), /^ch(\d+)$/);
@@ -85,7 +73,6 @@ export function carGeometry(config: Configuration): CarGeometry | null {
   };
 }
 
-/** The shaft, when both its size and the pit are stated. */
 export function shaftGeometry(config: Configuration): ShaftGeometry | null {
   const size = pair(liveValue(config, "shaft"), /^t\d+_(\d+)x(\d+)$/);
   const pit = single(liveValue(config, "pit_depth"), /^p(\d+)$/);
@@ -93,24 +80,22 @@ export function shaftGeometry(config: Configuration): ShaftGeometry | null {
   return { width: size[0], depth: size[1], pit };
 }
 
-/** One door panel, parked where it stands when the doors are open. */
 export interface Leaf {
-  /** centre of the panel on the car's width axis, metres */
+  /** metres */
   x: number;
   width: number;
-  /** how far the panel stands in front of the car front, metres */
+  /** metres */
   offset: number;
 }
 
 /**
- * The three door types as panel layouts (design decision 4). Leaf count and
- * travel direction come from `door_type`, the widths from `door_width`; the
- * panels are drawn parked open, which is what makes the three distinguishable
- * from the outside viewpoint and lets the interior read through the opening.
+ * Leaf count and travel direction come from `door_type`, the widths from
+ * `door_width`. Drawn parked open, which is what tells the three apart from
+ * outside (docs/specs/visual-configuration/design.md decision 4).
  *
  * A telescopic pair nests: the fast panel is wider and stands in front of the
- * slow one, both to one side. Centre-opening parts at the middle, one panel
- * each way. The four-panel variant is a nesting pair each way.
+ * slow one, both to one side. Centre-opening parts at the middle, and the
+ * four-panel variant is a nesting pair each way.
  */
 export function doorLeaves(car: CarGeometry): Leaf[] {
   const half = car.doorWidth / 2;

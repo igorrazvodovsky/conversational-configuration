@@ -1,18 +1,7 @@
-/**
- * The agent's half of the shared contracts, as the agent itself builds it.
- *
- * Running the agent is the point — comparing the two sources as text would
- * pass on two files that hold the same words and build different sentences
- * (docs/specs/offline-checks). Shared with the interface checks
- * (docs/specs/interface-checks), whose agreement payloads come from
- * `configurations` — four agreements the agent actually built — rather than
- * from a hand-authored reading of what a configuration looks like.
- *
- * `npm install` provisions the agent through its postinstall, so a checkout
- * that can run the app can run this. When it cannot, the failure says which
- * command is missing rather than skipping: a check that quietly does not run
- * is worse than none.
- */
+// docs/specs/offline-checks/design.md
+//
+// Running the agent is the point: comparing sources would pass on two files
+// that hold the same words and build different sentences.
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 

@@ -1,13 +1,4 @@
-/**
- * The projection helpers and the message grammar (docs/specs/offline-checks).
- *
- * `src/lib/configurator.ts` is the frontend's whole understanding of the
- * agreement: what a variable currently says and on whose authority, which
- * layer of the document it belongs to, what its monthly contribution is, and
- * what sentence a click on it dispatches. None of it renders anything, and
- * none of it decides validity — every status here came from the solver
- * (constitution #1).
- */
+// docs/specs/offline-checks/design.md
 import { describe, expect, it } from "vitest";
 
 import {
@@ -113,9 +104,8 @@ describe("why an option cannot be taken", () => {
   });
 
   it("does not lock a decided term just because its alternatives are invalid", () => {
-    // Every alternative to a recorded choice is invalid by construction. The
-    // map is what distinguishes "you cannot swap to this" from "you already
-    // chose something else".
+    // Every alternative to a recorded choice is invalid by construction, so the
+    // map is what distinguishes "you cannot swap to this".
     const statuses = openStatuses();
     statuses.rated_speed.mps3_0 = "invalid";
     const config = agreement({
@@ -189,9 +179,8 @@ describe("the deviation register", () => {
   });
 
   it("has no row for a clause that asks for nothing", () => {
-    // A clause left to us and a clause no variable carries are clauses of the
-    // same list (docs/specs/document-clauses); neither can deviate from
-    // anything, so neither is in the register.
+    // A clause left to us and a clause no variable carries share one list;
+    // neither can deviate, so neither is in the register.
     const config = agreement({
       choices: chose({ rated_load: "kg1000" }, "document"),
       rfq: rfq([
@@ -200,9 +189,8 @@ describe("the deviation register", () => {
         { id: "c-x", clause: "6.3", quote: "possession", note: "programme" },
       ]),
     });
-    // Which is also what routes the click: the canvas reconciles a term with a
-    // register row and edits every other one, so a term the document left to us
-    // edits (docs/specs/document-clauses, decision 6).
+    // Which is also what routes the click: the canvas reconciles a register row
+    // and edits every other one.
     expect(registerEntries(config).map((e) => e.variable)).toEqual([
       "rated_load",
     ]);
@@ -224,8 +212,7 @@ describe("the document's three layers", () => {
     expect(layerOf("context")).toBe("recitals");
     expect(layerOf("agreement")).toBe("terms");
     expect(layerOf("performance")).toBe("terms");
-    // A safety obligation is an operative term, not a schedule the vendor
-    // derives (docs/specs/document-clauses, decision 5).
+    // A safety obligation is an operative term, not a schedule.
     expect(layerOf("safety")).toBe("terms");
   });
 
@@ -369,12 +356,11 @@ describe("the sentences a click dispatches", () => {
   });
 
   it("leaves prose alone, however it opens", () => {
-    // What separates the two is the parenthesised code, which no customer
-    // types. Held on both sides of the language boundary in couplings.test.ts.
+    // The parenthesised code is what separates the two, held on both sides of
+    // the language boundary.
     expect(isGesture("Set up an elevator for a hospital")).toBe(false);
     expect(isGesture("Set the speed to 3.0 m/s.")).toBe(false);
     expect(isGesture("")).toBe(false);
-    // One dispatched line beside a sentence of the customer's own is prose.
     expect(
       isGesture(
         `${choiceMessage([{ variable: "region", value: "europe" }])}\nand what does that cost?`,

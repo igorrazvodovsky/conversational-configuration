@@ -1,26 +1,6 @@
 "use client";
 
-/**
- * The agreement document (docs/specs/agreement-document; canvas anatomy model),
- * in three layers: recitals — what will happen at the building, in the
- * building's language; operative terms — the commitments and the consideration;
- * schedules — the derived hardware as the sheet it has always been, annexed and
- * collapsed. The draft it is one of, and the way to the others, sit at its
- * identity (docs/specs/parallel-drafts).
- *
- * The document is a projection of `agent.state.configuration`, never a store
- * (constitution #3), and every edit round-trips through the agent as a
- * structured message handled by revise_choices, so the solver stays the single
- * source of validity and the edit applies whole or comes back with repairs
- * (docs/specs/one-gesture-one-action). That message is hidden from the chat — the document is
- * the record of the edit, the conversation only carries consequences.
- *
- * On a document-seeded agreement it also carries the deviation register
- * (docs/specs/rfq-reconciliation): document provenance with its clause, and
- * requested-versus-offered as a margin mark on the term a requirement could not
- * reach. Those moves dispatch *visible* messages — waiving a requirement of the
- * customer's own document is negotiation, not bookkeeping.
- */
+// docs/specs/agreement-document/design.md
 
 import {
   useAgent,
@@ -75,18 +55,10 @@ const EMPTY: Configuration = {
   candidate: null,
 };
 
-/**
- * The render, loaded only when the mode is entered
- * (docs/specs/visual-configuration). `ssr: false` is doing two jobs: a WebGL
- * surface cannot render on the server, and the three.js chunk stays out of the
- * page a workspace opens on — a canvas showing the document costs nothing.
- */
+/** `ssr: false` does two jobs: a WebGL surface cannot render on the server,
+ * and the three.js chunk stays out of the page a workspace opens on. */
 const CarViewer = dynamic(() => import("./render"), { ssr: false });
 
-/** How long a reveal mark stays before the shell drops it and the highlight
- * transitions out (docs/specs/shared-attention). Long enough to be found on
- * arrival after the smooth scroll, short enough to read as attention rather
- * than status. */
 const REVEAL_FADE_MS = 6000;
 
 export function ConfigCanvas({
@@ -95,15 +67,9 @@ export function ConfigCanvas({
   onRenamed,
   workspaceLoaded,
 }: {
-  /** Which elevator this agreement belongs to. Read by nothing that draws —
-   *  the delete control is the one thing here that addresses the record
-   *  itself (docs/specs/agreement-workspace). */
   workspaceId: string;
   /** Resolved by use-workspace-attachment (agent state wins); null = unnamed. */
   workspaceName: string | null;
-  /** Told to the attachment hook when the operator renames it, so the display
-   *  name and the agent's mirror of it agree with the store immediately
-   *  (docs/specs/agreement-workspace, *Renaming*). */
   onRenamed: (name: string) => void;
   /** False until the record arrives, so the placeholder is not shown too early. */
   workspaceLoaded: boolean;
@@ -113,51 +79,35 @@ export function ConfigCanvas({
   const { copilotkit } = useCopilotKit();
   const config: Configuration = agent.state?.configuration ?? EMPTY;
   const isRunning = agent.isRunning;
-  // Which draft this configuration belongs to and what else exists beside it
-  // (docs/specs/parallel-drafts) — mirrors of the store, seeded on attach and
-  // refreshed by every committing tool, exactly as the undo depths are.
+  // Mirrors of the store, seeded on attach and refreshed by every committing
+  // tool, exactly as the undo depths are.
   const draftState = agent.state as
     | { drafts?: DraftSummary[]; current_draft_id?: string }
     | undefined;
-  // How many reversals the current draft offers each way (docs/specs/undo,
-  // docs/specs/action-log). A mirror of the store, seeded on attach and
-  // refreshed by every committing tool; empty before state arrives, and
-  // possibly an action behind when another conversation moved the agreement,
+  // Possibly an action behind when another conversation moved the agreement,
   // which costs the control's presence and never the reversal itself.
   const history = (agent.state as { history?: { undo: number; redo: number } })
     ?.history ?? { undo: 0, redo: 0 };
   const hasAnything =
     Object.keys(config.choices).length > 0 || config.candidate !== null;
 
-  // Optimistic overlay: the clicked value shows immediately — on its row, or in
-  // the middle of a recital's sentence — and is discarded wholesale when the run
-  // ends, after which validated agent state renders the truth: identical on a
-  // clean apply, corrected on a rejection. Ephemeral display state, not a store
-  // (constitution #3); it can only hold options that were valid at click time
-  // because invalid ones are unclickable.
+  // Optimistic overlay, discarded wholesale when the run ends. It can only
+  // hold options that were valid at click time, because invalid ones are
+  // unclickable.
   const [pending, setPending] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!isRunning) setPending({});
   }, [isRunning]);
 
-  // Which of the canvas's two representations is showing
-  // (docs/specs/visual-configuration). A workspace opens on the document; the
-  // render is reached by a deliberate move and left by one, and nothing but a
-  // click may change this — in particular not the reveal below, which may mark
-  // the document but never switch away from it.
+  // Only a click changes this — in particular not the reveal below, which may
+  // mark the document but never switch away from it.
   const [canvasMode, setCanvasMode] = useState<"document" | "render">(
     "document",
   );
 
-  // ——— Shared attention (docs/specs/shared-attention) ———
-  //
-  // The read channel: which value the operator has an editor open on, lifted
-  // here from OptionEditor's mount and published as app context. The context
-  // list is captured when a run starts, so the editor the operator had open
-  // while typing is what the agent sees — the run itself disables and unmounts
-  // every editor a moment later, which is why the ref below (not the state) is
-  // what the reveal consults at run end: by then the editor has remounted and
-  // re-reported, and the state may still be a render behind.
+  // The reveal at run end consults the ref rather than the state: the run
+  // unmounts and remounts every editor, so the state may be a render behind
+  // (docs/specs/shared-attention/design.md).
   const [openEditor, setOpenEditor] = useState<string | null>(null);
   const openEditorRef = useRef<string | null>(null);
   const onEditorOpen = useCallback((variable: string) => {
@@ -181,11 +131,8 @@ export function ConfigCanvas({
       : "no editor open",
   });
 
-  // The reveal: the values a run changed, derived by diffing the resolved
-  // document across the run boundary — never nominated by the agent, so a
-  // turn that changed nothing cannot move the view, by construction. The
-  // baseline advances on every idle render, which keeps seeds and hydration
-  // out of the diff: only a transition out of isRunning compares.
+  // The baseline advances on every idle render, which keeps seeds and
+  // hydration out of the diff.
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -220,9 +167,8 @@ export function ConfigCanvas({
   });
   useEffect(() => () => clearTimeout(revealTimer.current), []);
 
-  // The scroll, once per reveal: to the topmost marked element not already in
-  // view, in document order — the rest stay marked in place, never toured.
-  // All in view means nothing moves; an open editor pins the page entirely.
+  // To the topmost marked element not already in view. All in view means
+  // nothing moves, and an open editor pins the page entirely.
   const bodyRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (revealed.size === 0 || openEditorRef.current) return;
@@ -242,19 +188,12 @@ export function ConfigCanvas({
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [revealed]);
 
-  // Through the CopilotKit core, exactly as the composer and the in-chat cards
-  // do, and never `agent.runAgent()` — see the note in
-  // `generative-ui/card-dispatch.ts`. It matters most here: a canvas edit is
-  // the turn where what the operator has open is most worth the agent knowing,
-  // and the bare call sends an empty `context`.
+  // Through the CopilotKit core, never `agent.runAgent()`, which sends an empty
+  // `context` — see the note in `generative-ui/card-dispatch.ts`.
   const dispatch = (content: string) => {
-    // The one guard on the sheet, and the reason nothing on it is disabled
-    // while a run is in flight (constitution #17). Every editable island, the
-    // draft moves and both history controls come through here, so the
-    // condition is stated once and answered in words rather than expressed as
-    // a dozen grey controls that explain nothing. Tools write through to the
-    // workspace store as they run, so a second turn started mid-run would act
-    // on an agreement the first is still changing.
+    // The one guard on the sheet: tools write through to the workspace store as
+    // they run, so a second turn started mid-run would act on an agreement the
+    // first is still changing.
     if (isRunning) {
       sayBusy();
       return false;
@@ -266,8 +205,6 @@ export function ConfigCanvas({
     return true;
   };
 
-  // The register, derived here from the frozen document block and the values
-  // already in state (docs/specs/rfq-reconciliation).
   const register = registerEntries(config);
   const byVariable = new Map<string, RegisterEntry[]>();
   for (const entry of register) {
@@ -277,9 +214,6 @@ export function ConfigCanvas({
     ]);
   }
   const openDeviations = register.filter((e) => e.status === "deviation");
-  // The clauses the document left to us, marked beside the term they bear on
-  // (docs/specs/document-clauses). They ask for nothing, so they are in no
-  // register row and answer to no move on the sheet.
   const leftToUs = new Map<string, Clause[]>();
   for (const clause of clausesLeftToUs(config)) {
     leftToUs.set(clause.variable!, [
@@ -288,21 +222,12 @@ export function ConfigCanvas({
     ]);
   }
 
-  // Picking an option on a term the document asks something of is a
-  // reconciliation, not bookkeeping: it dispatches a visible message rather
-  // than the hidden canvas edit, because moving away from the customer's own
-  // requirement is negotiation and belongs in the record. The register is the
-  // test, so a term the document speaks to without asking anything — a clause
-  // it left to us — edits like any other (docs/specs/document-clauses). Every
-  // editable island in every layer routes through here, so where on the page
-  // the click happened cannot change what the click means.
+  // The register is the test: a term the document asks something of
+  // reconciles, and one it speaks to without asking anything edits like any
+  // other (docs/specs/document-clauses/design.md).
   const dispatchChoice = (variable: string, value: string) => {
-    // The optimistic overlay records what was *sent*, so it is set from what
-    // `dispatch` reports rather than before calling it. A run in flight is
-    // answered in words and nothing is sent, and marking the clause anyway
-    // would show the customer their click landing when it did not — held on
-    // screen until the run ends, which is worse than the grey control this
-    // replaced (constitution #17).
+    // Records what was *sent*, so a run in flight does not mark a click that
+    // never landed.
     const sent = dispatch(
       byVariable.has(variable)
         ? reviseRequirementMessage(variable, value)

@@ -1,13 +1,4 @@
-/**
- * The car the schedules describe (docs/specs/visual-configuration, checked per
- * docs/specs/offline-checks).
- *
- * The scene is computed from millimetre *codes* and never from labels, which
- * makes these three functions a parser over the product model's own value
- * strings. A renamed code does not throw here — it returns null, and the
- * render silently shows its empty state instead of the car. That failure mode
- * is what `every code the model has still parses` exists to catch.
- */
+// docs/specs/visual-configuration/design.md, docs/specs/offline-checks/design.md
 import { describe, expect, it } from "vitest";
 
 import {
@@ -182,9 +173,9 @@ describe("the codes the parser depends on", () => {
   });
 
   it("reads each code as the millimetres its label states", () => {
-    // The label is the customer's figure and the code is the parser's; a code
-    // that stopped agreeing with its label would draw a car the schedule does
-    // not describe.
+    // The label is the customer's figure and the code is the car's: a code that
+    // stopped agreeing with its label would draw a car the sheet does not
+    // describe.
     const car = carGeometry(agreement({ choices: chose(A_CAR) }))!;
     const label = variablesByName
       .get("car_size")!

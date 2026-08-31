@@ -1,13 +1,12 @@
 "use client";
 
 /**
- * The transcript's scroll container (docs/specs/chat-pane).
+ * The transcript's scroll container (docs/specs/chat-pane/design.md).
  *
- * This is no longer a slot. CopilotKit's `scrollView` exists to hold the
- * composer's clearance and the suggestion strip inside one scrolled box; the
- * pane lays those out itself (decision 9), so the scroller is rendered
- * directly and holds nothing but the message view. It takes the space the
- * stack leaves it, which is what `flex-1` and `min-h-0` say here.
+ * Not a slot. CopilotKit's `scrollView` holds the composer's clearance and the
+ * suggestion strip inside one scrolled box; the pane lays those out itself
+ * (decision 9), so this is rendered directly and holds nothing but the message
+ * view.
  *
  * The provider is keyed by thread, so a conversation opened from the store
  * starts at its end rather than wherever the last one was.
@@ -27,11 +26,10 @@ import { cn } from "@/lib/utils";
 
 /**
  * A transcript does not arrive with the mount: `use-workspace-attachment.ts`
- * hydrates it from the workspace, in more than one batch, and each user turn
- * that lands is a scroll anchor — so an attaching conversation would come to
- * rest at whichever turn arrived last rather than at its end. This waits for
- * the batches to stop and then lands once, at the end. The provider is keyed
- * by thread, so "once" means once per conversation.
+ * hydrates it in more than one batch, and every user turn that lands is a
+ * scroll anchor, so an attaching conversation would come to rest at whichever
+ * turn arrived last. This waits for the batches to stop and lands once, at the
+ * end — once per conversation, since the provider is keyed by thread.
  */
 function SettleAtEnd() {
   const { agent } = useAgent();

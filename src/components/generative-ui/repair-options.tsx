@@ -1,15 +1,6 @@
 "use client";
 
-/**
- * Repair cards for the agent's revise_choices tool (docs/specs/nonlinear-interaction).
- *
- * When a revision collides with earlier commitments, the solver computes
- * repair options — minimal sets of existing choices to give up, ordered by
- * retention. Each card dispatches one structured message the agent applies as
- * a single atomic revise_choices call; the last card always abandons the
- * revision. On a non-conflicting revision the tool returns plain text and
- * this renders as a compact tool row instead.
- */
+// docs/specs/nonlinear-interaction/design.md
 
 import { Button } from "@/components/ui/button";
 import { ToolReasoning } from "@/components/tool-rendering";
@@ -46,7 +37,7 @@ export function RepairOptions({ toolCallId, status, result }: CardProps) {
   }
 
   const payload = parsePayload<Payload>(result, (p) => p.kind === "repairs");
-  // Passthrough ("Revised: …") and errors render as a plain tool row.
+// Passthrough ("Revised: …") and errors render as a plain line.
   if (!payload) return <ToolReasoning name="revise_choices" status={status} />;
 
   const wanted = payload.changes
@@ -85,8 +76,8 @@ export function RepairOptions({ toolCallId, status, result }: CardProps) {
                 .join(", ")}
             </div>
           )}
-          {/* The rule labels behind a repair are what constitution #6 exists to
-              surface, and they were set at 10px (constitution #16). */}
+          {/* Rule labels (constitution #6) at the chrome size, not below it
+              (constitution #16). */}
           {option.rules.length > 0 && (
             <div className="mt-0.5 text-xs text-muted-foreground">
               {option.rules.map((r) => r.label).join("; ")}
@@ -106,22 +97,10 @@ export function RepairOptions({ toolCallId, status, result }: CardProps) {
   );
 }
 
-/**
- * A repair is a paragraph, not a label: multi-line, left-aligned and free to
- * grow, so the shared shape is a Button with its nowrap/centering relaxed.
- *
- * A disabled button fades itself, and it gives that up here: a spent repair is
- * still the record of what was offered, and the rules line under it is what
- * constitution #6 exists to surface.
- *
- * That argument used to be about compounding — the card faded too, and two
- * fades over one string left the line barely readable. The card no longer
- * fades anything (`card-shell.tsx`, and constitution #16, which
- * generalises exactly this reasoning), so nothing compounds and the
- * override now carries the argument alone. It is kept for the half that was
- * never about compounding. What says the card is spent is its dashed edge and
- * the controls being genuinely `disabled`.
- */
+/** Multi-line, left-aligned and free to grow, so the shared Button has its
+ * nowrap and centering relaxed. The disabled fade is overridden: a spent repair
+ * is still the record of what was offered, and its rules line is what
+ * constitution #6 exists to surface. */
 function RepairButton({
   className,
   ...props

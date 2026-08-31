@@ -1,22 +1,9 @@
-/**
- * The couplings that cross the language boundary (docs/specs/offline-checks).
- *
- * Three things are mirrored by hand between the frontend and the agent: the
- * structured message grammar, which exists in three copies; the product model,
- * which the frontend addresses by name; and the shape of a configuration,
- * declared as a TypeScript interface here and as a TypedDict there.
- *
- * One coupling here stays inside the frontend, because it is the same kind of
- * thing: the list of tools that render as a card, which the transcript reads
- * to decide what a row is and the chat registrations declare one at a time.
- *
- * Two of the three copies of the grammar are code, so they are compared as
- * code: `agent/tests/grammar_dump.py` builds every sentence from the agent's
- * own helpers and prints them, and the same sentences are built here from the
- * same inputs and compared string for string. The third copy is the system
- * prompt, which is prose, and prose can only be read — those assertions are
- * text, and say so.
- */
+// docs/specs/offline-checks/design.md
+//
+// Two of the grammar's copies are code and are compared as code:
+// `agent/tests/grammar_dump.py` builds every sentence from the agent's own
+// helpers and the same sentences are built here. The third is the system
+// prompt, which can only be read as text.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -49,7 +36,6 @@ import { agentDump, type AgentDump } from "./agent-dump";
 
 const AGENT = agentDump();
 
-/** The frontend's half, built from the inputs the agent named. */
 function frontendGrammar(inputs: AgentDump["inputs"]): Record<string, string> {
   const selections = (pairs: [string, string][]) =>
     pairs.map(([variable, value]) => ({ variable, value }));
@@ -93,8 +79,6 @@ const FRONTEND = frontendGrammar(AGENT.inputs);
 
 describe("the message grammar, built on both sides", () => {
   it("names every grammar element the frontend exports", () => {
-    // A new element added on one side and not the other fails here before it
-    // can fail as a card that dispatches a sentence nothing recognises.
     const exported = Object.keys(configurator).filter(
       (name) => name.endsWith("Message") || name.endsWith("PREFIX"),
     );
@@ -113,12 +97,9 @@ describe("the message grammar, built on both sides", () => {
   });
 
   it("refuses in the tool layer exactly the sentences that set a value", () => {
-    // The third copy of the grammar (docs/specs/one-gesture-one-action):
-    // `set_choices` reads the last human message and refuses a gesture. The
-    // set is asserted in both directions, so a rule that grew would start
-    // swallowing reconciliations and draft moves, and one that shrank would
-    // let a gesture through. The dump runs the real predicate over the
-    // agent's own sentences, which the check above holds equal to these.
+    // Asserted in both directions: a rule that grew would swallow
+    // reconciliations and draft moves, and one that shrank would let a gesture
+    // through.
     expect(AGENT.guarded).toEqual([
       "CANVAS_EDIT_PREFIX",
       "canvasEditMessage",
@@ -128,11 +109,8 @@ describe("the message grammar, built on both sides", () => {
   });
 
   it("reads a gesture out of exactly the sentences the agent refuses", () => {
-    // The grammar's fourth copy (docs/specs/one-gesture-one-action): the
-    // frontend reads the sentence as well as mints it, because the transcript
-    // draws no row for a gesture (docs/specs/agreement-document). Held against
-    // the agent's own predicate rather than against a list, so the two cannot
-    // drift into hiding a message the agent treats as prose.
+    // Held against the agent's own predicate rather than against a list, so the
+    // two cannot drift into hiding a message the agent treats as prose.
     const read = Object.keys(AGENT.grammar)
       .filter((key) => configurator.isGesture(AGENT.grammar[key]))
       .sort();
@@ -140,8 +118,6 @@ describe("the message grammar, built on both sides", () => {
   });
 
   it("leaves the same prose alone on both sides", () => {
-    // The failure this guards is the customer's typed message disappearing
-    // from their own transcript.
     expect(AGENT.prose.map((text) => configurator.isGesture(text))).toEqual(
       AGENT.guardedProse,
     );
@@ -149,26 +125,20 @@ describe("the message grammar, built on both sides", () => {
   });
 
   it("lets prose through that opens on the grammar's own word", () => {
-    // "Set up an elevator for a hospital" is a customer talking, and it goes
-    // to set_choices with its partial semantics. The parenthesised code is
-    // what separates the two, so matching the first word would move the prose
-    // path this feature leaves alone.
     expect(AGENT.guardedProse).toEqual([false, false, false, false]);
   });
 
   it("keeps a draft name with quotes in it intact on both sides", () => {
-    // The draft moves quote the name, so a name containing a quote is where
-    // the two sides would diverge first if either started escaping.
+    // The draft moves quote the name, so a name containing a quote is where the
+    // two sides would diverge first if either started escaping.
     expect(AGENT.inputs.draftName).toContain('"');
     expect(FRONTEND.switchDraftMessage).toContain(AGENT.inputs.draftName);
   });
 });
 
-/**
- * The prompt's copy, which is prose and can only be read as text. Each entry
- * is the part of the sentence that does not vary, taken from the sentence the
- * frontend actually builds — so rewording a builder fails here too.
- */
+/** The prompt's copy is prose. Each entry is the part of the sentence that does
+ * not vary, taken from the sentence the frontend builds, so rewording a builder
+ * fails here too. */
 const PROMPT_FRAGMENTS: Record<string, string[]> = {
   CANVAS_EDIT_PREFIX: ["Canvas edit: "],
   choiceMessage: ["Set ", " to "],
@@ -224,9 +194,6 @@ describe("the grammar as the system prompt teaches it", () => {
   });
 
   it("sends a picked value to revise_choices, whatever the term's state", () => {
-    // The repair of finding 1: the rule for the dispatched sentence names one
-    // action and never the partial one, so a click applies whole or comes
-    // back with repairs (docs/specs/one-gesture-one-action).
     const rule = promptRule('"Set <term> to <value> (term=value)"');
     expect(rule).toContain("revise_choices");
     onlyForbids(rule, "set_choices");
@@ -239,8 +206,6 @@ describe("the grammar as the system prompt teaches it", () => {
   });
 
   it("keeps the revise-over-record rule for what the customer says", () => {
-    // Prose is still the agent's judgment, and the method bullet is where the
-    // A/B in docs/specs/agent-tools measured that it has to live.
     expect(PROMPT).toContain(
       "When the customer *tells* you to change something already decided, "
         + "revise it rather than recording it afresh.",
@@ -261,8 +226,6 @@ describe("the grammar as the system prompt teaches it", () => {
 
 describe("what the customer is shown of a dispatched sentence", () => {
   it("hides a code behind a prefix spokenText recognises", () => {
-    // A sentence carrying `variable=value` that spokenText does not strip puts
-    // the catalogue vocabulary in the customer's own bubble.
     const withCodes = [
       "choiceMessage",
       "canvasEditMessage",
@@ -345,13 +308,9 @@ describe("the product model, as the frontend addresses it", () => {
   });
 });
 
-/**
- * The interface is erased at runtime, so these three witnesses stand in for it.
- * `satisfies Record<keyof …, true>` makes the typecheck reject a witness that
- * is missing a member or carries one the type does not have — which is what
- * makes `Object.keys` below a list of the type's own members rather than a
- * fourth hand-maintained copy.
- */
+/** The interface is erased at runtime, so these three witnesses stand in for
+ * it. `satisfies Record<keyof …, true>` is what makes `Object.keys` below a
+ * list of the type's own members rather than a fourth hand-maintained copy. */
 const CONFIGURATION_KEYS = {
   choices: true,
   statuses: true,
@@ -366,9 +325,8 @@ const SOURCE_VALUES = {
   document: true,
 } satisfies Record<Source, true>;
 
-// A mark is optional on a clause — two of the three kinds take none
-// (docs/specs/document-clauses) — so the union is narrowed before it keys the
-// record, and the agent's dump unwraps the same NotRequired on its side.
+  // A mark is optional on a clause, so the union is narrowed before it keys the
+  // record; the agent's dump unwraps the same NotRequired.
 const RECONCILIATION_VALUES = {
   pending: true,
   waived: true,
@@ -381,8 +339,7 @@ describe("the two declarations of a configuration", () => {
   });
 
   it("carries every key an agreement the agent built actually has", () => {
-    // The declared set includes the optional fields; this is the subset a
-    // fresh agreement arrives with, and the frontend has to read both.
+    // The subset a fresh agreement arrives with. The frontend reads both.
     for (const key of AGENT.emptyConfigurationKeys) {
       expect(Object.keys(CONFIGURATION_KEYS)).toContain(key);
     }
@@ -400,13 +357,9 @@ describe("the two declarations of a configuration", () => {
 });
 
 describe("the one figure both languages format", () => {
-  /**
-   * The lifetime CO₂e total: the customer reads it on the sheet and hears it
-   * in chat. `_format_co2` reimplements `formatCO2` in integer arithmetic
-   * because Python rounds half to even and JavaScript rounds half away from
-   * zero, so 1250 kg once read 1.2 t beside 1.3 t. Compared against what the
-   * agent actually printed, not against a table copied from it.
-   */
+  /** `_format_co2` reimplements `formatCO2` in integer arithmetic because
+   * Python rounds half to even and JavaScript rounds half away from zero, so
+   * 1250 kg once read 1.2 t beside 1.3 t. */
   it.each(AGENT.inputs.co2.map((kg, index) => [kg, AGENT.co2[index]]))(
     "reads %i kg the same in chat as on the sheet",
     (kg, agentSays) => {
@@ -421,12 +374,8 @@ describe("the one figure both languages format", () => {
 });
 
 describe("the agreements the frontend checks build", () => {
-  /**
-   * A fixture assembled by hand can be valid in shape and impossible in fact.
-   * These invariants are not asserted from memory — they are read off
-   * agreements the agent actually built, which is what the first two checks
-   * establish, and only then required of the fixtures.
-   */
+  /** Read off agreements the agent actually built rather than asserted from
+   * memory, then required of the fixtures. */
   function violations(config: {
     choices: Record<string, { value: string }>;
     statuses: Record<string, Record<string, string>>;
@@ -463,7 +412,7 @@ describe("the agreements the frontend checks build", () => {
   });
 
   it("covers an agreement with choices, a candidate and a document", () => {
-    // An invariant read only off the empty agreement would be vacuous.
+      // An invariant read only off the empty agreement would be vacuous.
     expect(Object.keys(REAL).sort()).toEqual(["chosen", "empty", "priced", "seeded"]);
     expect(Object.keys(REAL.chosen.choices).length).toBeGreaterThan(0);
   });
@@ -491,8 +440,6 @@ describe("the agreements the frontend checks build", () => {
   });
 
   it("marks a recorded choice the way the agent marks the same one", () => {
-    // The fixture runs no solver, so the ripple around the choice is the
-    // agent's alone; the variable the choice is on has to agree.
     const variable = AGENT.inputs.oneSelection[0][0];
     expect(FIXTURES.withAChoice.statuses[variable]).toEqual(
       REAL.chosen.statuses[variable],
@@ -501,10 +448,8 @@ describe("the agreements the frontend checks build", () => {
 });
 
 describe("the reversals the canvas offers, counted on both sides", () => {
-  // One predicate in two languages (docs/specs/action-log): the agent
-  // refreshes this mirror on every commit and the frontend seeds it from the
-  // record on attach, so a disagreement shows as a canvas that offers Undo
-  // only after a reload — which no other check in the repo sees.
+  // A disagreement shows as a canvas that offers Undo only after a reload,
+  // which no other check in the repo sees.
   const logged = (log: AgentDump["logFixture"]): WorkspaceRecord => ({
     id: "ws-1",
     name: null,
@@ -534,26 +479,13 @@ describe("the reversals the canvas offers, counted on both sides", () => {
   });
 });
 
-/**
- * The ontology's copy (docs/specs/ontology-of-phenomena). Constitution #15
- * binds every artifact to the names enumerated there, and the enumeration is
- * prose, so it is read as text the way the system prompt above is.
- *
- * What this catches is a name that arrived without being named: a new tool, a
- * new element of the grammar, a new key on a configuration or on the durable
- * record, a variable or rule the product model gained. It does not catch a
- * signature that is wrong or a fact filed in the wrong class — reading the
- * enumeration against the code stays the obligation of the session that
- * changes the code.
- */
+/** The ontology is prose, so it is read as text the way the prompt above is.
+ * This catches a name that arrived without being named; it does not catch a
+ * wrong signature or a fact filed in the wrong class. */
 const ONTOLOGY = flat(
   readFileSync(at("../docs/specs/ontology-of-phenomena/ontology.md"), "utf8"),
 );
 
-/**
- * The gesture table unflattened, because the assertion below reads it a row at
- * a time and a flattened table is one line.
- */
 const GESTURE_TABLE = readFileSync(
   at("../docs/specs/ontology-of-phenomena/ontology.md"),
   "utf8",
@@ -563,11 +495,8 @@ const GESTURE_TABLE = readFileSync(
   .split("\n")
   .filter((line) => line.startsWith("| ") && !line.startsWith("| Gesture"));
 
-/**
- * The gesture table's sentence for every element of the grammar, as templates,
- * because the table spells the shape rather than one built example. A new
- * element fails the coverage assertion until it has a row.
- */
+/** Templates, because the table spells the shape rather than one built
+ * example. A new element fails the coverage assertion until it has a row. */
 const ONTOLOGY_SENTENCES: Record<string, string> = {
   CANVAS_EDIT_PREFIX: "Canvas edit: ",
   choiceMessage: "Set <term> to <value> (term=value)",
@@ -585,13 +514,7 @@ const ONTOLOGY_SENTENCES: Record<string, string> = {
   redoMessage: "Redo the undone change",
 };
 
-/**
- * The action every element of the grammar reaches, one per sentence. A gesture
- * that reached whichever of two actions the model judged right is what
- * [one-gesture-one-action](../docs/specs/one-gesture-one-action/design.md)
- * repaired, so the table below is the shape of the repair: the value is one
- * name, and the assertions refuse a row that offers a choice.
- */
+/** One name per sentence; the assertions refuse a row that offers a choice. */
 const ONTOLOGY_ACTIONS: Record<string, string> = {
   CANVAS_EDIT_PREFIX: "revise_choices",
   choiceMessage: "revise_choices",
@@ -609,12 +532,9 @@ const ONTOLOGY_ACTIONS: Record<string, string> = {
   redoMessage: "redo_change",
 };
 
-/**
- * A bullet of the prompt's *Messages that are not conversation* section: from
- * the sentence it quotes to the start of the next bullet. Read as a segment
- * rather than as the whole section, because a rule may name an action it
- * forbids — the undo bullet names both content actions to rule them out.
- */
+/** Read as a segment rather than as the whole section, because a rule may name
+ * an action it forbids — the undo bullet names both content actions to rule
+ * them out. */
 function promptRule(quoted: string): string {
   const start = PROMPT.indexOf(quoted);
   expect(start, `the prompt quotes ${quoted}`).toBeGreaterThanOrEqual(0);
@@ -623,11 +543,6 @@ function promptRule(quoted: string): string {
   return PROMPT.slice(start, end);
 }
 
-/**
- * The only way a rule may name the action it doesn't reach is to forbid it, so
- * reverting a rule to "One set_choices call" fails here while the prohibition
- * that keeps the model off it passes.
- */
 function onlyForbids(rule: string, action: string): void {
   for (const before of rule.split(action).slice(0, -1)) {
     expect(before.endsWith("Never "), `"…${before.slice(-40)}${action}"`).toBe(
@@ -636,12 +551,8 @@ function onlyForbids(rule: string, action: string): void {
   }
 }
 
-/**
- * Every key of the two durable shapes, and the ontology term that carries it.
- * Keys are prefixed because a workspace and a draft both have an `id` and a
- * `name`, and the two mean different things. A key added on either side fails
- * the coverage assertion until someone says here what it means.
- */
+/** Keys are prefixed because a workspace and a draft both have an `id` and a
+ * `name` meaning different things. */
 const CARRIED_BY: Record<string, string[]> = {
   "workspace.id": ["`record.id`, a uuid"],
   "workspace.name": ["named(Workspace, Name)"],
@@ -680,8 +591,6 @@ const CARRIED_BY: Record<string, string[]> = {
 
 describe("the ontology, as the vocabulary every artifact names by", () => {
   it("names every action the agent offers", () => {
-    // A tool the ontology has never heard of fails here, before it can be
-    // cited in a spec or a prompt under a name nothing else uses.
     const unnamed = AGENT.toolNames.filter((name) => !ONTOLOGY.includes(name));
     expect(unnamed).toEqual([]);
   });
@@ -719,8 +628,7 @@ describe("the ontology, as the vocabulary every artifact names by", () => {
       expect(rows).toHaveLength(1);
       const cell = rows[0].split("|")[3];
       expect(cell).toContain(`\`${action}\``);
-      // "set_choices or revise_choices" is the shape the repair removed: a
-      // gesture whose action the model picks is a gesture with no action.
+      // "set_choices or revise_choices" is the shape the repair removed.
       expect(cell).not.toContain(" or ");
     },
   );
@@ -728,8 +636,7 @@ describe("the ontology, as the vocabulary every artifact names by", () => {
   it.each(Object.entries(ONTOLOGY_SENTENCES))(
     "%s opens on the sentence the frontend actually builds",
     (key, template) => {
-      // The fixed head of the template — everything before the first
-      // placeholder — is a prefix of the real sentence, so rewording a builder
+      // The fixed head is a prefix of the real sentence, so rewording a builder
       // fails here as well as against the prompt.
       const head = template.split(/[…<]/)[0];
       expect(head.length).toBeGreaterThan(0);
@@ -755,9 +662,6 @@ describe("the ontology, as the vocabulary every artifact names by", () => {
   );
 
   it("names every action an entry of a log may carry", () => {
-    // The acceptance criterion of docs/specs/action-log: a tool added without
-    // being named in the ontology fails a run before it can write a name into
-    // the durable record.
     for (const action of AGENT.contentActions) {
       expect(AGENT.toolNames, action).toContain(action);
       expect(ONTOLOGY, action).toContain(action);
@@ -765,8 +669,7 @@ describe("the ontology, as the vocabulary every artifact names by", () => {
   });
 
   it("declares the population the product model actually has", () => {
-    // The one place the enumeration states a count. Checked rather than
-    // trusted, so it cannot go stale the next time a variable lands.
+    // The one place the enumeration states a count.
     const declared = ONTOLOGY.match(/(\d+) variables in (\d+) groups/);
     expect(declared).not.toBeNull();
     expect(Number(declared![1])).toBe(AGENT.variables.length);
@@ -780,10 +683,8 @@ describe("the ontology, as the vocabulary every artifact names by", () => {
 });
 
 describe("the tools that render as a card, listed twice", () => {
-  // The transcript groups a run of tool rows and leaves a card alone
-  // (docs/specs/chat-pane decision 8), and it decides which a row is from the
-  // tool's name, having nothing else to read. `CARD_TOOLS` is that list;
-  // `use-configurator-ui.tsx` is where a card renderer is actually registered.
+  // The transcript decides which rows are cards from the tool's name.
+  // `use-configurator-ui.tsx` is where a renderer is registered.
   const REGISTRATIONS = readFileSync(
     at("../src/hooks/use-configurator-ui.tsx"),
     "utf8",

@@ -1,13 +1,6 @@
 "use client";
 
-/**
- * The workspace's two surfaces: the agreement canvas beside a chat panel the
- * operator can size (docs/specs/agreement-workspace/design.md).
- *
- * The four chat geometries are four sets of classes over one unchanging tree,
- * because re-parenting the chat's DOM node resets the transcript's scroll
- * offset (docs/specs/chat-surface/design.md decision 2).
- */
+// docs/specs/agreement-workspace/design.md, docs/specs/chat-surface/design.md
 
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -20,8 +13,6 @@ import { recordsTheSplit, rememberCanvasPercent } from "@/lib/split-layout";
 import { cn } from "@/lib/utils";
 import type { ChatSurfaceMode } from "./chat-surface";
 
-/** Below `lg` the panes stack rather than the chat hiding
- * (docs/specs/agreement-workspace/design.md). */
 function useSplitOrientation(): "horizontal" | "vertical" {
   const [stacked, setStacked] = useState(false);
 
@@ -36,13 +27,9 @@ function useSplitOrientation(): "horizontal" | "vertical" {
   return stacked ? "vertical" : "horizontal";
 }
 
-/**
- * `ResizablePanel` renders an outer box the group sizes and an inner one that
+/** `ResizablePanel` renders an outer box the group sizes and an inner one that
  * takes `className`, so these classes move the panel's *contents* and
- * `UNDOCKED` empties the box. Both halves are needed
- * (docs/specs/chat-surface/design.md decision 2, which also rules `opacity-0`
- * over `display:none` and why the covering modes paint a background).
- */
+ * `UNDOCKED` empties the box. Both halves are needed (chat-surface decision 2). */
 const CHAT_GEOMETRY: Record<ChatSurfaceMode, string> = {
   sidebar: "",
   floating:
@@ -51,12 +38,8 @@ const CHAT_GEOMETRY: Record<ChatSurfaceMode, string> = {
   hidden: "absolute inset-0 opacity-0 pointer-events-none",
 };
 
-/**
- * Empties the panel box of its column by beating the inline `flex` the group
- * writes, rather than through the group's layout API, which validates against
- * `minSize` (docs/specs/chat-surface/design.md decision 2). Coupled to the
- * panel's `id`.
- */
+/** Beats the inline `flex` the group writes, rather than going through its
+ * layout API, which validates against `minSize`. Coupled to the panel's `id`. */
 const UNDOCKED = "[&>#chat]:!flex-none";
 
 export function WorkspaceSplit({
@@ -67,9 +50,6 @@ export function WorkspaceSplit({
   mode,
 }: {
   canvas: ReactNode;
-  /** The canvas's share of the group, read from the request's cookie by
-   * `workspaces/[id]/page.tsx` (docs/specs/remembered-split/design.md). The
-   * chat takes the rest. */
   canvasPercent: number;
   chat: ReactNode;
   chatHeader: ReactNode;
@@ -79,12 +59,8 @@ export function WorkspaceSplit({
   const sideBySide = orientation === "horizontal";
   const docked = mode === "sidebar";
 
-  /*
-    The split is persisted through a cookie, and every id here is explicit:
-    `useDefaultLayout` and `useId` each diverge between the SSR pass and
-    hydration, which is why the size arrives as a prop the server can also read
-    (docs/specs/remembered-split/design.md).
-  */
+  // Every id here is explicit: `useId` diverges between the SSR pass and
+  // hydration, which is why the size arrives as a prop the server can read too.
   return (
     <ResizablePanelGroup
       id="workspace-split"
@@ -93,7 +69,7 @@ export function WorkspaceSplit({
       className={cn("relative", !docked && UNDOCKED)}
       onLayoutChanged={(layout, { isUserInteraction }) => {
         // Only a drag of this handle, in the geometry the stored split is
-        // about, may write (docs/specs/remembered-split/design.md).
+        // about, may write (docs/specs/remembered-split/design.md decision 3).
         if (!recordsTheSplit({ isUserInteraction, sideBySide, docked })) return;
         const { canvas: canvasGrow, chat: chatGrow } = layout;
         if (!canvasGrow || !chatGrow) return;
@@ -103,13 +79,12 @@ export function WorkspaceSplit({
       <ResizablePanel
         id="canvas"
         defaultSize={`${canvasPercent}%`}
-        // Pixel floors, both measured (docs/specs/agreement-workspace/design.md).
-        // Side by side only: stacked, they would apply to the cross axis, where
-        // a short viewport could not satisfy both.
+        // Pixel floors, both measured. Side by side only: stacked, they would
+        // apply to the cross axis, where a short viewport could not satisfy both.
         minSize={sideBySide ? "360px" : undefined}
         // min-h-0/min-w-0 so the canvas ScrollArea scrolls inside the panel
         // rather than growing it. `relative` is what the render mode positions
-        // against (docs/specs/visual-configuration/design.md).
+        // against.
         className="relative min-h-0 min-w-0"
       >
         {canvas}
@@ -127,8 +102,8 @@ export function WorkspaceSplit({
         // The same measured floor as the canvas.
         minSize={sideBySide ? "360px" : undefined}
         className={cn("flex min-h-0 min-w-0 flex-col", CHAT_GEOMETRY[mode])}
-        // A hidden pane is still laid out, so it has to be taken out of the
-        // tab order and the accessibility tree by hand.
+        // A hidden pane is still laid out, so it leaves the tab order and the
+        // accessibility tree by hand.
         inert={mode === "hidden"}
       >
         {chatHeader}

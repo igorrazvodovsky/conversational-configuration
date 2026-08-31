@@ -1,25 +1,8 @@
-/**
- * A refusal reaches somebody who is not holding a mouse (constitution #16),
- * and it does not take the gesture away (constitution #17).
- *
- * The named rules behind a ruled-out option used to live only on a `title`,
- * on a control that is `disabled` and therefore outside the tab order — no
- * focus to raise a tooltip, and no hover at all on a touch screen. The rules
- * were reaching the browser and stopping there.
- *
- * The control is now operable as well, which is the half this file exists to
- * hold: a ruled-out option dispatches the same sentence any other option does
- * and comes back with repair paths, so disabling it was throwing away the one
- * move that answers "what would have to change?". Four controls draw one, and
- * all four are asserted here — three in the chat card, one on the sheet.
- *
- * This tier asserts on text and structure and never on style
- * (docs/specs/interface-checks), which is exactly the shape of what changed:
- * the sentence is in the document, and the control points at the element
- * carrying it. Whether it is *legible* is colour, which no check here sees;
- * that is computed from the tokens in the design and verified by running the
- * app.
- */
+// constitution #16, constitution #17
+//
+// Four controls draw a ruled-out option and all four are asserted here. This
+// tier asserts on text and structure and never on style
+// (docs/specs/interface-checks/design.md).
 
 import { CopilotKit, HttpAgent } from "@copilotkit/react-core/v2";
 import { AGUIMock } from "@copilotkit/aimock";
@@ -43,8 +26,6 @@ afterEach(cleanup);
 
 const RULE = { id: "R28", label: "Modernization cannot raise the existing headroom to 4600 mm" };
 
-/** One variable with one option taken out by one named rule, in each of the
- * three controls the payload can ask for. */
 const payload = (control: "chips" | "scale" | "list") =>
   JSON.stringify({
     prompt: "Choose the traffic level you want to test against.",
@@ -72,10 +53,9 @@ function draw(control: "chips" | "scale" | "list") {
   );
 }
 
-/** The refused option's own control, in whichever element the control uses.
- * A chip and a list row are buttons; a scale segment is a radio in a
- * radiogroup. `queryAll` on both, because each control has one and not the
- * other, and `getAll` throws on the kind it does not have. */
+/** A chip and a list row are buttons; a scale segment is a radio in a
+ * radiogroup. `queryAll` on both, because `getAll` throws on the kind a given
+ * control does not have. */
 function refusedControl(label: string) {
   return [
     ...screen.queryAllByRole("button", { hidden: true }),
@@ -93,7 +73,7 @@ describe.each(["chips", "scale", "list"] as const)("the %s control", (control) =
     draw(control);
     const refused = refusedControl("A few trips an hour");
     expect(refused).toBeTruthy();
-    // Neither channel says no. `disabled` would take it out of the tab order
+    // Neither channel says no: `disabled` would take it out of the tab order,
     // and `aria-disabled` would announce a control that in fact acts.
     expect((refused as HTMLButtonElement).disabled).toBe(false);
     expect(refused!.getAttribute("aria-disabled")).toBeNull();
@@ -106,9 +86,6 @@ describe.each(["chips", "scale", "list"] as const)("the %s control", (control) =
 
   it("points the refused control at the element carrying that sentence", () => {
     draw(control);
-    // A chip and a list row are buttons; a scale segment is a radio in a
-    // radiogroup. `queryAll` on both, because each control has one and not
-    // the other, and `getAll` throws on the kind it does not have.
     const refused = [
       ...screen.queryAllByRole("button", { hidden: true }),
       ...screen.queryAllByRole("radio", { hidden: true }),
@@ -118,8 +95,8 @@ describe.each(["chips", "scale", "list"] as const)("the %s control", (control) =
     const describedBy = refused!.getAttribute("aria-describedby");
     expect(describedBy).toBeTruthy();
 
-    // The id resolves, and what it resolves to is the sentence itself — not a
-    // second copy of it that could drift from the visible one.
+    // What the id resolves to is the sentence itself, not a second copy that
+    // could drift from the visible one.
     const description = document.getElementById(describedBy!);
     expect(description).toBeTruthy();
     expect(description!.textContent).toContain(RULE.label);
@@ -155,15 +132,11 @@ describe("a refusal with no product rule to cite", () => {
   });
 });
 
-/**
- * The fourth control, on the sheet rather than in the chat. It computes its
- * own refusals from the agreement through `rulesAgainst` instead of reading
- * them off a tool payload, so it is the one that could drift from the other
- * three without any of the assertions above noticing.
- */
+/** The fourth control computes its own refusals through `rulesAgainst` instead
+ * of reading a tool payload, so it is the one that could drift from the other
+ * three unnoticed. */
 describe("the option editor on the agreement sheet", () => {
-  // The real model's own code for the option the chat fixture calls "light":
-  // this control reads the product model, not a payload.
+  // This control reads the product model, not a payload.
   const config = agreement({
     unavailable: { usage_profile: { low: [RULE] } },
   });

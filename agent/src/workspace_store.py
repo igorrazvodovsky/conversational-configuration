@@ -1,13 +1,13 @@
-"""Durable workspace store (docs/specs/agreement-workspace,
-docs/specs/parallel-drafts).
+"""Durable workspace store (docs/specs/agreement-workspace/design.md,
+docs/specs/parallel-drafts/design.md).
 
-One JSON file per workspace under agent/data/workspaces/. A workspace is the
-durable home of one installation's agreement, held as several *drafts* of it —
-each a whole configuration with its own log of the actions that made it — of
-which exactly one is current. The conversations attached to the workspace are views onto the
-installation, not onto a draft. Deliberately dumb persistence: it never touches
-the solver or the product model, so callers pass in the initial configuration.
-Last write wins; no locking (spec scope decision).
+One JSON file per workspace under agent/data/workspaces/, holding several
+drafts of the agreement with exactly one current. The conversations attached to
+a workspace are views onto the installation, not onto a draft.
+
+Deliberately dumb persistence: it never touches the solver or the product
+model, so callers pass in the initial configuration. Last write wins, and there
+is no locking.
 """
 
 import copy
@@ -21,32 +21,24 @@ from src import trace
 
 _DEFAULT_DATA_DIR = Path(__file__).parent.parent / "data" / "workspaces"
 
-# How far the cursor may walk back from the head of a draft's log, counted in
-# reversible entries (docs/specs/undo, docs/specs/action-log). Ten covers a long
-# revision run; anything a customer wants to hold past that is what a second
-# draft is for.
+# How far the cursor may walk back from the head of a draft's log, in reversible
+# entries. Anything a customer wants to hold past that is what a draft is for.
 HISTORY_DEPTH = 10
 
-# How many entries a draft's log keeps, oldest dropped first. Reversibility and
+# How many entries a draft's log keeps, oldest dropped first. Reach and
 # retention are two questions under a delta log, where a snapshot history made
-# them one: an entry costs what its action changed rather than the size of the
-# agreement, so the record can outlast what undo can reach
-# (docs/specs/action-log).
+# them one.
 LOG_RETENTION = 50
 
-# What a workspace's first draft is called, and what the read-time adapter names
-# the agreement of a workspace written before drafts existed.
+# What a workspace's first draft is called, and the name the adapter gives the
+# agreement of a workspace written before drafts existed.
 FIRST_DRAFT_NAME = "Original"
 
 
 def data_dir() -> Path:
-    """Where workspaces live. The conversation checks point WORKSPACE_STORE_DIR
-    at a temp directory so a test run cannot write into the developer's own
-    agreements (docs/specs/conversation-checks design).
-
-    Resolved per call, not at import: pytest imports every test module before
-    deselecting any, so this module is already loaded by the time a scenario
-    sets the variable.
+    """Resolved per call, not at import: pytest imports every test module before
+    deselecting any, so this module is loaded by the time a scenario sets
+    WORKSPACE_STORE_DIR.
     """
     override = os.environ.get("WORKSPACE_STORE_DIR")
     return Path(override) if override else _DEFAULT_DATA_DIR
@@ -63,25 +55,16 @@ def _path(workspace_id: str) -> Path:
     return data_dir() / f"{workspace_id}.json"
 
 
-# Set by `_adapt` when it converted something, and popped by `_read`. A record
-# carries no schema version, so "did this read change the record" is the only
-# question the adapter can answer cheaply.
+# Set by `_adapt` when it converted something, popped by `_read`. A record
+# carries no schema version.
 _CONVERTED = "_converted"
 
 
 def _read(path: Path) -> dict:
-    """A record, brought up to the shape every read path sees — and written
-    back when the adapter had to convert it.
-
-    Persisting here rather than leaving it to the next write is what makes a
-    Clause an individual. The paper this vocabulary comes from asks an
-    individual for a *persistent* identity, one that can be matched but not
-    decomposed, and a uuid minted afresh on every read is neither: two reads of
-    one document would disagree about which clauses they hold. The store
-    computes a draft's log by diffing the configuration a tool hands back
-    against the one it reads from disk, so disagreeing reads would log a
-    phantom rewrite of the whole document on the next ordinary edit
-    (docs/specs/document-clauses, decision 3).
+    """A record, brought up to the shape every read path sees, and written back when
+    the adapter converted it. Persisting here rather than at the next write is what
+    mints a clause's identity exactly once
+    (docs/specs/document-clauses/design.md decisions 2 and 3).
     """
     record = _adapt(json.loads(path.read_text()))
     if record.pop(_CONVERTED, False):
@@ -94,16 +77,11 @@ def _new_draft(
     configuration: dict,
     forked_from: str | None = None,
 ) -> dict:
-    """A draft of the agreement. Unlike the workspace's own name it is never
-    None: every tool addresses drafts by name, so a nameless draft would be one
-    the agent could not switch to, compare or discard."""
     return {
         "id": uuid.uuid4().hex,
         "name": name.strip(),
-        # The draft this one was copied from, None on the one a workspace opens
-        # with. Recorded for display; never repaired when a parent is discarded,
-        # so an unresolvable id reads as no lineage rather than a lineage that
-        # never existed.
+# None on the draft a workspace opens with. Never repaired when a parent is
+# discarded, so an unresolvable id reads as no lineage.
         "forkedFrom": forked_from,
         "configuration": configuration,
         # Every action taken on this draft, oldest first (docs/specs/action-log).
@@ -112,39 +90,12 @@ def _new_draft(
 
 
 def _adapt(record: dict) -> dict:
-    """Bring a record written before a feature up to the shape every read path
-    sees. A read-time adapter rather than a migration script:
-    `agent/data/workspaces/` is local data, and the precedent for pre-feature
-    records is to let them lapse rather than convert them.
+    """Bring a record written before a feature up to the shape every read path sees. A
+    read-time adapter rather than a migration script, because
+    `agent/data/workspaces/` is local data.
 
-    A workspace written before docs/specs/parallel-drafts holds one
-    `configuration` at the record, and opens as a single draft named "Original"
-    with no parent. Its frames are dropped — they cannot be converted honestly,
-    since synthesizing the missing provenance would re-source every value to
-    `user`, which is the defect drafts remove.
-
-    A draft written before docs/specs/action-log holds a `history` of snapshots,
-    and opens with an empty log. The snapshots lapse by the same argument the
-    frames do: naming the action behind a stored state is provenance the record
-    does not have.
-
-    An `rfq` block written before docs/specs/document-clauses holds two lists,
-    `requirements` and `unmapped`, and is lifted into one list of clauses. The
-    configuration converts rather than lapsing, because nothing has to be
-    invented: every entry of either list already carries its citation, its
-    quote and what it says, and the only thing minted is the identity, which
-    asserts nothing about the document.
-
-    Its *log* is the other half, and there the precedent holds. An entry
-    written before that spec states a clause's facts in a vocabulary with no
-    clause identity in it — `requires` carrying the citation and the quote,
-    `reconciled` addressed by variable — and the identity a converted entry
-    would have to name is one that did not exist when the entry was written.
-    So entries carrying those facts are dropped, exactly as the frames and the
-    snapshots are, and every other entry in the same log survives: an ordinary
-    revision moves `chose` and `attributed`, which this change did not touch.
-    What lapses with them is undoing back past an ingestion or a
-    reconciliation on a record written before this change.
+    The rule between the three conversions is whether the new shape can be reached
+    without inventing anything (docs/specs/document-clauses/design.md decision 3).
     """
     converted = False
     if "drafts" not in record:
@@ -170,10 +121,10 @@ def _adapt(record: dict) -> dict:
 
 
 def _predates_clause_identity(entry: dict) -> bool:
-    """Whether this entry states a clause's facts in the vocabulary that had no
-    clause identity (docs/specs/document-clauses). `requires` and `note` are
-    told by their arity, which the identity lengthened and shortened; a
-    `reconciled` fact by whether it is addressed by an identity at all."""
+    """`requires` and `note` are told by their arity, which the identity lengthened
+    and shortened; a `reconciled` fact by whether it is addressed by an identity at
+    all.
+    """
     for fact in entry.get("asserted", []) + entry.get("retracted", []):
         relation = fact[0]
         if relation == "requires" and len(fact) != 4:
@@ -194,14 +145,8 @@ def _is_identity(value) -> bool:
 
 
 def lifted(configuration: dict) -> dict:
-    """`configuration` with a pre-docs/specs/document-clauses `rfq` block read
-    as one list of clauses, as a new value.
-
-    The read path above lifts a record in place, and a record is not the only
-    door: a configuration also arrives from a thread checkpoint, which no
-    adapter has ever seen. A conversation resumed on a thread written before
-    that spec would otherwise hand the tools two lists, and every reader of the
-    register indexes `clauses`.
+    """A configuration also arrives from a thread checkpoint, which no adapter has
+    ever seen, and every reader of the register indexes `clauses`.
     """
     rfq = configuration.get("rfq")
     if not rfq or "clauses" in rfq:
@@ -212,11 +157,8 @@ def lifted(configuration: dict) -> dict:
 
 
 def _lift_clauses(configuration: dict) -> bool:
-    """An `rfq` block's two lists read as one list of clauses, in place.
-
-    Returns whether it lifted anything, so `_read` knows to persist the
-    identities it minted — see the note there on why they cannot be minted
-    twice.
+    """Returns whether it lifted anything, so `_read` knows to persist the identities
+    it minted.
     """
     rfq = configuration.get("rfq")
     if not rfq or "clauses" in rfq:
@@ -237,10 +179,9 @@ def _lift_clauses(configuration: dict) -> bool:
             "clause": unmapped.get("clause", ""),
             "quote": unmapped.get("quote", ""),
         }
-        # Only when there is one to carry. `note` is a fact of a clause, and
-        # the fact vocabulary states it or does not — writing an empty string
-        # would put a key here that `trace.rebuild` drops, so a lifted record
-        # and its own round trip would differ by it.
+        # Only when there is one to carry: the fact vocabulary states a `note` or
+        # does not, so an empty one would put a key here that `trace.rebuild`
+        # drops.
         if unmapped.get("note"):
             clause["note"] = unmapped["note"]
         clauses.append(clause)
@@ -249,9 +190,9 @@ def _lift_clauses(configuration: dict) -> bool:
 
 
 def current_draft(record: dict) -> dict:
-    """The draft every tool acts on and the canvas renders. Falls back to the
-    first draft if the pointer is ever dangling — a workspace with drafts always
-    has a current one, and no read path may be the one that raises."""
+    """Falls back to the first draft if the pointer is ever dangling: no read path may
+    be the one that raises.
+    """
     drafts = record["drafts"]
     return next(
         (d for d in drafts if d["id"] == record.get("currentDraftId")), drafts[0]
@@ -259,9 +200,9 @@ def current_draft(record: dict) -> dict:
 
 
 def find_draft(record: dict, name: str) -> dict | None:
-    """Lookup by name, case-insensitively: the agent addresses drafts by the
-    name it gave them, through a customer's sentence, and "premium" is the draft
-    it called "Premium". Storage keeps the name as given."""
+    """Case-insensitively: the agent addresses drafts by the name it gave them,
+    through a customer's sentence. Storage keeps the name as given.
+    """
     wanted = name.strip().casefold()
     return next((d for d in record["drafts"] if d["name"].casefold() == wanted), None)
 
@@ -277,8 +218,6 @@ def draft_named(record: dict, name: str) -> dict:
 
 
 def _stamp(record: dict, thread_id: str | None = None) -> None:
-    """Touch the record, and the conversation that moved it if it is one the
-    workspace has registered."""
     now = _now()
     record["updatedAt"] = now
     for thread in record["threads"]:
@@ -292,18 +231,15 @@ def _write(record: dict) -> None:
 
 
 def draft_log(record: dict) -> list[dict]:
-    """Every action taken on the current draft, oldest first. `.get`: a draft
-    adapted from a workspace written before docs/specs/action-log carries no
-    log key until something is written to it."""
+    """`.get`: a draft adapted from a pre-log workspace carries no log key."""
     return current_draft(record).get("log") or []
 
 
 def _entry(action: str, source: str, thread_id: str | None, change: dict) -> dict:
-    """One occurrence, as the log holds it. `standing` is where the cursor is
-    relative to this entry (docs/specs/action-log): `applied` while it is in
-    force, `reversed` once undo has walked past it, `abandoned` once a later
-    action has passed it, which is the redo tail discarded with the record
-    kept."""
+    """`standing` is where the cursor is relative to this entry: `applied` while it is
+    in force, `reversed` once undo has walked past it, `abandoned` once a later
+    action has passed it.
+    """
     return {
         "id": uuid.uuid4().hex,
         "action": action,
@@ -317,14 +253,9 @@ def _entry(action: str, source: str, thread_id: str | None, change: dict) -> dic
 
 
 def _append(draft: dict, entry: dict) -> None:
-    """Land an entry at the head.
-
-    An action that moves the agreement strands whatever the cursor had walked
-    back past: those entries stop being reachable and stay readable, which is
+    """A reversible action strands whatever the cursor had walked back past, which is
     what the log has instead of a truncated redo tail. An action with no facts
-    strands nothing, because it leaves the agreement where the reversed entries
-    were replayable from — the other half of what the old no-op guard protected,
-    and the reason a decline cannot cost the customer their redo.
+    strands nothing, so a decline cannot cost the customer their redo.
     """
     log = list(draft.get("log") or [])
     if trace.is_reversible(entry):
@@ -336,23 +267,17 @@ def _append(draft: dict, entry: dict) -> None:
 
 
 def _walked(log: list[dict]) -> int:
-    """How far back from the head the cursor has already come, in reversible
-    entries. Retention can drop entries from the far end without moving it,
-    which is why the cursor is a standing on each entry rather than a
-    position."""
+    """Retention can drop entries from the far end without moving the cursor, which is
+    why it is a standing on each entry rather than a position.
+    """
     return sum(1 for e in log
                if e["standing"] == "reversed" and trace.is_reversible(e))
 
 
 def _passed(log: list[dict], direction: str) -> list[dict]:
-    """The entries one step in `direction` would move the cursor past, nearest
-    first, ending on the entry it would invert. Empty when there is nothing to
-    reverse within reach, and then nothing is marked at all.
-
-    An action whose whole content is that it occurred — a declined change, or a
-    batch that re-recorded what the agreement already held — is walked past
-    rather than spent a step on, so a control is never offered for a reversal
-    that would visibly do nothing.
+    """Nearest first, ending on the entry the step would invert. Empty when there is
+    nothing to reverse within reach, and then nothing is marked at all. An entry
+    with no facts is walked past rather than spent a step on.
     """
     if direction == "undo":
         if _walked(log) >= HISTORY_DEPTH:
@@ -371,9 +296,9 @@ def _passed(log: list[dict], direction: str) -> list[dict]:
 
 
 def beyond_reach(record: dict) -> bool:
-    """Whether undo is refused because the cursor has walked its whole reach
-    rather than because there is nothing left to reverse. Two refusals, and
-    only one of them means the agreement is at its earliest recorded state."""
+    """Two refusals, and only one of them means the agreement is at its earliest
+    recorded state.
+    """
     log = draft_log(record)
     return (_walked(log) >= HISTORY_DEPTH
             and any(e["standing"] == "applied" and trace.is_reversible(e)
@@ -381,20 +306,14 @@ def beyond_reach(record: dict) -> bool:
 
 
 def reversal_target(record: dict, direction: str) -> dict | None:
-    """The entry a reversal in `direction` would invert, or None when there is
-    none within reach. Pure read over a record the caller already holds — the
-    tool needs the draft's own configuration anyway, to rebuild the state the
-    entry moved away from."""
     passed = _passed(draft_log(record), direction)
     return passed[-1] if passed else None
 
 
 def history_depths(record: dict) -> dict:
-    """How many reversals each way the current draft offers, counted in
-    reversible entries and bounded by the reach. Mirrored into agent state so
-    the canvas can offer the controls without polling the store, and computed
-    the same way in `src/lib/workspaces.ts`, which seeds that mirror on
-    attach."""
+    """Counted in reversible entries and bounded by the reach. Computed the same way in
+    `src/lib/workspaces.ts`, which seeds the mirror on attach.
+    """
     log = draft_log(record)
     walked = _walked(log)
     applied = sum(1 for e in log
@@ -403,8 +322,7 @@ def history_depths(record: dict) -> dict:
 
 
 def create_workspace(configuration: dict) -> dict:
-    # Workspaces are born unnamed; the agent names them from conversation
-    # (rename_workspace) the way chat apps title conversations. Their first
+    # Workspaces are born unnamed and the agent names them from conversation. A
     # draft is named from the start, because drafts are addressed by name.
     draft = _new_draft(FIRST_DRAFT_NAME, configuration)
     record = {
@@ -439,24 +357,12 @@ def get_workspace(workspace_id: str) -> dict:
 
 
 def delete_workspace(workspace_id: str) -> None:
-    """Destroy a workspace and everything it holds
-    (docs/specs/agreement-workspace).
+    """The record is the container, so unlinking it ends drafts, logs, entries and the
+    frozen document text at once — which is why this is the one store call with no
+    `updatedAt` to stamp and no record to return.
 
-    The record is the container: its drafts, their logs and entries, the
-    clauses of its document and the frozen document text are all inside the
-    file, so unlinking it ends all of them at once and nothing has to be
-    swept up afterwards. There is no archived state and no undelete — the log
-    a reversal walks is itself inside the record — which is why this is the
-    one store call with no `updatedAt` to stamp and no record to return.
-
-    Deliberately through `_path`: the id arrives from a URL, and the guard
-    there is what keeps a path-like one from unlinking a file that is not a
-    workspace.
-
-    What survives is the LangGraph checkpoints of the conversations that were
-    attached. They are the ephemeral half of the system and the store has never
-    owned them; after this they belong to nothing and are reachable from
-    nowhere in the app (docs/specs/ontology-of-phenomena, finding 13).
+    Through `_path` deliberately: the id arrives from a URL, and the guard there
+    keeps a path-like one from unlinking a file that is not a workspace.
     """
     path = _path(workspace_id)
     if not path.exists():
@@ -478,30 +384,14 @@ def save_configuration(
     source: str,
     thread_id: str | None = None,
 ) -> dict:
-    """Persist the agreement, log the action that moved it, and stamp the
-    conversation it came from.
+    """The one door the log is written through, so no tool can forget to record what
+    it did; the delta is computed from the two configurations rather than described
+    by the caller, so none can record it wrongly. A batch that changed nothing
+    lands an entry with no facts, which is not reversible.
 
-    `thread_id` is how the frontend knows which conversation to open a
-    workspace on: the last one to change the agreement is where the operator
-    left off (docs/specs/agreement-workspace). A thread the workspace has not
-    registered yet is ignored — registration happens on the conversation's
-    first message and stamps it then.
-
-    This is also the door the log is written through (docs/specs/action-log):
-    every mutating tool reaches the store here, so no tool can forget to record
-    what it did, and the delta is computed from the two configurations rather
-    than described by the caller, so no tool can record it wrongly either. What
-    each tool has to supply is its own name and whose move it is.
-
-    A batch that changed nothing lands an entry with no facts, and that entry
-    is not reversible — one rule covering the no-op batch and the declined
-    change, where the snapshot history needed a guard for the first and had
-    nothing for the second.
-
-    Content changes reach a draft's log through this one door and the
-    structural moves below reach it not at all (docs/specs/parallel-drafts) —
-    routing a switch through here would spend an undo step and let a later undo
-    walk backwards into a state belonging to another document.
+    A thread the workspace has not registered yet is ignored. The structural draft
+    moves reach this door not at all
+    (docs/specs/parallel-drafts/design.md).
     """
     record = get_workspace(workspace_id)
     draft = current_draft(record)
@@ -516,19 +406,10 @@ def save_configuration(
 def append_action(
     workspace_id: str, action: str, source: str, thread_id: str | None = None
 ) -> dict:
-    """Record an action that asserted and retracted nothing, without touching
-    the configuration (docs/specs/action-log).
-
-    `keep_as_is` is the one caller: an occurrence whose whole content is that
-    it occurred. It needs a door of its own rather than a flag on
+    """`keep_as_is` is the one caller. A door of its own rather than a flag on
     `save_configuration`, which would hand a tool that must never move the
-    agreement a write path to it.
-
-    The conversation is recorded on the entry and is deliberately not stamped.
-    A workspace opens on the one that last *changed the agreement*
-    (docs/specs/agreement-workspace), and this is the one action that changes
-    nothing — stamping here would make a decline decide where the operator
-    lands.
+    agreement a write path to it. The conversation is recorded on the entry and
+    deliberately not stamped.
     """
     record = get_workspace(workspace_id)
     _append(current_draft(record), _entry(action, source, thread_id, trace.EMPTY))
@@ -543,17 +424,8 @@ def commit_reversal(
     configuration: dict,
     thread_id: str | None = None,
 ) -> dict:
-    """Move the cursor one step and write the state that comes back
-    (docs/specs/action-log).
-
-    Deliberately not `save_configuration`: a reversal appends nothing, so
-    undoing and redoing the same batch ten times leaves ten cursor moves and
-    one entry. Every entry the step passes changes standing, including the
-    fact-less ones walked over on the way.
-
-    `configuration` is the restored state, already re-validated through the
-    solver by the caller; the store stays out of that. The log walked is the
-    current draft's own.
+    """Not `save_configuration`: a reversal appends nothing, so undoing and redoing
+    the same batch ten times leaves ten cursor moves and one entry.
     """
     record = get_workspace(workspace_id)
     draft = current_draft(record)
@@ -571,19 +443,13 @@ def commit_reversal(
 
 # -- drafts (docs/specs/parallel-drafts) ----------------------------------
 #
-# Structural moves: they rearrange drafts and move the pointer, and none of
-# them touches a log. Forking, switching and discarding are not changes to a
-# document, so they are in no document's record of what was done to it.
+# Structural moves: they rearrange drafts and move the pointer, and none of them
+# touches a log.
 
 
 def fork_draft(workspace_id: str, name: str, thread_id: str | None = None) -> dict:
-    """Copy the current draft into a new one under `name`, and make it current.
-
-    The copy is the whole configuration — choices with their sources, the
-    candidate, the register state — so both drafts are live documents rather
-    than one document and a copy of it. The fork starts with an empty log: no
-    action has been taken on it yet, and inheriting the source's would hand it
-    a redo of a change that was never applied to this document.
+    """The fork starts with an empty log: inheriting the source's would hand it a redo
+    of a change never applied to this document.
     """
     name = name.strip()
     if not name:
@@ -605,9 +471,9 @@ def fork_draft(workspace_id: str, name: str, thread_id: str | None = None) -> di
 
 
 def switch_draft(workspace_id: str, name: str, thread_id: str | None = None) -> dict:
-    """Make another draft the current one. Nothing is written into any
-    configuration, so no value is re-attributed by the move and no log
-    grows."""
+    """Nothing is written into any configuration, so no value is re-attributed and no
+    log grows.
+    """
     record = get_workspace(workspace_id)
     record["currentDraftId"] = draft_named(record, name)["id"]
     _stamp(record, thread_id)
@@ -616,9 +482,9 @@ def switch_draft(workspace_id: str, name: str, thread_id: str | None = None) -> 
 
 
 def discard_draft(workspace_id: str, name: str, thread_id: str | None = None) -> dict:
-    """Remove a draft that is not the current one. The only draft of a
-    workspace is always the current one, so the last draft is refused by the
-    same check that refuses the one being worked on."""
+    """The only draft of a workspace is always the current one, so the last draft is
+    refused by the same check that refuses the one being worked on.
+    """
     record = get_workspace(workspace_id)
     draft = draft_named(record, name)
     if draft["id"] == record["currentDraftId"]:
@@ -637,10 +503,9 @@ def discard_draft(workspace_id: str, name: str, thread_id: str | None = None) ->
 
 
 def attach_rfq(workspace_id: str, document_text: str) -> dict:
-    """Freeze the requirements document on the workspace record
-    (docs/specs/rfq-reconciliation). The raw text is reference material, not
-    working state: it never enters the shared configuration, and deleting
-    every conversation leaves it untouched."""
+    """The raw text is reference material, not working state: it never enters the
+    shared configuration.
+    """
     record = get_workspace(workspace_id)
     record["rfq_document"] = {"text": document_text, "ingestedAt": _now()}
     record["updatedAt"] = _now()
@@ -653,9 +518,9 @@ def register_thread(workspace_id: str, thread_id: str) -> dict:
     record = get_workspace(workspace_id)
     if not any(t["id"] == thread_id for t in record["threads"]):
         now = _now()
-        # createdAt orders the conversation list; updatedAt is the last time
-        # this conversation moved the agreement, and decides which one a
-        # workspace opens on.
+    # createdAt orders the conversation list; updatedAt is the last time this
+    # conversation moved the agreement, and decides which one a workspace opens
+    # on.
         record["threads"].append({"id": thread_id, "createdAt": now, "updatedAt": now})
         record["updatedAt"] = now
         _write(record)

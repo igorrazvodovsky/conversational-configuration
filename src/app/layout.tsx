@@ -67,16 +67,13 @@ export default function RootLayout({
               {children}
             </CopilotKit>
             {/*
-              Where a click that cannot do what it looks like it does gets its
-              answer (constitution #17, and `src/lib/say-why.ts`). Mounted once
-              at the root because the sentences it carries come from three
-              different surfaces, and mounted inside `ThemeProvider` because
-              the toast reads the theme from it.
+              Where a refused click gets its answer (`src/lib/say-why.ts`).
+              At the root because three surfaces send sentences here, and
+              inside `ThemeProvider` because the toast reads the theme from it.
 
-              It is safe in the hydrated tree, which
+              Safe in the hydrated tree, which
               docs/specs/chat-surface/design.md is otherwise strict about:
-              sonner mints no React id — `useId` appears nowhere in its bundle
-              — so it shifts nothing below it.
+              `useId` appears nowhere in sonner's bundle.
             */}
             <Toaster position="bottom-right" />
           </TooltipProvider>

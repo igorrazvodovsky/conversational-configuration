@@ -1,26 +1,16 @@
-/**
- * Workspace API client (docs/specs/agreement-workspace).
- *
- * A workspace is the durable home of one installation's agreement; these
- * helpers talk to the agent-side store through the /api/workspaces rewrite.
- * No state is kept here — records are fetched on demand and the agreement
- * itself always rides in agent state (docs/specs/constitution.md #3).
- */
+// docs/specs/agreement-workspace/design.md
 
 import type { Configuration } from "./configurator";
 
 export interface WorkspaceThread {
   id: string;
   createdAt: string;
-  /** Last time this conversation moved the agreement — what "where I left
-   *  off" means when a workspace opens. Absent on conversations registered
-   *  before the store began stamping it; `createdAt` stands in then. */
+  /** Absent on conversations registered before the store began stamping it;
+   * `createdAt` stands in then. */
   updatedAt?: string;
 }
 
-/** The conversation a workspace opens on: the one that last changed the
- * agreement, falling back to the one started last. Ties go to the later
- * entry, since the store appends in creation order. */
+/** Ties go to the later entry, since the store appends in creation order. */
 export function latestThread(
   threads: WorkspaceThread[],
 ): WorkspaceThread | undefined {
@@ -31,9 +21,7 @@ export function latestThread(
   );
 }
 
-/** One action taken on a draft (docs/specs/action-log). The facts are the
- * agent's business; what the frontend reads is whether an entry has any — an
- * action that asserted nothing is no step back to anywhere — and where the
+/** What the frontend reads is whether an entry has any facts, and where the
  * cursor stands relative to it. */
 export interface LogEntry {
   id: string;
@@ -46,29 +34,23 @@ export interface LogEntry {
   retracted: unknown[][];
 }
 
-/** One draft of the workspace's agreement (docs/specs/parallel-drafts): a whole
- * configuration with its own record of what was done to it. */
 export interface DraftRecord {
   id: string;
   name: string;
-  /** The draft this one was forked from, null on the one a workspace opens
-   * with. Recorded for lineage; an id that no longer resolves reads as no
-   * lineage rather than being repaired. */
+  /** null on the draft a workspace opens with. An id that no longer resolves
+   * reads as no lineage rather than being repaired. */
   forkedFrom: string | null;
   configuration: Configuration;
-  /** Every action taken on this draft, oldest first (docs/specs/action-log).
-   * Drafts adapted from workspaces written before that spec carry none until
-   * something is written to them. */
+  /** Oldest first. Drafts adapted from records written before the log carry
+   * none until something is written to them. */
   log?: LogEntry[];
 }
 
 export interface WorkspaceRecord {
   id: string;
-  // null until the agent names the workspace from conversation
+  /** null until the agent names the workspace from conversation. */
   name: string | null;
-  /** Always at least one, and always with one of them current. Records written
-   * before drafts are adapted store-side, so this shape is what every read
-   * sees. */
+  /** Always at least one, always with one current. */
   drafts: DraftRecord[];
   currentDraftId: string;
   threads: WorkspaceThread[];
@@ -76,32 +58,24 @@ export interface WorkspaceRecord {
   updatedAt: string;
 }
 
-/** The draft the agent acts on and the canvas renders. Falls back to the first
- * draft if the pointer is ever dangling — no read path may be the one that
- * throws. */
+/** Falls back to the first draft if the pointer is ever dangling — no read path
+ * may be the one that throws. */
 export function currentDraft(record: WorkspaceRecord): DraftRecord {
   return (
     record.drafts.find((d) => d.id === record.currentDraftId) ?? record.drafts[0]
   );
 }
 
-/** How far the cursor may walk back from the head of a draft's log, counted in
- * reversible entries. The agent's copy is `HISTORY_DEPTH` in
- * `agent/src/workspace_store.py`, and `tests/couplings.test.ts` asserts the two
- * agree. */
+/** The agent's copy is `HISTORY_DEPTH` in `agent/src/workspace_store.py`, held
+ * equal by `tests/couplings.test.ts`. */
 export const REVERSAL_REACH = 10;
 
-/** Whether walking the cursor past this entry would change the agreement. An
- * action whose whole content is that it occurred — a declined change, or a
- * batch that re-recorded what the agreement already held — is walked past
- * rather than spent a step on (docs/specs/action-log). */
+/** An entry with no facts is walked past rather than spent a step on. */
 const reversible = (entry: LogEntry) =>
   entry.asserted.length > 0 || entry.retracted.length > 0;
 
-/** How many reversals each way the current draft offers. Mirrored into agent
- * state, seeded from the record on attach — which is why this predicate exists
- * twice, here and as `history_depths` in the store, and why the couplings check
- * holds the two against each other. */
+/** The same predicate as `history_depths` in the store, held equal by the
+ * couplings check. */
 export function historyDepths(record: WorkspaceRecord | null) {
   const log = (record ? currentDraft(record).log : undefined) ?? [];
   const walked = log.filter(
@@ -116,8 +90,6 @@ export function historyDepths(record: WorkspaceRecord | null) {
   };
 }
 
-/** The draft mirror agent state carries, built from the record for the seed —
- * the same shape the agent's committing tools write. */
 export function draftSummaries(record: WorkspaceRecord) {
   return record.drafts.map((d) => ({
     id: d.id,
@@ -141,24 +113,14 @@ export function createWorkspace(): Promise<WorkspaceRecord> {
   return request("/api/workspaces", { method: "POST" });
 }
 
-/** User-facing label for an unnamed workspace (the user-facing term for the
- * entity is "elevator" — docs/specs/agreement-workspace). */
 export const PLACEHOLDER_NAME = "New elevator";
 
 export function fetchWorkspace(id: string): Promise<WorkspaceRecord> {
   return request(`/api/workspaces/${encodeURIComponent(id)}`);
 }
 
-/** Rename an elevator, and answer with the stored record.
- *
- * The operator's door onto the name the agent's `name_workspace` tool also
- * writes (docs/specs/agreement-workspace). Both reach one store call, so the
- * two cannot disagree about what the elevator is called; what they can disagree
- * about is which of them wrote last, and last write wins.
- *
- * A name with nothing in it is refused by the store and arrives here as a 400,
- * which `request` throws on. The caller says why the elevator kept its name.
- */
+/** The same store call the agent's `name_workspace` tool reaches; last write
+ * wins. An empty name is refused by the store and arrives as a 400. */
 export function renameWorkspace(
   id: string,
   name: string,
@@ -170,10 +132,7 @@ export function renameWorkspace(
   });
 }
 
-/** Destroy an elevator and everything it holds — its drafts, their record of
- * what was done to them, and any document ingested for it
- * (docs/specs/agreement-workspace). There is no archived state and no
- * undelete, and the reply is the id that is gone. */
+/** There is no archived state and no undelete. */
 export function deleteWorkspace(id: string): Promise<{ deleted: string }> {
   return request(`/api/workspaces/${encodeURIComponent(id)}`, {
     method: "DELETE",

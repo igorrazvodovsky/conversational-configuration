@@ -1,24 +1,21 @@
-"""The fact vocabulary a draft's log is written in (docs/specs/action-log).
+"""The fact vocabulary a draft's log is written in
+(docs/specs/action-log/design.md).
 
 An entry records one action over named facts: what it asserted, what it
-retracted. This module is that vocabulary and the four pure functions over it —
-`facts` reads a configuration as facts, `rebuild` reads facts back as a
-configuration, `delta` diffs two configurations, and `apply` moves a
-configuration by a delta. `facts` and `rebuild` are mutual inverses, which is
-what makes a reversal exact rather than careful:
+retracted. This module is that vocabulary and four pure functions over it.
+`facts` and `rebuild` are mutual inverses, which is what makes a reversal
+exact:
 
     apply(before, delta(before, after))         == after
     apply(after, invert(delta(before, after)))  == before
 
-Deliberately free of the solver and the product model, so the store can compute
-a delta without growing a model of the product. Validity is the caller's: a
-rebuilt configuration is re-validated by `configuration.restore` before it
-lands, exactly as a snapshot was.
+Free of the solver and the product model, so the store can compute a delta
+without growing a model of the product. Validity is the caller's: a rebuilt
+configuration is re-validated by `configuration.restore` before it lands.
 
-The relations are the ontology's own (docs/specs/ontology-of-phenomena), so an
-entry read by hand says what happened. Derived facts are in none of them: the
-solver recomputes `statuses` and `unavailable`, so there is nothing to copy
-blind.
+The relations are the ontology's own
+(docs/specs/ontology-of-phenomena/ontology.md). Derived facts are in none of
+them — the solver recomputes `statuses` and `unavailable`.
 """
 
 # The draft an entry belongs to is the log it sits in, so no fact repeats it.
@@ -31,10 +28,7 @@ EMPTY: Delta = {"asserted": [], "retracted": []}
 
 
 def facts(config: dict) -> list[Fact]:
-    """A configuration read as the facts that hold of it.
-
-    `config` is a configuration or the snapshot of one; `statuses` and
-    `unavailable` are ignored wherever they are present, because the solver
+    """`statuses` and `unavailable` are ignored wherever present, because the solver
     derives them.
     """
     out: list[Fact] = []
@@ -79,11 +73,9 @@ def facts(config: dict) -> list[Fact]:
 
 
 def rebuild(fact_list: list[Fact]) -> dict:
-    """The configuration these facts hold of, minus what the solver derives.
-
-    The inverse of `facts`, and the only place the vocabulary is read. An
-    unknown relation raises rather than being skipped: a fact nothing rebuilds
-    is a fact a reversal would silently drop.
+    """The inverse of `facts`, and the only place the vocabulary is read. An unknown
+    relation raises rather than being skipped: a fact nothing rebuilds is a fact a
+    reversal would silently drop.
     """
     values: dict[str, str] = {}
     sources: dict[str, str] = {}
@@ -159,15 +151,9 @@ def rebuild(fact_list: list[Fact]) -> dict:
 
 
 def _minus(fact_list: list[Fact], remove: list[Fact]) -> list[Fact]:
-    """`fact_list` less one occurrence of each fact in `remove`, in order.
-
-    Multiset rather than set arithmetic. It matters less than it did — every
-    fact of a clause now carries the clause's identity, so two clauses of one
-    document no longer reduce to the same triple — but a delta is still a list
-    of facts rather than a set, and set semantics would be a claim about the
-    vocabulary rather than about this document. A fact already absent is
-    dropped, because a reversal reconstructs a state rather than settling a
-    transaction, and the solver validates what comes out.
+    """Multiset rather than set arithmetic: a delta is a list of facts. A fact already
+    absent is dropped, because a reversal reconstructs a state rather than settling
+    a transaction.
     """
     pending: dict[tuple, int] = {}
     for fact in remove:
@@ -190,35 +176,23 @@ def delta(before: dict, after: dict) -> Delta:
 
 
 def change_of(entry: dict) -> Delta:
-    """A log entry read as the delta it recorded, without the occurrence around
-    it — the id, the action, the source and where the cursor stands."""
+    """A log entry read as the delta it recorded, without the occurrence around it."""
     return {"asserted": entry["asserted"], "retracted": entry["retracted"]}
 
 
 def invert(change: Delta) -> Delta:
-    """A delta run backwards. Inversion is generic, which is why no tool needs
-    an inverse of its own — the objection the [undo requirements] raised
-    against a move log, and the reason it doesn't carry to a fact delta."""
+    """Inversion is generic, which is why no tool needs an inverse of its own."""
     return {"asserted": change["retracted"], "retracted": change["asserted"]}
 
 
 def apply(config: dict, change: Delta) -> dict:
-    """`config` moved by `change`, as a configuration minus what is derived.
-
-    Re-asserted facts land at the end of the fact list, which is why the only
-    ordered structure a configuration holds — the frozen register — is one that
-    only ever arrives or leaves whole. Choices and the candidate's assignment
-    are dicts, where order is not part of the value.
+    """Re-asserted facts land at the end of the fact list, which is why the only
+    ordered structure a configuration holds — the frozen register — only ever
+    arrives or leaves whole.
     """
     return rebuild(_minus(facts(config), change["retracted"]) + change["asserted"])
 
 
 def is_reversible(entry: dict) -> bool:
-    """Whether walking the cursor past this entry would change the agreement.
-
-    An action whose whole content is that it occurred — a declined change, or a
-    batch that re-recorded what the agreement already held — lands an entry and
-    is no step back to anywhere. Undo walks past it rather than spending a step
-    on it (docs/specs/action-log).
-    """
+    """An entry with no facts is no step back to anywhere, and undo walks past it."""
     return bool(entry.get("asserted") or entry.get("retracted"))

@@ -1,24 +1,13 @@
 "use client";
 
-/**
- * Recitals — the change in the world (docs/specs/agreement-document; canvas
- * anatomy, *The anatomy*). The site, the situation, and what will happen:
- * installed thus, operating so, for the term — in the building's language, so
- * the record answers in the vocabulary elicitation speaks.
- *
- * Every sentence here is a deterministic template over agent state and model
- * data. The agent never composes this prose: model-written text in the record
- * drifts from the state it describes, and constitution #6's grounding
- * discipline applies to the document as much as to explanations. The agent's
- * free narration has a surface already — the chat.
- *
- * The prose restates three agreement-group values (term, service, use) that
- * the operative terms own. That is deliberate: a recital reads as the change in
- * the world only if it says how long and on what service, and both instances
- * edit the same state. Marks are not duplicated — a variable's provenance and
- * deviation marks render only in its home layer, which for those three is the
- * terms.
- */
+// docs/specs/agreement-document/design.md
+//
+// Every sentence is a deterministic template over agent state and model data.
+// The agent never composes this prose: model-written text in the record drifts
+// from the state it describes (constitution #6).
+//
+// Term, service and use are restated here and stated in the terms. Both edit
+// the same state, and the marks render only in a variable's home layer.
 
 import {
   Clause,
@@ -31,13 +20,9 @@ import {
   unmetFor,
 } from "./document-parts";
 
-/**
- * How each value reads inside these sentences. The catalogue's labels are
- * column headings — "Office", "Modernization (existing shaft)" — and dropping
- * them into prose is exactly the re-imposition of catalogue terms this layer
- * exists to undo. Total over the model's values; a value that grows a new
- * option falls back to its label rather than breaking the sentence.
- */
+/** The catalogue's labels are column headings, and dropping them into prose
+ * re-imposes the vocabulary this layer exists to undo. Falls back to the
+ * label. */
 const BUILDING: Record<string, string> = {
   office: "an office building",
   residential: "a residential building",
@@ -74,7 +59,6 @@ const TRAFFIC: Record<string, string> = {
   heavy: "near-continuous traffic",
 };
 
-/** The margin marks for the variables a paragraph commits. */
 function Marks({ doc, variables }: { doc: DocumentView; variables: string[] }) {
   return (
     <>
@@ -101,8 +85,7 @@ export function Recitals({
   siteName,
 }: {
   doc: DocumentView;
-  /** The workspace's name — all the site the store carries; there is no
-   * address field, and this spec does not add one. */
+  /** The workspace's name — all the site the store carries. */
   siteName: string | null;
 }) {
   return (

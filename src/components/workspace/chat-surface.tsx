@@ -1,14 +1,6 @@
 "use client";
 
-/**
- * The chat's geometry, as a mode the user picks (docs/specs/chat-surface).
- *
- * Everything here is chrome *around* the chat, never inside it: the pane is one
- * mount in all four modes, and only its container's classes change
- * (workspace-split.tsx). Re-parenting it would reset the transcript's scroll
- * offset and re-fire `SettleAtEnd`, which is the whole reason the modes are
- * expressed as classes rather than as four renderings.
- */
+// docs/specs/chat-surface/design.md
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -31,7 +23,6 @@ import {
 import type { WorkspaceRecord } from "@/lib/workspaces";
 import { ConversationMenu } from "./conversation-menu";
 
-/** Hidden is a mode like the others; only the visible three are switchable. */
 export type ChatSurfaceMode = "sidebar" | "floating" | "fullscreen" | "hidden";
 type VisibleMode = Exclude<ChatSurfaceMode, "hidden">;
 
@@ -45,17 +36,11 @@ const GEOMETRIES = [
   icon: typeof PanelRightIcon;
 }>;
 
-/**
- * Mode state, deliberately in React and deliberately not persisted: it is not
- * configuration (constitution #3 keeps the agent's state for the agreement),
- * and restoring it from localStorage would reintroduce the hydration mismatch
- * `workspace-split.tsx` refuses for the panel split. Sidebar on every load is
- * also the guard the discovery amendment rests on — the app never opens anyone
- * in a transcript.
- */
+/** Not persisted: restoring it from localStorage would bring back the
+ * hydration mismatch `workspace-split.tsx` refuses, and sidebar on every load
+ * is what keeps the app from opening anyone in a transcript. */
 export function useChatSurface() {
   const [mode, setMode] = useState<ChatSurfaceMode>("sidebar");
-  // Restoring goes back to where the user was, not to a mode we chose for them.
   const lastVisible = useRef<VisibleMode>("sidebar");
   const [unseenReplies, setUnseenReplies] = useState(false);
 
@@ -85,15 +70,9 @@ export function useChatSurface() {
 }
 
 /**
- * A hidden pane may not open itself and may not swallow a reason
- * (docs/discovery/principles/refusals-name-their-rules.md), so what is left
- * is a mark. Counting assistant turns is all it does — no parsing, no
- * notion of which reply mattered.
- *
- * This lives in the header rather than in `useChatSurface`, and the reason is
- * render scope: `useAgent` re-renders its caller on every agent event, which
- * during a streaming reply is every token. In `useChatSurface` that caller is
- * the whole workspace page. Here it is two buttons.
+ * In the header rather than in `useChatSurface` because `useAgent` re-renders
+ * its caller on every streamed token, and there that caller is the whole
+ * workspace page (docs/specs/chat-surface/design.md decision 5).
  */
 function useUnseenReplies(hidden: boolean, onUnseenReply: () => void) {
   const { agent } = useAgent();
@@ -109,14 +88,9 @@ function useUnseenReplies(hidden: boolean, onUnseenReply: () => void) {
   }, [hidden, replies, onUnseenReply]);
 }
 
-/**
- * The bar itself: a flex container that calls no hook of its own beyond the
- * hydration flag, so the conversation menu is not dragged into the mode
- * controls' render scope — those re-render on every streamed token, this one
- * only when the workspace's conversations change (design 7). Nothing here may
- * subscribe to agent state: one such hook re-renders both leaves and the split
- * buys nothing.
- */
+/** Calls no hook beyond the hydration flag, so the conversation menu stays out
+ * of the mode controls' render scope. Nothing here may subscribe to agent
+ * state — one such hook re-renders both leaves (decision 7). */
 export function ChatSurfaceHeader({
   mode,
   onSelect,
@@ -213,23 +187,14 @@ function ChatModeControls({
   );
 }
 
-/**
- * Both menus in this header are mounted after hydration, and this is not a
- * styling nicety.
- * A Radix menu present during the hydration pass shifts the `useId` values of
- * the *whole* page — every canvas disclosure comes back with a different id
- * than the server sent, and React reports a mismatch on every load. This is the
- * same hazard `workspace-split.tsx` documents, and the same answer: keep the
- * hydrated tree off `useId`. The server and the first client render agree on a
- * plain button; the menu takes over a tick later, before anyone can click it.
- */
+/** A Radix menu present during the hydration pass shifts the `useId` values of
+ * the whole page (docs/specs/chat-surface/design.md decision 4). */
 function useHydrated() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   return hydrated;
 }
 
-/** The only affordance left when the chat is away. */
 export function ChatRestoreButton({
   unseenReplies,
   onClick,

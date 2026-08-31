@@ -1,11 +1,6 @@
 "use client";
 
-/**
- * Elevator list — the journey's entry point (docs/specs/agreement-workspace).
- * The primary user is a reviser: the front door shows their installations and
- * the agreements' current state, not an empty chat. Creation is one click and
- * nameless — the agent names the entry from conversation.
- */
+// docs/specs/agreement-workspace/design.md
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -39,8 +34,7 @@ export default function HomePage() {
   const [error, setError] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // Re-read rather than splice: the store owns the order, and a delete is the
-  // second thing that changes what this list holds.
+  // Re-read rather than splice: the store owns the order.
   const load = () =>
     listWorkspaces()
       .then(setWorkspaces)
@@ -50,10 +44,8 @@ export default function HomePage() {
     load();
   }, []);
 
-  // A ref as well as the state, because the state is read from a render's
-  // closure and a second click can land before React has re-rendered. The
-  // button is no longer disabled (constitution #17), so the handler is the
-  // whole guard on a non-idempotent action and has to hold synchronously.
+  // The state is read from a render's closure, so it cannot guard a second
+  // click that lands before React re-renders.
   const creatingNow = useRef(false);
   const create = async () => {
     if (creatingNow.current) return;
@@ -80,10 +72,8 @@ export default function HomePage() {
               review or revise it, in conversation or directly.
             </p>
           </div>
-          {/* Not disabled while it works (constitution #17). `create` already
-              returns early on a second call, so the attribute was never the
-              guard — it only took the control away and said nothing. What says
-              a creation is in flight is the spinner and the word. */}
+          {/* Live while it works (constitution #17); the spinner and the word
+              say a creation is in flight. */}
           <Button variant="outline" onClick={create}>
             {creating ? <Spinner /> : <Plus />}
             {creating ? "Creating…" : "New elevator"}

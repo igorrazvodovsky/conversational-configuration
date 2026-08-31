@@ -1,40 +1,6 @@
 "use client";
 
-/**
- * Workspace attachment (docs/specs/agreement-workspace) — the evolution of
- * the thread-resumption hook from docs/specs/nonlinear-interaction.
- *
- * The workspace, not the thread, is the durable locus of the agreement.
- *
- * Entering a workspace first *resolves* which conversation to be in — the one
- * that last moved the agreement, or a fresh one when it has none — and
- * everything below waits for that, because until then the active thread is
- * whatever was globally active, quite possibly another workspace's.
- *
- * Then, on every active-thread change (and on the agent-instance change the
- * initial connect causes) this hook:
- *   1. clears the agent state synchronously (so nothing from the previous
- *      thread leaks into the next run),
- *   2. seeds `{workspace_id, configuration}` — the *current draft's*
- *      configuration — plus the draft mirrors, from the workspace store, and
- *      KEEPS it seeded via an agent subscriber: the connect that follows a
- *      page load or thread switch delivers the thread checkpoint's state
- *      after the seed, and the workspace configuration must win over that
- *      checkpoint (it is a historical record). The subscriber disarms the
- *      moment a genuinely new user message exists — from then on state
- *      belongs to the live run,
- *   3. for a thread with server history, hydrates the transcript from the
- *      runtime (CopilotKit v2 switches threads but never fetches messages),
- *   4. flags the thread stale, with the reason, when its checkpoint no longer
- *      matches the workspace's current draft — its cards must not act on a
- *      superseded state, nor on another draft,
- *   5. registers a conversation with the workspace on its first message.
- *
- * Two inherited traps (see docs/specs/nonlinear-interaction/design.md): the
- * runtime returns LangChain-style tool calls that must be converted to the
- * AG-UI shape, and the switch-triggered connect can wipe hydrated messages —
- * hydration waits for the agent to settle and briefly re-applies if wiped.
- */
+// docs/specs/agreement-workspace/design.md, which rules every mechanism here.
 
 import {
   useAgent,
@@ -83,9 +49,8 @@ function toAgUiMessage(message: RuntimeMessage) {
   };
 }
 
-/** Key-order-independent comparison: checkpoint and workspace configurations
- * take different serialization paths, so plain JSON.stringify could disagree
- * on identical states. */
+/** Not `JSON.stringify`: checkpoint and workspace configurations take
+ * different serialization paths and could disagree on identical states. */
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
@@ -98,22 +63,6 @@ function stableStringify(value: unknown): string {
   return `{${entries.join(",")}}`;
 }
 
-/**
- * Why a reopened conversation's cards may not act, in the operator's terms —
- * the line the card itself shows (docs/specs/agreement-workspace design).
- *
- * Under drafts it can usually be specific, naming the draft this conversation
- * was working on and the one that is current, which tells the operator what to
- * do about it where "the agreement moved on" only says that something happened.
- * It falls back to the workspace-level wording when the conversation's own
- * draft cannot be resolved — it ran before drafts existed, or that draft has
- * since been discarded — which is still true.
- *
- * The singular ("was working on") holds because a card that predates a switch
- * made inside its own conversation is already inert under the any-user-message
- * rule `useCardDispatch` applies; only tail cards reach this path, and a tail
- * card's draft is the checkpoint's draft.
- */
 function staleReason(
   record: WorkspaceRecord,
   checkpointDraftId: string | undefined,
@@ -132,37 +81,20 @@ export function useWorkspaceAttachment(workspaceId: string) {
 
   const [workspace, setWorkspace] = useState<WorkspaceRecord | null>(null);
   const [notFound, setNotFound] = useState(false);
-  // The reason this conversation's cards may not act, or null when they may.
-  // A string rather than a flag because the three inert conditions are not
-  // equally self-explanatory: this is the one whose cause is outside the
-  // conversation entirely (docs/specs/agreement-workspace design).
   const [staleThread, setStaleThread] = useState<string | null>(null);
   const clearedFor = useRef<string | undefined>(undefined);
   const enteredFor = useRef<string | undefined>(undefined);
-  // Workspace whose entry has resolved to a thread. Everything below waits for
-  // it: until entry lands, the active thread is still whatever was globally
-  // active — quite possibly another workspace's conversation.
   const [entryResolvedFor, setEntryResolvedFor] = useState<string | undefined>(
     undefined,
   );
-  // The configuration object is captured per render; entry acts on it after an
-  // await, so it reads the current one rather than the one it started with.
   const configurationRef = useRef(configuration);
   configurationRef.current = configuration;
-  // Thread whose seed has landed — only it may register conversations. Right
-  // after a switch the new threadId renders while the previous conversation's
-  // messages are still in the agent, and without this gate that stale render
-  // registers the fresh thread before its first real message.
+  // Right after a switch the new threadId renders while the previous
+  // conversation's messages are still in the agent; without this gate that
+  // stale render registers the fresh thread before its first real message.
   const attachedFor = useRef<string | undefined>(undefined);
   const registering = useRef<Set<string>>(new Set());
 
-  // Opening a workspace resumes its latest conversation, or mounts a fresh
-  // unregistered one when it has none. Entry has to resolve the thread rather
-  // than assume it: the active thread is global to the CopilotKit core and
-  // survives client-side navigation, so a workspace opened after another one
-  // would otherwise attach to — and register — the previous workspace's active
-  // conversation. The two refs below are workspace-agnostic and must not carry
-  // that thread's clearance across the boundary.
   useEffect(() => {
     if (!configuration || enteredFor.current === workspaceId) return;
     enteredFor.current = workspaceId;
@@ -175,18 +107,14 @@ export function useWorkspaceAttachment(workspaceId: string) {
       try {
         record = await fetchWorkspace(workspaceId);
       } catch {
-        // Every exit sets notFound or resolves entry — an exit that does
-        // neither would leave the rest of the hook gated forever.
+        // Every exit sets notFound or resolves entry, or the rest of the
+        // hook stays gated forever.
         if (enteredFor.current === workspaceId) setNotFound(true);
         return;
       }
       if (enteredFor.current !== workspaceId) return; // navigated on
-      // Where the operator left off: the conversation that last moved the
-      // agreement (`latestThread`), not the one started most recently — those
-      // differ as soon as someone returns to an older conversation to make a
-      // change. The record is deliberately not written to `workspace` state
-      // here — the attach effect owns it, so it can never be observed against
-      // another workspace's thread in the render before the switch lands.
+      // The conversation that last moved the agreement, not the one started
+      // most recently.
       const latest = latestThread(record.threads);
       const config = configurationRef.current;
       if (!latest) config?.startNewThread();
@@ -196,19 +124,13 @@ export function useWorkspaceAttachment(workspaceId: string) {
     })();
   }, [configuration, workspaceId]);
 
-  // Attach on active-thread change. Deliberately NOT guarded to run once per
-  // thread: the initial connect swaps the `agent` instance, and a seed or
-  // subscriber applied to the stale instance is invisible to the UI — the
-  // effect must re-attach on the fresh one.
+  // Deliberately NOT guarded to run once per thread: the initial connect swaps
+  // the `agent` instance, and a seed applied to the stale one is invisible.
   useEffect(() => {
     if (!threadId || entryResolvedFor !== workspaceId) return;
 
-    // Clear synchronously on the switch itself, before anything can be sent —
-    // otherwise a new conversation would start from the previous thread's
-    // choices (the trap the resumption hook documented). The seed below puts
-    // the real state in. Messages are cleared too: after cross-workspace
-    // navigation no connect wipes them, and they would both show another
-    // workspace's transcript and trip message-count-based registration.
+    // Synchronously, before anything can be sent. Messages too: after
+    // cross-workspace navigation no connect wipes them.
     if (clearedFor.current !== threadId) {
       clearedFor.current = threadId;
       setStaleThread(null);
@@ -222,8 +144,7 @@ export function useWorkspaceAttachment(workspaceId: string) {
 
     (async () => {
       // The previous conversation's messages linger until the runtime's
-      // switch-triggered connect wipes them — wait for the drain so the
-      // subscriber's "user acted" check sees this thread, not the old one.
+      // switch-triggered connect wipes them.
       for (let i = 0; i < 20 && !cancelled && agent.messages.length > 0; i++)
         await sleep(250);
       if (cancelled || agent.messages.length > 0) return;
@@ -241,8 +162,6 @@ export function useWorkspaceAttachment(workspaceId: string) {
       const draft = currentDraft(record);
       const want = stableStringify(draft.configuration);
       const restoredIds = new Set<string>();
-      // A user message that was not hydrated from the server is the user (or
-      // a card) acting live in this conversation.
       const userActed = () =>
         agent.messages.some(
           (m) =>
@@ -253,26 +172,15 @@ export function useWorkspaceAttachment(workspaceId: string) {
         agent.setState({
           workspace_id: record.id,
           configuration: draft.configuration,
-          // The canvas renders its undo controls from this mirror
-          // (docs/specs/undo); what it counts is how far the cursor can walk
-          // through the current draft's own log (docs/specs/action-log), and
-          // tools refresh it as they commit.
           history: historyDepths(record),
-          // Which draft this is and what else exists beside it
-          // (docs/specs/parallel-drafts). This seed is the only path for the
-          // two: a thread that has never run replays no snapshot, and one
-          // that ran before drafts replays a snapshot with neither key in it,
-          // either of which would leave the document unnamed and the switcher
-          // empty until the customer's first message.
+          // A thread that has never run replays no snapshot, and one that ran
+          // before drafts replays one with neither key, so this seed is the
+          // only path for the two.
           current_draft_id: draft.id,
           drafts: draftSummaries(record),
         });
 
       seed();
-      // Workspace-configuration precedence, event-driven: whatever the
-      // connect writes (nothing, or the checkpoint state), put the workspace
-      // configuration back — until the user acts, after which state belongs
-      // to the live run and the subscriber disarms.
       subscription = agent.subscribe({
         onStateChanged: () => {
           if (cancelled) return;
@@ -284,11 +192,6 @@ export function useWorkspaceAttachment(workspaceId: string) {
           const state = agent.state as
             | { configuration?: unknown; current_draft_id?: string }
             | undefined;
-          // The pair again, for the same reason as the staleness check below:
-          // a checkpoint delivered by the connect can carry the configuration
-          // of a draft this workspace has since forked from, byte-identical to
-          // the current one, and comparing content alone would leave the canvas
-          // naming the wrong document.
           if (
             !state?.configuration ||
             state.current_draft_id !== draft.id ||
@@ -304,30 +207,16 @@ export function useWorkspaceAttachment(workspaceId: string) {
         fetch(`${base}/messages`),
         fetch(`${base}/state`),
       ]);
-      // A brand-new thread has no server record yet — nothing to restore.
       if (cancelled || !messagesRes.ok || !stateRes.ok) return;
       const { messages } = await messagesRes.json();
       const { state } = await stateRes.json();
 
-      // The checkpoint is the record of what this conversation saw; when the
-      // agreement has moved on — another conversation changed it, or forked or
-      // switched the draft under it — the transcript's cards must not act on
-      // it.
-      //
-      // The comparison is over the PAIR (draft, configuration), not the
-      // configuration alone: a fork is byte-identical to the draft it came
-      // from until one of them is edited, which is exactly the window in which
-      // the operator is most likely to reopen the conversation the fork came
-      // out of, and content equality would let its cards apply to the fork
-      // (docs/specs/parallel-drafts).
+      // Over the PAIR (draft, configuration): a fork is byte-identical to the
+      // draft it came from until one is edited.
       //
       // An ABSENT checkpoint means unverifiable, not unchanged. The runtime
-      // answers 200 with `{state: null}` — never a 404 — when its thread store
-      // holds no state snapshot for this thread, and that store is a map in the
-      // Next.js process, so it is empty after a restart. A conversation that
-      // ran before drafts has no `current_draft_id` in its checkpoint either,
-      // and is unverifiable on the same terms. Only a transcript we could check
-      // against the workspace may keep live cards.
+      // answers 200 with `{state: null}`, never a 404, when its thread store
+      // holds no snapshot — and that store is a map in the Next.js process.
       const hasMessages = Array.isArray(messages) && messages.length > 0;
       if (hasMessages) {
         const checkpoint = state as
@@ -350,9 +239,8 @@ export function useWorkspaceAttachment(workspaceId: string) {
         seed(); // workspace configuration wins over whatever connect left
       };
 
-      // The switch-triggered connect can be in flight (isRunning) and reset
-      // local messages when it lands — wait for it to settle, hydrate, then
-      // briefly watch for a late wipe.
+      // The switch-triggered connect can be in flight and reset local messages
+      // when it lands.
       for (let i = 0; i < 40 && !cancelled && agent.isRunning; i++)
         await sleep(250);
       if (cancelled || agent.messages.length > 0) return;
@@ -370,8 +258,6 @@ export function useWorkspaceAttachment(workspaceId: string) {
     };
   }, [agent, threadId, workspaceId, entryResolvedFor]);
 
-  // A conversation joins the workspace's list on its first message — this is
-  // also how a canvas edit with no active conversation "starts" one.
   const messageCount = agent.messages.length;
   useEffect(() => {
     if (!threadId || !workspace || messageCount === 0) return;
@@ -385,22 +271,14 @@ export function useWorkspaceAttachment(workspaceId: string) {
       .catch(() => registering.current.delete(threadId));
   }, [messageCount, threadId, workspace, entryResolvedFor, workspaceId]);
 
-  // Live display name: the name_workspace tool mirrors the store's name into
-  // agent state, so a rename shows up mid-conversation without a refetch.
   // null means unnamed — the caller shows the placeholder.
   const workspaceName =
     (agent.state as { workspace_name?: string } | undefined)?.workspace_name ??
     workspace?.name ??
     null;
 
-  // The operator renamed it from the canvas, and the store already holds the
-  // new name (docs/specs/agreement-workspace, *Renaming*). Precedence is
-  // resolved here and nowhere else, which is why the mirror is corrected here
-  // too: a conversation in which the agent has already named the elevator
-  // carries `workspace_name` in agent state, and that beats the record, so
-  // writing only the record would persist a rename the canvas never shows.
-  // The mirror is touched only when it is there — an untouched conversation
-  // has no key to correct, and adding one would put a name into the next run's
+  // The mirror is touched only when the key is already there: an untouched
+  // conversation has none, and adding one would put a name into the next run's
   // initial state that nothing asked for.
   const renamed = useCallback(
     (name: string) => {

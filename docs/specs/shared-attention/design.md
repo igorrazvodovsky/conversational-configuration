@@ -55,7 +55,7 @@ The precedent is in the code. `ScheduleGroup` in `config-canvas/schedules.tsx` a
 const expanded = open ?? (deviating || holdsRevealedValue)
 ```
 
-An untouched schedule follows the document, and a schedule the operator has explicitly opened or closed obeys them permanently. That is the requirements' rule about an explicit collapse, obtained for free, and it avoids the hydration hazard the existing comment documents: the state initializer doesn't re-run, so a default read from anything the server can't see would mismatch on load.
+An untouched schedule follows the document, and a schedule the operator has explicitly opened or closed obeys them permanently. That is the requirements' rule about an explicit collapse, obtained for free, and it avoids the hydration hazard the [agreement workspace](../agreement-workspace/design.md) records: the state initializer doesn't re-run, so a default read from anything the server can't see would mismatch on load.
 
 One addition proved necessary. The expansion has to outlive the mark, or the schedule would re-collapse when the reveal faded, and a reveal collapsing something is exactly what the requirements forbid. So alongside the fallback, an effect latches `open` to true, `setOpen(o => o ?? true)`, while an untouched schedule holds a revealed value. The fallback expands it in the reveal's own render, since the scroll queries the DOM in that same commit and needs the rows present; the latch makes the expansion permanent; and an explicit collapse, `open === false`, defeats both, with the header carrying the mark and a "changed in here" note instead.
 

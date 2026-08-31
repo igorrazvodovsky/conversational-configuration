@@ -1,14 +1,6 @@
 "use client";
 
-/**
- * Side-by-side agreement comparison for the agent's compare_drafts tool
- * (docs/specs/parallel-drafts; monthly semantics from docs/specs/service-agreement):
- * only the differing variables, both values with monthly deltas at each side's
- * own term, and the monthly-price delta — computed backend-side, valid by
- * construction. Both sides are whole drafts, so taking one is a *switch*: the
- * other survives the choice, and the button dispatches the structured message
- * the agent maps onto switch_draft.
- */
+// docs/specs/parallel-drafts/design.md
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,16 +20,14 @@ interface SideValue {
 
 interface Payload {
   kind: "draft_comparison";
-  // footprint is null on candidates stored before docs/specs/environmental-footprint
+  // null on candidates stored before the footprint feature.
   a: { name: string; price: number; footprint: Footprint | null };
   b: { name: string; price: number; isCurrent: boolean; footprint: Footprint | null };
   differences: { variable: string; label: string; a: SideValue; b: SideValue }[];
   priceDelta: number;
   footprintDelta: number; // 0 when either side lacks a footprint
-  // The delta already formatted backend-side, so this card and the agent's
-  // sentence beside it quote one figure; null when either side lacks a
-  // footprint. Older tool results in a reopened conversation have no such
-  // field, hence the fallback below.
+  // Formatted backend-side so the card and the sentence beside it quote one
+  // figure. Older tool results in a reopened conversation predate the field.
   footprintDeltaText?: string | null;
 }
 
@@ -77,9 +67,7 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left">
-            {/* Scoped, so a cell announces the variable and the draft it
-                belongs to — which is the whole content of a comparison
-                (constitution #16). */}
+            {/* Scoped, so a cell announces its variable and its draft. */}
             <th scope="col" className="pb-2 font-normal text-xs text-muted-foreground">
               {payload.differences.length} difference
               {payload.differences.length === 1 ? "" : "s"}
@@ -155,10 +143,7 @@ export function DraftComparison({ toolCallId, status, result }: CardProps) {
             <Button
               key={s.key}
               size="sm"
-              /* A spent card says so with its dashed edge and with this
-                 button being `disabled`; fading the draft's name on top of
-                 that would only make the record harder to read
-                 (constitution #16). */
+              /* The dashed edge and the `disabled` say the card is spent. */
               className="disabled:opacity-100"
               disabled={inert}
               onClick={() => dispatch(switchDraftMessage(s.name))}

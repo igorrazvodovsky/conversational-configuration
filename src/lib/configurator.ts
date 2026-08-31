@@ -1,16 +1,8 @@
-/**
- * Shared configurator types + product-model display data (docs/specs/agreement-document).
- *
- * The model JSON is imported straight from the agent so labels/groups/prices
- * have a single source of truth. Validity NEVER comes from here — only from
- * the solver-computed statuses in agent state (docs/specs/constitution.md #1).
- */
+// docs/specs/agreement-document/design.md
 import rawModel from "../../agent/src/product_model/elevator.json";
 
 export type OptionStatus = "chosen" | "forced" | "invalid" | "open";
 
-/** "document" is the third provenance source (docs/specs/rfq-reconciliation):
- * a value the customer's own requirements document states. */
 export type Source = "user" | "agent" | "document";
 
 export interface Choice {
@@ -18,8 +10,7 @@ export interface Choice {
   source: Source;
 }
 
-/** Lifetime kg CO₂e (docs/specs/environmental-footprint). Absent on threads
- * persisted before the footprint feature — render "—" then. */
+/** Absent on threads persisted before the footprint feature. */
 export interface Footprint {
   embodied: number;
   use_phase: number;
@@ -30,16 +21,13 @@ export interface Candidate {
   assignment: Record<string, string>;
   price: number;
   footprint?: Footprint;
-  // which completion this is; absent on pre-footprint threads (always cheapest)
+  /** Absent on pre-footprint threads, which were always cheapest. */
   objective?: "price" | "co2";
 }
 
-/** One clause of the customer's document (docs/specs/document-clauses). Three
- * kinds, told apart by the facts a clause carries rather than by which list it
- * is in: `variable` with `value` asks for something, `variable` alone leaves
- * the decision to us, and neither is a clause no product variable carries.
- * Immutable after ingestion apart from the `reconciliation` mark — which is
- * what lets the register be derived here rather than stored. */
+/** Which kind a clause is follows from the facts it carries: `variable` with
+ * `value` asks for something, `variable` alone leaves the decision to us,
+ * neither is a clause no variable carries. */
 export interface Clause {
   id: string;
   clause: string; // the citation the document gives it — "5.2"
@@ -50,7 +38,6 @@ export interface Clause {
   reconciliation?: "pending" | "waived" | "revised";
 }
 
-/** A clause that asks for a value: the only kind that enters the register. */
 export interface Requirement extends Clause {
   variable: string;
   value: string;
@@ -61,42 +48,31 @@ export interface RFQ {
   budget_cap?: number;
 }
 
-/** The clauses of the document that ask for something. */
 export function requirements(config: Configuration): Requirement[] {
   return (config.rfq?.clauses ?? []).filter(
     (clause): clause is Requirement => !!clause.variable && !!clause.value,
   );
 }
 
-/** The clauses the document leaves to us to decide — a question to raise,
- * never a value on the sheet (docs/specs/document-clauses). */
 export function clausesLeftToUs(config: Configuration): Clause[] {
   return (config.rfq?.clauses ?? []).filter(
     (clause) => !!clause.variable && !clause.value,
   );
 }
 
-/** One draft of the agreement (docs/specs/parallel-drafts) — what rides in
- * agent state is always the current draft's. */
 export interface Configuration {
   choices: Record<string, Choice>;
   statuses: Record<string, Record<string, OptionStatus>>;
   /**
-   * Why an option cannot be taken, for every option that cannot: the named
-   * rules behind it, straight from a solver core (docs/specs/constitution.md
-   * #6). Absent on threads persisted before the field existed, which is why
-   * every read goes through `rulesAgainst`.
-   *
-   * Each row is computed with that variable's own recorded choice lifted, so
-   * presence here means "you cannot swap to this", not "you already chose
-   * something else" — the distinction the option editor turns on.
+   * Computed with the variable's own recorded choice lifted, so presence here
+   * means "you cannot swap to this", not "you already chose something else".
+   * Absent on threads persisted before the field existed.
    */
   unavailable?: Record<string, Record<string, Rule[]>>;
   candidate: Candidate | null;
   rfq?: RFQ; // only on document-seeded agreements
 }
 
-/** A product rule as the interface may quote it: the model's own id and label. */
 export interface Rule {
   id: string;
   label: string;
@@ -105,12 +81,9 @@ export interface Rule {
 /**
  * The rules that rule this value out, or null when it can be taken.
  *
- * The one place validity is read for an editable control. It deliberately does
- * not consult `statuses`: there, every alternative to a recorded choice is
- * invalid by construction, which would lock the document everywhere the
- * agreement has actually been decided. An empty array means unavailable with
- * no product rule to cite — the structural one-value-per-variable — and reads
- * as such.
+ * Deliberately does not consult `statuses`, where every alternative to a
+ * recorded choice is invalid by construction. An empty array means unavailable
+ * with no product rule to cite.
  */
 export function rulesAgainst(
   config: Configuration,
@@ -118,9 +91,7 @@ export function rulesAgainst(
   value: string,
 ): Rule[] | null {
   // The map's absence is the legacy case, not a variable's absence from it: a
-  // variable with nothing ruled out has no row at all, and reading that as
-  // "fall back to statuses" would put every decided term back behind the lock
-  // this function exists to lift.
+  // variable with nothing ruled out has no row at all.
   const map = config.unavailable;
   if (!map) {
     return (config.statuses[variable]?.[value] ?? "open") === "invalid" ? [] : null;
@@ -128,17 +99,14 @@ export function rulesAgainst(
   return map[variable]?.[value] ?? null;
 }
 
-/** How an unavailable option explains itself, in one line. */
 export function refusalText(rules: Rule[]): string {
   return rules.length
     ? `ruled out by ${rules.map((r) => r.label).join("; ")}`
     : "ruled out by your other choices — ask why in chat";
 }
 
-/** A draft as the switcher draws it, mirrored into agent state by the agent's
- * committing tools. `price` is null on a draft that has never been completed:
- * it lives on the candidate, and a change to a priced agreement now completes
- * again rather than dropping it (`_repriced` in the agent). */
+/** `price` is null on a draft that has never been completed: it lives on the
+ * candidate. */
 export interface DraftSummary {
   id: string;
   name: string;
@@ -152,8 +120,6 @@ export interface RegisterEntry extends Requirement {
   status: RegisterStatus;
 }
 
-/** How a value came to be in the agreement: its provenance if someone chose
- * it, else the rules, else the candidate's proposal, else nothing yet. */
 export type ValueKind = Source | "forced" | "proposed" | "open";
 
 export interface ResolvedValue {
@@ -161,16 +127,7 @@ export interface ResolvedValue {
   kind: ValueKind;
 }
 
-/**
- * What the agreement currently says for a variable, and on whose authority:
- * the recorded choice, else the value the rules force, else the candidate's.
- * Never a validity judgment — every status here comes from the solver
- * (docs/specs/constitution.md #1).
- *
- * The single resolver behind every surface: the register compares against it,
- * and all three document layers render from it, so what the document shows and
- * what the register measures cannot diverge.
- */
+/** Never a validity judgment — every status here comes from the solver. */
 export function resolveValue(
   config: Configuration,
   variable: string,
@@ -186,7 +143,6 @@ export function resolveValue(
   return { value: null, kind: "open" };
 }
 
-/** `resolveValue` without the provenance. */
 export function liveValue(
   config: Configuration,
   variable: string,
@@ -194,19 +150,12 @@ export function liveValue(
   return resolveValue(config, variable).value;
 }
 
-/**
- * The deviation register: the document's requirements against the live
- * agreement, one entry per requirement. Derived, never stored — the same
- * comparison the agent makes, recomputed on every render from the frozen
- * block and the values already in state, so it cannot go stale. The *rules*
- * behind a deviation are not in state; they are narrated in chat, grounded in
- * a solver core (docs/specs/rfq-reconciliation design).
- */
+/** Derived on every render rather than stored, so it cannot go stale. */
 export function registerEntries(config: Configuration): RegisterEntry[] {
   return requirements(config).map((requirement) => {
     const offered = liveValue(config, requirement.variable);
-    // met first: an agreement back on the document's value complies,
-    // whatever mark reconciliation left behind
+    // met first: an agreement back on the document's value complies, whatever
+    // mark reconciliation left behind
     const status: RegisterStatus =
       offered === requirement.value
         ? "met"
@@ -224,10 +173,6 @@ export interface ModelOption {
   label: string;
   price?: number; // cost basis (EUR), amortized into the monthly fee — never shown raw
   monthly_price?: number; // recurring fee (EUR/month)
-  /** Situational gloss — what this value means at the building, in the
-   * building's language (docs/specs/agreement-document). Declarative product
-   * knowledge, never composed at render time; only the options that carry one
-   * are glossed, so the model's own data is the list. */
   note?: string;
 }
 
@@ -244,8 +189,7 @@ export interface Pricing {
   default_term: string;
 }
 
-/** Named assessment assumptions, rendered by the canvas assumptions panel
- * (docs/specs/environmental-footprint decision 5). No arithmetic happens
+/** Rendered by the canvas assumptions panel. No arithmetic happens
  * frontend-side — footprint totals ride in agent state. */
 export interface FootprintBlock {
   service_life_years: number;
@@ -272,7 +216,6 @@ export const variablesByName: Map<string, ModelVariable> = new Map(
   productModel.variables.map((v) => [v.name, v]),
 );
 
-/** Groups in model order, each with its variables in model order. */
 export const modelGroups: { name: string; variables: ModelVariable[] }[] = (() => {
   const groups: { name: string; variables: ModelVariable[] }[] = [];
   for (const v of productModel.variables) {
@@ -291,28 +234,20 @@ export function optionLabel(variable: string, value: string): string {
   return modelOption(variable, value)?.label ?? value;
 }
 
-/** The situational gloss for a value, if the model carries one. */
 export function optionNote(variable: string, value: string): string | undefined {
   return modelOption(variable, value)?.note;
 }
 
-/**
- * The three document layers (docs/specs/agreement-document), mapped onto the
- * model's own groups. A presentation heuristic that lives here beside the
- * control-selection one, not in the product model: adding a variable to a group
- * needs no layout decision, and UI concerns stay out of product data
- * (docs/specs/constitution.md #2).
- */
+/** Here rather than in the product model, so adding a variable needs no layout
+ * decision (constitution #2). */
 export type Layer = "recitals" | "terms" | "schedules";
 
 const LAYER_OF_GROUP: Record<string, Layer> = {
   context: "recitals",
   agreement: "terms",
   performance: "terms",
-  // Rescue and firefighters' operation are obligations the building is held
-  // to, not hardware standing in for an outcome, so they are operative terms
-  // the customer reads and reconciles rather than a collapsed schedule
-  // (docs/specs/document-clauses, decision 5).
+  // An obligation the building is held to, not hardware
+  // (docs/specs/document-clauses/design.md decision 5).
   safety: "terms",
 };
 
@@ -320,22 +255,14 @@ export function layerOf(group: string): Layer {
   return LAYER_OF_GROUP[group] ?? "schedules";
 }
 
-/** Groups of one layer, in model order. */
 export function layerGroups(layer: Layer): { name: string; variables: ModelVariable[] }[] {
   return modelGroups.filter((g) => layerOf(g.name) === layer);
 }
 
-/** Variables of one layer, in model order. */
 export function layerVariables(layer: Layer): ModelVariable[] {
   return layerGroups(layer).flatMap((g) => g.variables);
 }
 
-/**
- * Which completion the solver returned, named as the objective it was
- * optimised for — so a lowest-footprint agreement is never labelled cheapest.
- * The canvas header and the consideration clause show the same figure and say
- * the same thing about it.
- */
 export function completionLabel(candidate: Candidate): string {
   return candidate.objective === "co2"
     ? "lowest-footprint completion"
@@ -350,7 +277,6 @@ export function formatMonthly(eurPerMonth: number): string {
   return `${formatPrice(eurPerMonth)}/mo`;
 }
 
-/** kg CO₂e → "12.4 t CO₂e" (or "540 kg CO₂e" below a tonne). */
 export function formatCO2(kg: number): string {
   return Math.abs(kg) >= 1000
     ? `${(kg / 1000).toLocaleString("en-IE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} t CO₂e`
@@ -358,11 +284,9 @@ export function formatCO2(kg: number): string {
 }
 
 /**
- * An option's contribution to the monthly fee: its recurring fee, or its cost
- * basis amortized over `termMonths` (docs/specs/service-agreement). Mirrors the
- * agent's half-up rounding (Math.round rounds half up for positive values) —
- * the single place the frontend re-derives money, from the same imported JSON
- * the agent reads.
+ * Mirrors the agent's half-up rounding: `Math.round` rounds half up for
+ * positive values, which Python's `round` does not. The single place the
+ * frontend re-derives money.
  */
 export function monthlyDelta(option: ModelOption, termMonths: number): number {
   if (option.monthly_price) return option.monthly_price;
@@ -370,7 +294,6 @@ export function monthlyDelta(option: ModelOption, termMonths: number): number {
   return Math.round((option.price * pricing.financing_factor) / termMonths);
 }
 
-/** Amortization months for display: the chosen term, else the candidate's, else the default. */
 export function termMonthsInEffect(config: Configuration): number {
   const term =
     config.choices["contract_term"]?.value ??
@@ -379,14 +302,6 @@ export function termMonthsInEffect(config: Configuration): number {
   return pricing.term_months[term] ?? pricing.term_months[pricing.default_term];
 }
 
-/**
- * The structured control-activation message (docs/specs/agreement-document design):
- * a visible user message the agent applies through one revise_choices call,
- * whether or not those terms were decided before, so a picked change applies
- * whole or comes back with repair paths (docs/specs/one-gesture-one-action).
- * Includes both the human-readable labels and the exact codes so the LLM never
- * has to guess.
- */
 export function choiceMessage(
   selections: { variable: string; value: string }[],
 ): string {
@@ -397,15 +312,10 @@ export function choiceMessage(
   return lines.join("\n");
 }
 
-/**
- * Marks a canvas-originated edit. The chat renders nothing for messages
- * carrying this prefix, and the agent prompt keys on it to stay quiet when
- * the edit applies cleanly (docs/specs/agreement-document design) — the
- * sheet already shows the change, so the conversation doesn't repeat it.
- */
+/** The agent prompt keys on this prefix to stay quiet when the edit applies
+ * cleanly, and the chat renders no row for one. */
 export const CANVAS_EDIT_PREFIX = "Canvas edit: ";
 
-/** A canvas edit: the choiceMessage grammar, hidden from the chat. */
 export function canvasEditMessage(
   selections: { variable: string; value: string }[],
 ): string {
@@ -413,16 +323,9 @@ export function canvasEditMessage(
 }
 
 /**
- * The grammar read rather than minted: the `(term=value)` pairs a gesture
- * carries, or null when the message is not one.
- *
- * A fourth copy of the sentence's shape, and deliberately the agent's own —
- * `is_gesture` in `agent/src/configuration.py` matches this pattern to refuse
- * a gesture in `set_choices`, and `tests/couplings.test.ts` holds the two
- * predicates equal over every sentence the grammar builds
- * (docs/specs/one-gesture-one-action). Matched on shape rather than on the
- * first word: "Set up an elevator for a hospital" is prose, and the
- * parenthesised code is what no customer types.
+ * Matched on shape, not on the first word: "Set up an elevator for a hospital"
+ * is prose. `is_gesture` in `agent/src/configuration.py` is the same predicate,
+ * held equal by `tests/couplings.test.ts`.
  */
 const SET_LINE = /^Set .+ to .+ \(([a-z][a-z0-9_]*)=([a-z0-9_]+)\)$/;
 
@@ -443,24 +346,12 @@ export function gestureSelections(
   return selections;
 }
 
-/**
- * Whether this message is the customer setting a value themselves rather than
- * telling the agent something — the sheet's edit and the card's pick, and
- * nothing else the grammar builds. The chat renders no row for one
- * (docs/specs/agreement-document): the surface that dispatched it is its
- * record.
- */
 export function isGesture(content: string): boolean {
   return (
     content.startsWith(CANVAS_EDIT_PREFIX) || gestureSelections(content) !== null
   );
 }
 
-/**
- * Structured messages for the docs/specs/nonlinear-interaction cards. Same principle as
- * choiceMessage: a visible user message the agent maps onto one atomic tool
- * call (revise_choices with drop+changes).
- */
 export function repairMessage(
   drop: { variable: string; value: string }[],
   changes: { variable: string; value: string }[],
@@ -482,13 +373,6 @@ export function repairMessage(
 export const abandonMessage =
   "Abandon the revision — keep the configuration as it is.";
 
-/**
- * Reconciliation moves (docs/specs/rfq-reconciliation). Deliberately *visible*
- * messages, unlike the hidden `Canvas edit:` grammar: waiving or adjusting a
- * requirement of the customer's own document is negotiation and belongs in the
- * record, where sheet bookkeeping does not. The agent maps each onto one
- * reconcile_requirement call — prompt wording and this grammar are coupled.
- */
 const RECONCILE_PREFIX = "Reconcile deviation: ";
 
 export function acceptOfferedMessage(
@@ -512,17 +396,6 @@ export function leaveOpenMessage(variable: string): string {
   return `${RECONCILE_PREFIX}leave ${label} (${variable}) open`;
 }
 
-/**
- * The draft moves (docs/specs/parallel-drafts), dispatched by the canvas head
- * and the comparison card. Visible, like undo and the reconciliation moves:
- * switching changes what the whole document says, and one transcript can hold
- * turns that acted on two drafts, so the sentence is what keeps it readable.
- * Each maps onto one atomic tool call — fork_draft, switch_draft,
- * discard_draft, compare_drafts.
- *
- * A fork carries no name: the agent names the draft from the conversation, and
- * asking the operator for one is exactly what the prompt forbids.
- */
 export const forkDraftMessage = "Keep this draft and start another from it";
 
 export function switchDraftMessage(draftName: string): string {
@@ -537,28 +410,14 @@ export function compareDraftMessage(draftName: string): string {
   return `Compare draft "${draftName}" with the current one`;
 }
 
-/**
- * Undo and redo (docs/specs/undo). Visible, like the reconciliation moves and
- * unlike a canvas edit: after a restore the document shows only the restored
- * state, so the chat is the only place what was reversed can be said. Each
- * maps onto one atomic tool call — undo_change and redo_change.
- */
 export const undoMessage = "Undo the last change";
 export const redoMessage = "Redo the undone change";
 
 /**
- * The same sentence, as the customer should read it.
- *
- * Every card grammar above spells option codes, because the agent maps the
- * sentence onto one atomic tool call and a label is not a key. But the
- * sentence is dispatched as the customer's own message and rendered in their
- * bubble, so the transcript was putting `contract_term=y10` in their mouth —
- * the catalogue vocabulary the whole surface exists to spare them
- * ([elicitation uses the building's vocabulary]). This drops the codes for
- * display only: what reaches the agent is untouched.
- *
- * Gated on the card prefixes rather than applied to all text, so a customer
- * who types a code sees what they typed.
+ * The same sentence for display only — what reaches the agent is untouched.
+ * The grammars spell option codes, and the customer's own bubble may not.
+ * Gated on the card prefixes, so a customer who types a code sees what they
+ * typed.
  */
 const CARD_PREFIXES = [
   "Set ",
@@ -570,17 +429,13 @@ const CARD_PREFIXES = [
 export function spokenText(content: string): string {
   if (!CARD_PREFIXES.some((prefix) => content.startsWith(prefix))) return content;
   return content
-    // "… 10 years (contract_term=y10)" — the label is already in the sentence
     .replace(/ \(([a-z_]+)=([a-z0-9_]+)\)/g, (whole, variable: string) =>
       variablesByName.has(variable) ? "" : whole,
     )
-    // "leave Rated speed (rated_speed) open" — the variable named twice
     .replace(/ \(([a-z_]+)\)/g, (whole, variable: string) =>
       variablesByName.has(variable) ? "" : whole,
     )
-    // "drop installation=modernization" — the repair's drop list, which has no
-    // label of its own to fall back on. Said the way the card that dispatched
-    // it says it: "Give up Installation type = Modernization (existing shaft)".
+        // The repair's drop list, which has no label of its own.
     .replace(
       /([a-z_]+)=([a-z0-9_]+)/g,
       (whole, variable: string, value: string) =>

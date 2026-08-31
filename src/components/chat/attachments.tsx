@@ -1,13 +1,6 @@
 "use client";
 
-/**
- * Attachments in the chat pane (docs/specs/chat-pane).
- *
- * A file shows up twice — queued in the composer, then in the message that
- * carried it — and both are drawn from the same components. The queue has no
- * slot of its own: `CopilotChatView` renders it directly, so the state comes
- * down from the `chatView` wrapper through this context instead.
- */
+// docs/specs/chat-pane/design.md
 
 import { createContext, useContext } from "react";
 import { FileIcon, XIcon } from "lucide-react";
@@ -37,7 +30,6 @@ const ComposerAttachmentsContext = createContext<ComposerAttachments>({
 
 export const ComposerAttachmentsProvider = ComposerAttachmentsContext.Provider;
 
-/** The queue inside the composer: what will be sent with the next message. */
 export function ComposerAttachments() {
   const { attachments, onRemove } = useContext(ComposerAttachmentsContext);
   if (attachments.length === 0) return null;
@@ -86,11 +78,8 @@ export function ComposerAttachments() {
   );
 }
 
-/**
- * The same file, once it is part of a message. A conversation reopened from
- * the store has lost the filename in transit, so the row says what it has —
- * the kind of file — rather than wearing a MIME type as a name.
- */
+/** A conversation reopened from the store has lost the filename in transit, so
+ * the row falls back to the kind of file rather than a MIME type. */
 export function MessageAttachments({
   attachments,
 }: {

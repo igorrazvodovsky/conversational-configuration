@@ -1,13 +1,4 @@
-/**
- * The suggestion strip's catalogue (docs/specs/suggested-moves, checked per
- * docs/specs/offline-checks).
- *
- * Two properties hold across the whole catalogue and matter more than any
- * single family: a pill's message is a sentence the customer could have typed,
- * and the trade-off pair is offered as a pair or not at all — dropping one half
- * resolves the trade-off by omission, which is the agent's first never-move
- * (docs/discovery/principles/trade-offs-shown-as-a-pair.md).
- */
+// docs/specs/suggested-moves/design.md, docs/specs/offline-checks/design.md
 import { describe, expect, it } from "vitest";
 
 import {
@@ -40,14 +31,12 @@ describe("the entry prompts", () => {
   });
 
   it("stop once the customer has said something, even before anything is recorded", () => {
-    // Offering a new hotel to someone who has just described an office is
-    // the failure this catalogue exists to fix.
+    // Offering a new hotel to someone who has just described an office is the
+    // failure this catalogue exists to fix.
     expect(suggestedMoves(agreement(), true, NOTHING_ASKED)).toEqual([]);
   });
 
   it("offer the document entrance, which nothing else in the interface announces", () => {
-    // The delivery lead's project has already written the requirements, and the
-    // composer does not say it will take them (docs/specs/suggested-moves).
     const offered = suggestedMoves(agreement(), false, NOTHING_ASKED);
     expect(offered.some((m) => /RFQ|requirements/i.test(m.message))).toBe(true);
   });
@@ -63,10 +52,8 @@ describe("the entry prompts", () => {
   });
 
   it("assert nothing about the project beyond the entrance they name", () => {
-    // A chip may assert what its own sentence says and nothing more, so no
-    // city, floor count, travel, traffic profile or speed
-    // (docs/specs/suggested-moves design decision 2). The old chips carried
-    // four of those under a three-word label.
+    // A chip may assert what its own sentence says and nothing more
+    // (docs/specs/suggested-moves/design.md decision 2).
     const specifics = /\b(Munich|Berlin|Boston|[0-9]+([.,][0-9]+)?\s*(-|\s)?(m\/s|metres?|meters?|m\b|floors?|stor(e?y|ies)))/i;
     for (const prompt of ENTRY_PROMPTS) expect(prompt.message).not.toMatch(specifics);
   });
@@ -217,7 +204,7 @@ describe("the strip as a whole", () => {
       candidate: candidate({ building_type: "hotel" }, 1450),
       rfq: rfq([requirement("rated_load", "kg1600")]),
     });
-    // three families, one of which yields two pills
+  // three families, one of which yields two pills
     expect(moves(crowded).length).toBeLessThanOrEqual(4);
   });
 

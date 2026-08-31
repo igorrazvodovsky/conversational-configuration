@@ -1,22 +1,6 @@
 "use client";
 
-/**
- * Which draft of the agreement this is, and the way between them
- * (docs/specs/parallel-drafts) — at the document's identity, where the frames
- * strip's information used to sit under the price as a compare trigger.
- *
- * Every move here dispatches a *visible* structured message, unlike a canvas
- * edit: switching changes what the whole document says, and one transcript can
- * hold turns that acted on two drafts, so the chat has to carry the change.
- * Forking carries no name — the agent names the draft from the conversation.
- *
- * Two rules from docs/specs/chat-surface govern this component. It is a menu,
- * so it mints React ids and may not join the hydrated tree: the server and the
- * first client render agree on a plain button and the menu takes over a tick
- * later, exactly as the chat header's two menus do. And it takes props only —
- * the canvas above it already subscribes to agent state, and nothing here adds
- * a second subscription.
- */
+// docs/specs/parallel-drafts/design.md
 
 import { useEffect, useState } from "react";
 import { ChevronDownIcon, Columns2, CopyPlus, Trash2 } from "lucide-react";
@@ -55,11 +39,9 @@ export function DraftSwitcher({
 
   const current =
     drafts.find((d) => d.id === currentDraftId) ?? drafts[0] ?? null;
-  // Nothing at all until the client has taken over: the server renders no
-  // drafts (it has no agent state) and the seed can land before the canvas
-  // hydrates, so a switcher rendered during that pass would be an extra node
-  // above the schedules' collapsibles and shift every `useId` on the page
-  // (docs/specs/chat-surface).
+  // Nothing until the client has taken over: the server renders no drafts, and
+  // a switcher rendered during that pass would be an extra node above the
+  // schedules' collapsibles and shift every `useId` on the page.
   if (!hydrated || !current) return null;
 
   const trigger = (
@@ -121,10 +103,8 @@ export function DraftSwitcher({
             visible rather than vanishing — a move that disappeared between two
             openings of the same menu reads as a bug.
 
-            Live rather than disabled (constitution #17): "no price" beside the
-            name is what the reader sees, and the sentence on the click is what
-            it means, since nothing on the menu says why a draft has no price
-            or how it gets one. */}
+            Live rather than disabled (constitution #17); nothing else on the
+            menu says why a draft has no price or how it gets one. */}
         {current.price === null ? (
           <DropdownMenuItem onSelect={() => sayNoPrice(current.name)}>
             <Columns2 />

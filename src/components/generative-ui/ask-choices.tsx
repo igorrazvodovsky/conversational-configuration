@@ -1,19 +1,6 @@
 "use client";
 
-/**
- * In-chat controls for the agent's ask_choices tool (docs/specs/agreement-document).
- *
- * The payload is computed server-side from solver state. An invalid value
- * renders struck through in place, with the rules that ruled it out listed
- * underneath where every input device reaches them (constitution #16), and it
- * stays clickable: asking for it dispatches the same sentence any other option
- * does and comes back with the repair paths that would admit it
- * (constitution #17, docs/specs/one-gesture-one-action). Option prices are
- * monthly deltas at the term in effect (docs/specs/service-agreement). Controls go
- * inert once the conversation moves past them or after submission, and the
- * spent card shows what it was answered with: the pick leaves no message of
- * its own in the transcript, so this card is the record of it.
- */
+// docs/specs/agreement-document/design.md
 
 import { useState } from "react";
 import { BadgePercent } from "lucide-react";
@@ -47,8 +34,7 @@ interface PayloadOption {
   price: number;
   status: "valid" | "invalid" | "chosen" | "forced";
   cheapest: boolean;
-  /** the named rules that rule this option out, when it is out
-   * (constitution #6); absent on cards rendered from older tool results */
+  /** Absent on cards rendered from older tool results. */
   rules?: Rule[];
 }
 
@@ -73,7 +59,7 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
     return <CardPending>preparing options…</CardPending>;
   }
 
-  // No `kind` on this payload — its shape is the test.
+// No `kind` on this payload — its shape is the test.
   const payload = parsePayload<Payload>(result, (p) =>
     Array.isArray(p.variables),
   );
@@ -81,25 +67,15 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
 
   const multi = payload.variables.length > 1;
 
-  // What this card was answered with, whether the answer is still in component
-  // state or only in the transcript. The gesture leaves no row of its own
-  // (docs/specs/agreement-document), so the card is the record of the pick,
-  // and a reopened conversation restores it from the message rather than from
-  // state that did not survive. Restricted to the terms this card asked
-  // about: a pick on a term it never raised is some other card's.
+  // A gesture leaves no row of its own, so the card is the record of the pick
+  // and a reopened conversation restores it from the message.
   const asked = new Set(payload.variables.map((variable) => variable.name));
   const picked: Record<string, string> = {};
   for (const { variable, value } of answer ?? []) {
     if (asked.has(variable)) picked[variable] = value;
   }
-  // The two agree whenever the card is live — the message that supplies an
-  // answer is the same message that makes the card inert — so the merge
-  // matters only for the batch that was just applied.
-  //
-  // What this shows when the pick did not land is the pick: a ruled-out option
-  // is clickable (constitution #17), so a customer can ask for one and get
-  // repair paths back, and the card is the record of what they asked for
-  // rather than of what the agreement says. The agreement is on the sheet.
+  // The two agree whenever the card is live, so the merge matters only for the
+  // batch just applied.
   Object.assign(picked, selections);
   const pickedCount = Object.keys(picked).length;
 
@@ -132,17 +108,10 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
       {multi && (
         <Button
           size="sm"
-          // Live with nothing picked, and it says which terms are still
-          // waiting when it is pressed that way (constitution #17). A button
-          // that greys itself makes the reader compare a form against its own
-          // controls to find out what is missing, which is the work the button
-          // is in a position to do for them.
           disabled={inert}
           onClick={() => {
-            // Nothing picked is the only case this answers instead of
-            // dispatching. A card may ask about several terms and take a pick
-            // on one of them: the batch is what was picked, as it always was,
-            // and a partial batch is a valid gesture rather than an omission.
+            // A card may ask about several terms and take a pick on one:
+            // a partial batch is a valid gesture, not an omission.
             if (pickedCount === 0) {
               sayWhy(
                 `${toolCallId}-unpicked`,
@@ -152,9 +121,7 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
               );
               return;
             }
-            // From what the card displays, not from component state: the
-            // two agree on a live card, and dispatching from the other one
-            // would make that agreement a thing to remember.
+            // From what the card displays, not from component state.
             dispatch(
               Object.entries(picked).map(([variable, value]) => ({
                 variable,
@@ -171,16 +138,13 @@ export function AskChoices({ toolCallId, status, result }: CardProps) {
   );
 }
 
-/** What every control renders from: one variable's payload, the pending
- * selection when the card is collecting several, and the two things that
- * decide whether a click does anything. */
 interface ControlProps {
   variable: PayloadVariable;
   selected?: string;
   inert: boolean;
   onSelect: (variable: string, value: string) => void;
-  /** what makes this control's refusal ids unique on the page: the tool call
-   * that drew it, since a transcript may hold several cards over one variable */
+  /** The tool call that drew this control: a transcript may hold several cards
+   * over one variable. */
   scope: string;
 }
 
@@ -199,11 +163,8 @@ function optionState(o: PayloadOption, selected?: string) {
   const active = selected
     ? selected === o.value
     : o.status === "chosen" || o.status === "forced";
-  // `refused`, not `disabled`: the rules separate this option from the
-  // agreement as it stands, and the control for it is still operable
-  // (constitution #17). An unavailable option says which rules made it
-  // unavailable; older tool results carry no rules, and fall back to the
-  // wording they shipped with.
+  // `refused`, not `disabled`. Older tool results carry no rules and fall back
+  // to the wording they shipped with.
   const refused = o.status === "invalid";
   return {
     active,
@@ -212,26 +173,14 @@ function optionState(o: PayloadOption, selected?: string) {
   };
 }
 
-/** The ruled-out options of one variable, in the shape the shared list wants.
- * The list is what a keyboard or touch user reads; `title` is a convenience
- * for the mouse on top of it (constitution #16). */
 function refusalsOf(variable: PayloadVariable, selected?: string): Refusal[] {
   return variable.options
     .filter((o) => optionState(o, selected).refused)
     .map((o) => ({ value: o.value, label: o.label, rules: o.rules ?? [] }));
 }
 
-/**
- * Unavailability is a muted foreground and a strike, never an opacity: the
- * card above may carry a state of its own, and two opacities over one string
- * multiply (constitution #16).
- *
- * No `cursor-not-allowed`, and no `KEEP_TITLE`. Both were written for a
- * control that refuses the click. This one takes it — the cursor is a pointer
- * because there is a pointer's worth of action behind it, and the `title`
- * raises on hover and on focus without a workaround now that the element is
- * neither disabled nor out of the tab order.
- */
+/** Never an opacity: it composes multiplicatively down the tree
+ * (constitution #16). */
 const UNAVAILABLE = "text-muted-foreground line-through";
 
 function CheapestMark() {
@@ -255,10 +204,8 @@ function ChipRow({ variable, selected, inert, onSelect, scope }: ControlProps) {
               key={o.value}
               size="sm"
               variant={active ? "default" : "outline"}
-              // Only the spent card disables anything here: a repair or a pick
-              // computed against an agreement that has moved would apply the
-              // wrong change, which is the one thing a sentence cannot guard
-              // (constitution #17, docs/specs/ui-component-library decision 8).
+              // A pick computed against an agreement that has moved would
+              // apply the wrong change, which a sentence cannot guard.
               disabled={inert}
               onClick={() => onSelect(variable.name, o.value)}
               title={why}
@@ -305,8 +252,8 @@ function ScaleControl({
         type="single"
         variant="outline"
         size="sm"
-        // Joined, not gapped: this control is a range, and separated cells
-        // read as independent options. Lyra's default spacing is 2.
+                // Joined, not gapped: this is a range, and separated cells read
+                // as independent options.
         spacing={0}
         value={active ?? ""}
         onValueChange={(value) => value && onSelect(variable.name, value)}
@@ -326,13 +273,8 @@ function ScaleControl({
                 refused ? refusalId(scope, variable.name, o.value) : undefined
               }
               // h-auto + whitespace-normal: toggle items are nowrap and fixed
-              // height by default, which makes long scale labels ("630 kg /
-              // 8 persons") overlap their neighbours instead of wrapping.
-              //
-              // A segment outside the valid range is told apart by the same
-              // vocabulary the chips use — muted, struck, dashed edge — and
-              // not by a background tint: no tint reaches 3:1 against the card
-              // (constitution #16).
+              // height by default, so long scale labels overlap rather than
+              // wrap. No background tint reaches 3:1 against the card.
               className={`h-auto min-w-0 flex-1 px-1 py-1.5 text-xs leading-tight whitespace-normal data-[state=on]:bg-primary data-[state=on]:text-primary-foreground ${
                 refused ? `border-dashed ${UNAVAILABLE}` : ""
               }`}
@@ -420,10 +362,8 @@ function OptionList({
           );
         })}
       </div>
-      {/* This control shows each reason on its own row, so it needs the line the
-        shared list carries underneath rather than the list itself — the rules
-        are already in place, and repeating them would put two copies of one
-        sentence on the page (constitution #17). */}
+      {/* Each reason is already on its own row here, so this takes the shared
+        list's last line without the list. */}
       {refused && (
         <p className="mt-1.5 text-xs italic text-muted-foreground">
           {REFUSAL_AFFORDANCE}

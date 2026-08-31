@@ -1,17 +1,4 @@
-/**
- * Renaming an elevator (docs/specs/agreement-workspace, *Renaming*).
- *
- * Three things are asserted, and all three are behaviour rather than style
- * (docs/specs/interface-checks): that confirming an empty name is *answered*
- * rather than refused by an unclickable control (constitution #17), that a
- * real rename reaches the store and reports back the name the store kept
- * rather than the one that was typed, and that a rename that fails leaves the
- * name where it was and says so in text the field points at, rather than on a
- * `title` only a mouse can raise (constitution #16).
- *
- * The store is a `fetch` stub. What is under test is the control, and the
- * route beneath it is held by `agent/tests/test_http_app.py`.
- */
+// docs/specs/agreement-workspace/design.md, docs/specs/interface-checks/design.md
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -25,7 +12,6 @@ afterEach(() => {
 
 const WORKSPACE = "ws-1";
 
-/** The store, answering however this test needs it to. */
 function stubStore(reply: () => Promise<Response> | Response) {
   const fetchMock = vi.fn((_path: string, _init?: RequestInit) => reply());
   vi.stubGlobal("fetch", fetchMock);
@@ -35,7 +21,6 @@ function stubStore(reply: () => Promise<Response> | Response) {
 const record = (name: string) =>
   new Response(JSON.stringify({ id: WORKSPACE, name }), { status: 200 });
 
-/** Draw the control and open its field, the way the operator does. */
 function open(name: string | null, onRenamed = () => {}) {
   render(
     <RenameElevator workspaceId={WORKSPACE} name={name} onRenamed={onRenamed}>
@@ -80,9 +65,8 @@ describe("the rename control", () => {
     fireEvent.change(field, { target: { value: "   " } });
 
     const confirm = screen.getByRole("button", { name: "Rename" });
-    // Neither channel says no (constitution #17): `disabled` would take the
-    // control out of the tab order, and `aria-disabled` would announce a
-    // control that in fact acts — it answers, through `sayWhy`.
+    // Neither channel says no: `disabled` would take the control out of the tab
+    // order, and `aria-disabled` would announce one that in fact acts.
     expect((confirm as HTMLButtonElement).disabled).toBe(false);
     expect(confirm.getAttribute("aria-disabled")).toBeNull();
 
@@ -102,8 +86,8 @@ describe("the rename control", () => {
 
     const note = await screen.findByText(/still has the name it had/);
     expect(onRenamed).not.toHaveBeenCalled();
-    // The sentence is on the page, and the field points at it rather than at
-    // a second copy that could drift from the visible one.
+    // The sentence is on the page and the field points at it, not at a second
+    // copy that could drift.
     const describedBy = screen
       .getByRole("textbox", { name: "Elevator name" })
       .getAttribute("aria-describedby");

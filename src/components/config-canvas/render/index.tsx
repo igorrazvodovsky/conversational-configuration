@@ -1,18 +1,6 @@
 "use client";
 
-/**
- * The render: a second mode of the canvas, showing the car the schedules
- * describe (docs/specs/visual-configuration).
- *
- * A projection and nothing else. It takes the configuration as a prop from
- * `ConfigCanvas`, which already holds it, so it adds no subscription to agent
- * state, keeps no record of its own, and follows a draft switch, an undo and a
- * redo for free. It carries no provenance and no price: who chose a value and
- * what it costs are the document's answers.
- *
- * It is mounted only while the mode is entered, so a workspace that is never
- * switched into it pays for no WebGL context (design decision 9).
- */
+// docs/specs/visual-configuration/design.md
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
@@ -39,11 +27,8 @@ import { sayWhy } from "@/lib/say-why";
 import { CarScene } from "./scene";
 import { DEFAULT_VIEWPOINT, VIEWPOINTS, Viewpoint } from "./viewpoints";
 
-/**
- * The camera is placed by the viewpoint and then left alone: a finish that
- * changes while the operator is looking must not throw away the angle they
- * orbited to. Only a viewpoint change re-frames.
- */
+/** Placed by the viewpoint and then left alone: a value that changes while the
+ * operator is looking must not throw away the angle they orbited to. */
 function CameraRig({
   viewpoint,
   car,
@@ -76,8 +61,8 @@ function CameraRig({
   return null;
 }
 
-/** What the agreement has not said yet, named rather than guessed: a car
- * drawn from defaults would be a picture of an agreement nobody made. */
+/** Named rather than guessed: a car drawn from defaults would be a picture of
+ * an agreement nobody made. */
 function MissingValues({ config }: { config: Configuration }) {
   const missing = GEOMETRY_VARIABLES.filter((v) => !liveValue(config, v)).map(
     (v) => (variablesByName.get(v)?.label ?? v).toLowerCase(),
@@ -98,13 +83,11 @@ export default function CarViewer({
   onExit,
 }: {
   config: Configuration;
-  /** the one click back to the document */
   onExit: () => void;
 }) {
   const [viewpoint, setViewpoint] = useState<Viewpoint>(DEFAULT_VIEWPOINT);
   // The environment map and the floor textures take a moment on first entry,
-  // and a black panel says nothing. The scene itself reports when it has
-  // something to show.
+  // and a black panel says nothing.
   const [ready, setReady] = useState(false);
   const onReady = useCallback(() => setReady(true), []);
   const car = carGeometry(config);
@@ -136,9 +119,8 @@ export default function CarViewer({
             onValueChange={(id) => {
               const next = VIEWPOINTS.find((v) => v.id === id);
               if (!next) return;
-              // Answered, and not also acted on. The item stays live
-              // (constitution #17) and says why; moving to the view as well
-              // would answer the click with a sentence and an empty picture.
+              // Answered, and not also acted on: moving to the view would pair
+              // the sentence with an empty picture.
               if (next.id === "shaft" && !shaft) {
                 sayWhy(
                   "no-shaft",
@@ -154,10 +136,8 @@ export default function CarViewer({
                 key={v.id}
                 value={v.id}
                 title={v.hint}
-                // Live even when there is nothing to look at: the group's
-                // `onValueChange` above answers it (constitution #17).
-                // "Shaft" greyed out names neither the missing values nor how
-                // to state them.
+                // Live even with nothing to look at; the group's
+                // `onValueChange` above answers it.
               >
                 {v.label}
               </ToggleGroupItem>
@@ -169,17 +149,10 @@ export default function CarViewer({
       <div className="relative min-h-0 flex-1">
         {car ? (
           /*
-            What the picture is, and where its equivalent is. The render is a
-            projection of values the agreement already states, so the agreement
-            mode is its text alternative rather than a described geometry — a
-            fact the markup never declared (constitution #16, and
-            docs/specs/visual-configuration decision 10).
-
-            The role goes on a wrapper around the canvas alone rather than on
-            the panel: `role="img"` makes its whole subtree presentational, and
-            the panel also holds the status line below, which is not part of
-            the picture. The WebGL canvas has no accessible content of its own,
-            so a name on it is a name on nothing.
+            `role="img"` makes its whole subtree presentational, so it goes on a
+            wrapper around the canvas alone rather than on the panel, which also
+            holds the status line. The WebGL canvas has no accessible content
+            of its own (docs/specs/visual-configuration/design.md decision 10).
           */
           <div
             role="img"
@@ -187,12 +160,12 @@ export default function CarViewer({
             aria-label={`The configured car, ${viewpoint.label.toLowerCase()}. Every value it draws is stated in words in the agreement, which the "Back to the agreement" button opens.`}
           >
             <Canvas
-              // Demand, not continuous: frames are drawn when the configuration
-              // changes and while the operator orbits, and never otherwise.
+              // Demand, not continuous: frames are drawn on a configuration
+              // change and while the operator orbits.
               frameloop="demand"
               dpr={[1, 2]}
-              // The buffer has to stay readable or the still-image export the
-              // requirements leave out of scope becomes impossible to add later.
+              // The buffer has to stay readable, or a still-image export
+              // becomes impossible to add later.
               gl={{ preserveDrawingBuffer: true, antialias: true }}
               camera={{ fov: 45, near: 0.05, far: 120 }}
             >

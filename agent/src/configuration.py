@@ -20,8 +20,6 @@ MODEL_PATH = Path(__file__).parent / "product_model" / "elevator.json"
 MODEL = load_model(MODEL_PATH)
 SOLVER = ConfigSolver(MODEL)
 
-# "document" is the third provenance source (docs/specs/rfq-reconciliation):
-# a value the customer's own requirements document states.
 Source = Literal["user", "agent", "document"]
 
 
@@ -30,9 +28,7 @@ class Choice(TypedDict):
     source: Source
 
 
-# Lifetime kg CO2e (docs/specs/environmental-footprint). Stored on candidates;
-# absent on threads persisted before the footprint feature — always read with
-# .get.
+# Absent on threads persisted before the footprint feature — read with .get.
 class Footprint(TypedDict):
     embodied: int
     use_phase: int
@@ -42,12 +38,9 @@ class Footprint(TypedDict):
 Objective = Literal["price", "co2"]
 
 
-# "price" means EUR/month since docs/specs/service-agreement. The key name is
-# deliberately unchanged: renaming would break threads persisted by
-# docs/specs/nonlinear-interaction thread resumption.
-# `objective` names which completion the candidate is, so the canvas header
-# never labels a lowest-footprint completion "cheapest"; absent on
-# pre-footprint threads, which were always cheapest.
+# "price" means EUR/month. The key name is deliberately unchanged: renaming
+# would break threads already persisted. `objective` is absent on pre-footprint
+# threads, which were always cheapest.
 class Candidate(TypedDict):
     assignment: dict[str, str]
     price: int
@@ -55,37 +48,27 @@ class Candidate(TypedDict):
     objective: NotRequired[Objective]
 
 
-# A product rule as the interface may quote it: the id and the model's own
-# label, never a paraphrase (constitution #6).
+# The id and the model's own label, never a paraphrase (constitution #6).
 class Rule(TypedDict):
     id: str
     label: str
 
 
-# A choice `set_choices` would not record, because it cannot hold with the
-# rest, and the rules that say so (docs/specs/agent-tools).
 class Declined(TypedDict):
     variable: str
     value: str
     rules: list[Rule]
 
 
-# One clause of the customer's document, and the whole of what the record
-# holds about it (docs/specs/document-clauses). Three kinds, told apart by the
-# facts a clause carries rather than by which list it is in:
+# Which kind a clause is follows from the facts it carries:
 #
-#   variable and value  a requirement: the document states this value of this
-#                       term, and `reconciliation` is the one field a tool may
-#                       move
-#   variable, no value  a clause the document leaves to us — "open to
-#                       proposal", "state your assumption". It seeds nothing
-#                       and deviates from nothing; it is a question to raise
+#   variable and value  a requirement; `reconciliation` is the one field a
+#                       tool may move
+#   variable, no value  a clause the document leaves to us
 #   neither             a clause no product variable carries, with `note`
-#                       saying why
 #
-# Immutable after ingestion apart from the mark, which is what makes the
-# register derivable: it is always the difference between this block and the
-# live agreement, so it cannot go stale.
+# Immutable after ingestion apart from the mark, which is what lets the register
+# be derived rather than stored.
 class Clause(TypedDict):
     id: str
     clause: str  # the citation the document gives it — "5.2"
@@ -109,57 +92,44 @@ def left_to_us(clause: Clause) -> bool:
 
 class RFQ(TypedDict):
     clauses: list[Clause]
-    # A monthly cap the document states, reported against the candidate price
-    # as arithmetic — never a solver constraint (the model has no budget
-    # variable). Absent when the document states none.
+    # Reported against the candidate price as arithmetic, never as a solver
+    # constraint: the model has no budget variable.
     budget_cap: NotRequired[int]
 
 
-# One draft of the agreement (docs/specs/parallel-drafts). `configuration`
-# below is always the *current* draft's — every tool acts on that one, and
-# which one it is lives in the store.
+# `configuration` below is always the *current* draft's; which one that is
+# lives in the store.
 class Configuration(TypedDict):
     choices: dict[str, Choice]
     statuses: dict[str, dict[str, str]]  # var -> value -> chosen|forced|invalid|open
-    # Why every option that cannot be taken cannot be taken: variable -> value
-    # -> the named rules that rule it out (constitution #6). Derived, never
-    # stored in a snapshot, and rebuilt wherever `statuses` is.
-    #
-    # Each row is computed with that variable's *own* recorded choice lifted,
-    # so it answers the swap the customer is weighing rather than restating
-    # what they already chose. Without the lift every alternative to a decided
-    # value is invalid by construction, which is what locked the document
-    # everywhere the agreement had been decided. An empty list means the only
-    # thing separating the value is the structural one-value-per-variable,
-    # which is not a product rule and is not narrated as one.
+    # Computed with each variable's own recorded choice lifted, so presence here
+    # means "you cannot swap to this", not "you already chose something else".
+    # An empty list means the structural one-value-per-variable, which is not a
+    # product rule and is not narrated as one.
     unavailable: dict[str, dict[str, list[Rule]]]
     candidate: Candidate | None
     rfq: NotRequired[RFQ]  # only on document-seeded agreements
 
 
-# A configuration as the log holds it (docs/specs/action-log): everything
-# except what the solver derives. Its own type rather than a reuse of
-# Configuration, because it deliberately lacks a required key — `trace.rebuild`
-# returns this shape and `restore` validates it back into a whole one.
+# Its own type rather than a reuse of Configuration, because it deliberately
+# lacks a required key: `trace.rebuild` returns this shape and `restore`
+# validates it back into a whole one.
 class Snapshot(TypedDict):
     choices: dict[str, Choice]
     candidate: Candidate | None
     rfq: NotRequired[RFQ]
 
 
-# How many reversals each way the current draft offers, mirrored into agent
-# state so the canvas can offer the controls without polling the store.
+# Mirrored into agent state so the canvas can offer the controls without
+# polling the store.
 class HistoryDepths(TypedDict):
     undo: int
     redo: int
 
 
-# What the canvas's draft switcher draws a row from (docs/specs/parallel-drafts).
 # `price` is nullable and routinely null: it lives on the candidate, which
-# `_keep_candidate` drops as soon as a choice diverges from it, so a draft
-# edited since its last completion has no price to report and shows by name
-# alone. Solving the other drafts to fill the gap would put solver calls behind
-# a render.
+# `_keep_candidate` drops as soon as a choice diverges from it. Solving the
+# other drafts to fill the gap would put solver calls behind a render.
 class DraftSummary(TypedDict):
     id: str
     name: str
@@ -168,23 +138,16 @@ class DraftSummary(TypedDict):
 
 class AgentState(BaseAgentState):
     configuration: Configuration
-    # The workspace this conversation belongs to (docs/specs/agreement-workspace).
     # Seeded by the frontend on attach; absent on legacy threads — read with .get.
     workspace_id: NotRequired[str]
-    # Mirror of the workspace's name, updated by name_workspace so the open
-    # workspace's UI re-renders with the name immediately. The store is the
-    # durable copy; this field is display plumbing.
+    # The store is the durable copy; this field is display plumbing.
     workspace_name: NotRequired[str]
-    # Mirror of the current draft's undo/redo depths (docs/specs/undo), on the
-    # same terms: the store holds the history, this is what the canvas renders
-    # its controls from. Absent until the first batch of a conversation
-    # commits, and seeded by the frontend on attach.
+    # Absent until the first batch of a conversation commits, and seeded by the
+    # frontend on attach.
     history: NotRequired[HistoryDepths]
-    # Mirrors of the workspace's drafts and which one this conversation is
-    # working on (docs/specs/parallel-drafts). Chrome only — the store decides
-    # what is current — but `current_draft_id` also rides in the thread
-    # checkpoint, where it is half of what tells a reopened conversation that
-    # its cards refer to another document.
+    # Chrome only — the store decides what is current — but `current_draft_id`
+    # also rides in the thread checkpoint, where it is half of what tells a
+    # reopened conversation its cards refer to another document.
     current_draft_id: NotRequired[str]
     drafts: NotRequired[list[DraftSummary]]
 
@@ -222,13 +185,9 @@ def _unavailable(
 ) -> dict[str, dict[str, list[Rule]]]:
     """The rules behind every unavailable option, for the `unavailable` field.
 
-    Around 40 ms on the shipped model: one `valid_options` per decided
-    variable (the lift), then one `explain` per option that is genuinely out.
-
-    Which options are out is settled; *which* minimal core comes back for one
-    of them is not, since an incremental solver can answer the same question
-    with either of two true cores. Nothing may depend on getting the same one
-    twice.
+    Which options are out is settled; *which* minimal core comes back for one of
+    them is not, since an incremental solver can answer with either of two true
+    cores. Nothing may depend on getting the same one twice.
     """
     out: dict[str, dict[str, list[Rule]]] = {}
     for var in MODEL.variables:
@@ -243,9 +202,6 @@ def _unavailable(
 
 
 def _derived(choices: dict[str, str]) -> tuple[dict[str, dict[str, str]], dict]:
-    """The two solver-derived halves of a configuration, always built together
-    so neither can go stale behind the other (a restore that rebuilt only
-    `statuses` would leave the document explaining an older agreement)."""
     statuses = SOLVER.valid_options(choices)  # raises ConflictError if infeasible
     return statuses, _unavailable(choices, statuses)
 
@@ -269,9 +225,9 @@ def _rules(conflict) -> list[Rule]:
 
 
 def _carry_rfq(config: Configuration, new_config: Configuration) -> Configuration:
-    """Keep the frozen RFQ reference across a transition that rebuilds the
-    configuration wholesale. The register is the difference between it and the
-    live agreement, so dropping it would erase the document, not the diff."""
+    """The register is the difference between the frozen block and the live
+    agreement, so dropping the block would erase the document, not the diff.
+    """
     rfq = config.get("rfq")
     if rfq is not None:
         new_config["rfq"] = rfq
@@ -279,15 +235,9 @@ def _carry_rfq(config: Configuration, new_config: Configuration) -> Configuratio
 
 
 def _repriced(config: Configuration, new_config: Configuration) -> Configuration:
-    """Keep a priced agreement priced across a change.
-
-    A candidate that no longer matches the choices is invalid and `_keep_candidate`
-    drops it, which used to leave the document unpriced after every edit — a
-    click on a cabin finish took the sheet from a monthly fee to "no priced
-    proposal yet", against [always show a valid whole]. So a change to an
-    agreement that *had* a candidate completes again on the same objective,
-    inside the same batch, and undo reverses the pair together. An agreement
-    that never had one still has none: pricing is asked for, not assumed.
+    """Keep a priced agreement priced across a change: a candidate that no longer
+    matches the choices is dropped, which would otherwise leave the document
+    unpriced after every edit. An agreement that never had one still has none.
     """
     previous = config.get("candidate")
     if previous is None or new_config["candidate"] is not None:
@@ -295,9 +245,8 @@ def _repriced(config: Configuration, new_config: Configuration) -> Configuration
     return make_candidate(
         new_config,
         previous.get("objective", "price"),
-        # Keep what the customer has already read wherever the objective is
-        # indifferent: a completion is one of many optima, and re-solving from
-        # scratch would flip cost-free values nobody touched.
+        # A completion is one of many optima, and re-solving from scratch would
+        # flip cost-free values nobody touched.
         prefer=previous["assignment"],
     )
 
@@ -305,9 +254,10 @@ def _repriced(config: Configuration, new_config: Configuration) -> Configuration
 def apply_choices(
     config: Configuration, new_choices: dict[str, str], source: Source
 ) -> tuple[Configuration, dict[str, str]]:
-    """Returns (new configuration, newly forced values). Raises ConflictError
-    on infeasible combinations (leaving config untouched) and ValueError on
-    unknown variables/values."""
+    """Returns (new configuration, newly forced values). Raises ConflictError on
+    infeasible combinations, leaving config untouched, and ValueError on unknown
+    variables or values.
+    """
     _validate_known(new_choices)
     merged = {**_chosen_values(config), **new_choices}
     statuses, unavailable = _derived(merged)  # raises ConflictError if infeasible
@@ -335,20 +285,9 @@ def record_choices(
 ) -> tuple[Configuration, dict[str, str], list[Declined]]:
     """Record what can hold, and say what cannot, rather than losing the lot.
 
-    `apply_choices` is all-or-nothing, which is right for a revision the
-    customer aimed at one term and wrong for a batch of things they just
-    stated: one collision inside it used to discard the choices that had
-    nothing to do with the collision, and the completion that followed filled
-    those variables with the agent's own guesses (docs/specs/agent-tools, and
-    [the agent proposes and the user decides]). So each round asks the solver
-    which choices are in the conflict, declines the ones that came in this
-    batch — every member of that minimal set, so nothing arbitrary is picked
-    between two things the customer said — and tries again with the rest.
-    Declined choices come back with the rules that separate them, for the
-    agent to put to the customer.
-
-    The recorded remainder is applied by `apply_choices`, so a batch with no
-    conflict in it behaves exactly as before.
+    `apply_choices` is all-or-nothing, which is wrong for a batch of things the
+    customer just stated. Each round asks the solver which choices are in the
+    conflict and declines the ones that came in this batch.
     """
     _validate_known(new_choices)
     keep = dict(new_choices)
@@ -360,8 +299,7 @@ def record_choices(
             break
         offenders = [(v, val) for v, val in conflict.choices if v in keep]
         if not offenders:
-            # The conflict is entirely among choices already recorded, which
-            # the invariant says cannot happen; refuse rather than guess.
+            # The invariant says this cannot happen; refuse rather than guess.
             raise ConflictError(conflict, conflict.describe(MODEL))
         rules = _rules(conflict)
         for var, _ in offenders:
@@ -397,9 +335,9 @@ def make_candidate(
     objective: Objective = "price",
     prefer: dict[str, str] | None = None,
 ) -> Configuration:
-    """`prefer` is passed through to the solver as a tie-break — see
-    `SolverService.complete`. Used when repricing, so an edit moves what it
-    forced and nothing else."""
+    """`prefer` is a tie-break passed to the solver, so a reprice moves what the
+    edit forced and nothing else.
+    """
     assignment, price = SOLVER.complete(_chosen_values(config), objective, prefer)
     return {
         **config,
@@ -418,9 +356,9 @@ def revise(
     drop: list[str],
     source: Source,
 ) -> tuple[Configuration, dict[str, str]]:
-    """Withdraw `drop` and apply `changes` as one atomic transition: the
-    resulting choice set is validated as a whole, so it either fully applies
-    or raises (ConflictError / ValueError) leaving config untouched."""
+    """Withdraw `drop` and apply `changes` as one atomic transition: it either
+    fully applies or raises, leaving config untouched.
+    """
     unknown = [v for v in drop if v not in MODEL.variables]
     if unknown:
         raise ValueError(f"unknown variables: {unknown}")
@@ -435,11 +373,10 @@ def revise(
 
 
 def _draft_candidate(name: str, config: Configuration) -> Candidate:
-    """The priced whole a draft is compared by. A draft whose candidate was
-    dropped by an edit has nothing to compare *with* — the choices alone carry
-    no price and no footprint — so the fix is named rather than guessed at, and
-    never solved for here: the solver answers for the draft being worked on
-    (constitution #1)."""
+    """A draft whose candidate an edit dropped has nothing to compare with. Never
+    solved for here: the solver answers for the draft being worked on
+    (constitution #1).
+    """
     candidate = config.get("candidate")
     if not candidate:
         raise ValueError(
@@ -456,11 +393,9 @@ def draft_comparison(
     b_config: Configuration,
     b_is_current: bool = False,
 ) -> dict:
-    """Comparison payload between two drafts: only the differing variables,
-    both values with their monthly deltas, and the monthly-price delta.
-    Per-side deltas are computed at each side's own term — two agreements may
-    differ precisely in term. Each side is its draft's stored solver result, so
-    both are valid by construction."""
+    """Only the differing variables. Per-side deltas are computed at each side's own
+    term, since two agreements may differ precisely in term.
+    """
     side_a = {"name": a_name, **_draft_candidate(a_name, a_config)}
     side_b = {"name": b_name, **_draft_candidate(b_name, b_config)}
 
@@ -468,8 +403,8 @@ def draft_comparison(
     months_b = MODEL.months_of(side_b["assignment"].get(TERM_VAR))
 
     def _side(var_name: str, val: str | None, months: int) -> dict:
-        # val is None when a draft adapted from a workspace written before the
-        # service frame lacks an agreement variable
+        # val is None when a draft adapted from a pre-service-frame workspace
+        # lacks an agreement variable
         if val is None:
             return {"value": None, "label": "—", "price": 0}
         return {"value": val, "label": _label(var_name, val),
@@ -487,9 +422,8 @@ def draft_comparison(
             "a": _side(var_name, val_a, months_a),
             "b": _side(var_name, val_b, months_b),
         })
-    # Pair-level footprint only — no per-variable co2 column: an option-level
-    # column is the badge format decision 6 of docs/specs/environmental-footprint
-    # bans, and use-phase is not attributable to single options at all.
+        # Pair-level only: an option-level co2 column is the badge format
+        # decision 6 bans, and use-phase is not attributable to single options.
     fp_a = side_a.get("footprint")
     fp_b = side_b.get("footprint")
     return {
@@ -501,11 +435,8 @@ def draft_comparison(
         "priceDelta": side_b["price"] - side_a["price"],
         # 0 when either side predates the footprint feature — the card shows "—"
         "footprintDelta": (fp_b["total"] - fp_a["total"]) if fp_a and fp_b else 0,
-        # The same figure already formatted, for the same reason `_format_co2`
-        # exists at all: the card renders this string and the agent quotes it,
-        # so the sheet and the prose beside it cannot disagree. Left to the two
-        # runtimes separately, they did — the card said 1.5 t CO₂e where the
-        # agent's sentence said 1,529 kg CO2e, having read the raw delta.
+        # Formatted once here, because the card renders this string and the
+        # agent quotes it. Left to the two runtimes separately they disagreed.
         "footprintDeltaText": _format_co2(
             abs(fp_b["total"] - fp_a["total"])) if fp_a and fp_b else None,
     }
@@ -527,9 +458,6 @@ class RegisterEntry(TypedDict):
 
 
 def live_value(config: Configuration, variable: str) -> str | None:
-    """What the agreement currently says for a variable: the recorded choice,
-    else the value the rules force, else the candidate's — the same precedence
-    the canvas renders."""
     choice = config["choices"].get(variable)
     if choice:
         return choice["value"]
@@ -564,18 +492,15 @@ def unmapped_clauses(config: Configuration) -> list[Clause]:
 
 
 def register(config: Configuration) -> list[RegisterEntry]:
-    """The deviation register: the document's requirements against the live
-    agreement, one entry per requirement (a tender is answered clause by
-    clause, so three clauses bearing on one variable are three entries).
-
-    Derived, never stored — recomputed from the frozen block and the live
-    assignment on every call, so it cannot go stale.
+    """Derived, never stored: recomputed from the frozen block and the live
+    assignment on every call. A tender is answered clause by clause, so three
+    clauses bearing on one variable are three entries.
     """
     entries: list[RegisterEntry] = []
     for clause in requirements(config):
         offered = live_value(config, clause["variable"])
-        # met first: an agreement that landed back on the document's value
-        # complies, whatever mark reconciliation left behind.
+            # met first: an agreement back on the document's value complies,
+            # whatever mark reconciliation left behind.
         if offered == clause["value"]:
             status: RegisterStatus = "met"
         elif clause.get("reconciliation") == "waived":
@@ -602,14 +527,11 @@ def ingest(
 ) -> tuple[Configuration, Seed, list[Clause]]:
     """Seed an agreement from an extracted requirements document.
 
-    Every clause the extraction hands over is recorded, and what the model
-    cannot carry it loses rather than being moved to another list
-    (docs/specs/document-clauses): an entry naming a variable or a value the
-    model does not declare keeps its citation, its quote and a note saying so.
+    An entry naming a variable or value the model does not declare keeps its
+    citation, its quote and a note saying so, rather than moving to another list.
 
-    Returns (new configuration, the solver's seeding result, the clauses that
-    lost facts this way). Either fully applies or raises, leaving `config`
-    untouched — the transition is built as a new value and never mutates.
+    Returns (new configuration, the solver's seeding result, the clauses that lost
+    facts). Either fully applies or raises.
     """
     if config.get("rfq") is not None:
         raise ValueError(
@@ -659,9 +581,8 @@ def ingest(
 
     seeded = SOLVER.seed([(c["variable"], c["value"]) for c in asked])
     new_config, _ = apply_choices(config, dict(seeded.kept), "document")
-    # The candidate is seed's own whole, not a recomputed one: cost-free
-    # variables leave several equally cheap completions and complete() picks
-    # among them arbitrarily, so re-solving could offer a value the seeding
+    # seed's own whole, not a recomputed one: cost-free variables leave several
+    # equally cheap completions, so re-solving could offer a value the seeding
     # result never named.
     new_config = {**new_config, "candidate": {
         "assignment": dict(seeded.assignment),
@@ -690,10 +611,9 @@ def _requirements_on(config: Configuration, variable: str) -> list[Clause]:
 
 
 def _mark(config: Configuration, answered: dict[str, str]) -> RFQ:
-    """Move the mark on the clauses a reconciliation move answered, keyed by
-    clause identity (docs/specs/document-clauses). A clause the move leaves
-    nothing to answer keeps the mark it had, which is why the caller decides
-    per clause rather than per variable."""
+    """A clause the move leaves nothing to answer keeps the mark it had, which is why
+    the caller decides per clause rather than per variable.
+    """
     rfq = config["rfq"]
     return {
         **rfq,
@@ -710,16 +630,13 @@ def reconcile(
     move: ReconcileMove,
     value: str | None = None,
 ) -> tuple[Configuration, dict[str, str], str | None]:
-    """Reconcile the document's requirements on one variable. Every clause
-    bearing on that variable is answered by the one move — they are one
-    disagreement, answered once — but the mark lands per clause, on the ones
-    the move actually answers: a clause asking for the value the agreement
-    lands on has nothing to answer and keeps its pending mark
-    (docs/specs/document-clauses).
+    """Every clause bearing on the variable is answered by the one move, but the mark
+    lands per clause: a clause asking for the value the agreement lands on keeps
+    its pending mark.
 
     Returns (new configuration, newly forced values, the value now recorded).
-    Raises ConflictError from the `revise` move exactly as `revise_choices`
-    does, so a colliding reconciliation reaches the customer as repair options.
+    Raises ConflictError so a colliding reconciliation reaches the customer as
+    repair options.
     """
     clauses = _requirements_on(config, variable)
 
@@ -736,18 +653,15 @@ def reconcile(
                 f"nothing is offered for {variable} yet — propose a completion "
                 "before accepting what it offers"
             )
-        # Every clause, not any: a document asking two different values of one
-        # term has one clause the agreement meets and one to waive, and only a
-        # document the agreement meets outright has nothing to waive
-        # (docs/specs/document-clauses).
+        # Every clause, not any: a document asking two values of one term has
+        # one clause the agreement meets and one to waive.
         if all(c["value"] == offered for c in clauses):
             raise ValueError(
                 f"the agreement already meets the document on {variable} — "
                 "there is nothing to waive"
             )
-        # Pinned as a user choice: waiving is the customer's decision, and
-        # pinning stops a later revision silently moving a value they
-        # explicitly accepted.
+        # Pinned as a user choice, so a later revision cannot silently move a
+        # value they explicitly accepted.
         new_config, newly_forced = revise(config, {variable: offered}, [], "user")
         marks = _mark(new_config, answered(offered, "waived"))
         return {**new_config, "rfq": marks}, newly_forced, offered
@@ -766,14 +680,8 @@ def reconcile(
 
 
 def cursor_move(entry: dict, direction: str) -> dict:
-    """The delta one step of the cursor over this entry applies.
-
-    Undoing runs the entry backwards and redoing runs it forwards, and running
-    one backwards is swapping what it asserted for what it retracted. Inversion
-    being generic is why no tool needs an inverse of its own — the objection the
-    [undo requirements](../../docs/specs/undo/requirements.md) raised against a
-    move log, and the one thing a fact delta answers that an operation log does
-    not.
+    """Running an entry backwards is swapping what it asserted for what it retracted,
+    which is why no tool needs an inverse of its own.
     """
     return trace.invert(entry) if direction == "undo" else trace.change_of(entry)
 
@@ -781,12 +689,9 @@ def cursor_move(entry: dict, direction: str) -> dict:
 def restore(snap: Snapshot) -> Configuration:
     """Validate a reconstructed state back into a whole configuration.
 
-    A reversal is a move, not a bypass: the reconstructed choices are
-    re-validated against the product model and their statuses re-derived from
-    the solver, so a state the current model no longer admits raises rather
-    than landing. Raises ValueError on a value the model no longer has — the
-    reachable failure once `elevator.json` is edited (constitution #2) — and
-    ConflictError on a choice set the rules no longer allow together.
+    Raises ValueError on a value the model no longer has — reachable once
+    `elevator.json` is edited (constitution #2) — and ConflictError on a choice set
+    the rules no longer allow together.
     """
     values = {var: c["value"] for var, c in snap["choices"].items()}
     _validate_known(values)
@@ -795,24 +700,21 @@ def restore(snap: Snapshot) -> Configuration:
         "choices": dict(snap["choices"]),
         "statuses": statuses,
         "unavailable": unavailable,
-        # The candidate cannot be recomputed faithfully (see `ingest`), so it
-        # is restored as the delta recorded it — but only if it still extends
-        # these choices.
+        # The candidate cannot be recomputed faithfully (see `ingest`), so it is
+        # restored as the delta recorded it, and only if it still extends these
+        # choices.
         "candidate": _keep_candidate(snap.get("candidate"), values),
     }
     rfq = snap.get("rfq")
     if rfq is not None:
-        # From the reconstruction, never carried from the live configuration:
-        # reconciliation marks move with a batch, so restoring them is most of
-        # what undoing a reconciliation means.
+        # From the reconstruction, never the live configuration: reconciliation
+        # marks move with a batch.
         config["rfq"] = rfq
     return config
 
 
-# How each action reads in the customer's terms, and whose move it was. The
-# log records an action's name, so a reversal can say which move it reverses
-# where the snapshot history could only say what changed — the gap ontology
-# finding 3 named (docs/specs/action-log).
+# How each action reads in the customer's terms, and whose move it was. The log
+# records an action's name, so a reversal can say which move it reverses.
 _POSSESSIVE = {"user": "your", "agent": "the assistant\'s",
                "document": "the document\'s"}
 
@@ -821,8 +723,8 @@ _MOVE_PHRASE = {
     "revise_choices": "revision of {terms}",
     "clear_choices": "withdrawal of {terms}",
     "propose_completion": "completion of the agreement",
-    # No "from the document" here: the possessive above already supplies it,
-    # and this action's source is always `document`.
+    # No "from the document": the possessive above supplies it, and this
+    # action's source is always `document`.
     "ingest_rfq": "seeding of the agreement",
     "reconcile_requirement": "answer to the deviation on {terms}",
     "keep_as_is": "declining of a change",
@@ -830,17 +732,10 @@ _MOVE_PHRASE = {
 
 
 def variables_by_clause(change: dict, *configs: dict) -> dict[str, str]:
-    """Which variable each clause the change speaks about bears on.
-
-    A `reconciled` fact carries the clause and the mark and nothing else — the
-    ontology's relation is `reconciled(Clause, Mark)` — so naming the term it
-    answers means looking the clause up. Two sources, because neither answers
-    alone: an ingestion's own delta carries `carries` facts and so describes
-    itself, while a reconciliation's does not and is answered by the
-    configurations the reversal spans. Both configurations are needed for the
-    same reason in reverse — undoing an ingestion retracts every clause, so the
-    ids are absent from the configuration it lands on, and redoing one asserts
-    them, so they are absent from the one it starts at.
+    """A `reconciled` fact carries the clause and the mark and nothing else, so naming
+    the term it answers means looking the clause up. Two sources, because neither
+    answers alone: an ingestion's delta carries `carries` facts and describes
+    itself, a reconciliation's does not.
     """
     out: dict[str, str] = {}
     for config in configs:
@@ -854,12 +749,9 @@ def variables_by_clause(change: dict, *configs: dict) -> dict[str, str]:
 
 
 def _terms_named(entry: dict, variables: dict[str, str] | None = None) -> list[str]:
-    """The variables an entry's facts speak about, labelled, in the model's
-    order so two readings of one entry name them the same way.
-
-    `variables` maps a clause to the term it bears on, for the `reconciled`
-    facts that name a clause rather than a term. Without it a move whose whole
-    content is a mark names no term at all.
+    """In the model's order, so two readings of one entry name them the same way.
+    `variables` maps a clause to its term, without which a move whose whole content
+    is a mark names no term at all.
     """
     variables = variables or {}
     named = set()
@@ -882,16 +774,8 @@ def name_action(entry: dict, variables: dict[str, str] | None = None) -> str:
 
 
 def describe_delta(change: dict, variables: dict[str, str] | None = None) -> str:
-    """What a delta does to the agreement, in the customer\'s terms — read off
-    the facts rather than by diffing two configurations.
-
-    A reversal describes itself by passing the inverted delta, so the sentence
-    is what the customer is about to see rather than what the entry originally
-    did.
-
-    `variables` maps a clause to the term it bears on, from
-    `variables_by_clause`. A `reconciled` fact names a clause, so without it a
-    mark that moved is described as nothing at all.
+    """Read off the facts rather than by diffing two configurations. A reversal passes
+    the inverted delta, so the sentence is what the customer is about to see.
     """
     variables = variables or {}
     parts = []
@@ -915,12 +799,9 @@ def describe_delta(change: dict, variables: dict[str, str] | None = None) -> str
     for fact in change["asserted"]:
         if fact[0] != "reconciled" or fact[1] not in marked:
             continue
-        # Two .gets, unlike the loop above, which iterates the model: the
-        # clause may be one no configuration to hand still lists, and `restore`
-        # re-validates choices against the product model and not the frozen
-        # register, so an edited model (constitution #2) can leave a
-        # requirement on a variable the model no longer declares. Describing a
-        # reversal must not raise — it runs after the write has landed.
+        # Two .gets, unlike the loop above: an edited model (constitution #2) can
+        # leave a requirement on a variable the model no longer declares, and
+        # describing a reversal must not raise — it runs after the write.
         variable = MODEL.variables.get(variables.get(fact[1], ""))
         if variable is not None:
             parts.append(f"the deviation on {variable.label} {fact[2]}")
@@ -934,9 +815,8 @@ def describe_delta(change: dict, variables: dict[str, str] | None = None) -> str
 
 # -- ask_choices payload (docs/specs/agreement-document) ----------------------------------------
 
-# Control selection is a UI heuristic and deliberately not part of the
-# product model (docs/specs/agreement-document design). Ordered groups render as scales;
-# consequence-heavy variables always render as detail lists.
+# A UI heuristic, deliberately not part of the product model. Ordered groups
+# render as scales; consequence-heavy variables always as detail lists.
 _ORDERED_GROUPS = {"performance", "dimensions"}
 _FORCE_LIST = {"car_size", "wall_finish", "floor"}
 _CHIP_MAX_OPTIONS = 6
@@ -964,10 +844,9 @@ def _months_in_effect(config: Configuration) -> int:
 
 
 def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
-    """Typed payload for in-chat controls: per variable, its control type and
-    every option with validity status (from the solver), its monthly delta at
-    the term in effect, and a marker on the cheapest-monthly-completion value.
-    Raises ValueError on unknown variables."""
+    """Per variable: its control type, every option with solver validity, its monthly
+    delta at the term in effect, and a marker on the cheapest-completion value.
+    """
     unknown = [v for v in variables if v not in MODEL.variables]
     if unknown:
         raise ValueError(f"unknown variables: {unknown}; valid: {sorted(MODEL.variables)}")
@@ -978,8 +857,7 @@ def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
     for var_name in variables:
         var = MODEL.variables[var_name]
         statuses = config["statuses"][var_name]
-        # An option the customer cannot take says which rules say so, so the
-        # card can name them rather than greying the row out (constitution #6).
+        # So the card can name the rules rather than greying the row out.
         unavailable = config.get("unavailable", {}).get(var_name, {})
         options = [
             {
@@ -1014,10 +892,10 @@ def _described(pairs) -> list[dict]:
 
 
 def build_repair_payload(config: Configuration, changes: dict[str, str]) -> dict:
-    """Typed payload for the RepairOptions renderer: the requested revision
-    plus solver-computed repair options ordered by retention. Each option
-    lists the choices to give up, the resulting forced ripple (only what
-    differs from the current sheet), and the rules involved."""
+    """The requested revision plus solver-computed repair options ordered by
+    retention. Each lists the choices to give up, the forced ripple that differs
+    from the current sheet, and the rules involved.
+    """
     current = {**_forced(config["statuses"]), **_chosen_values(config)}
     repairs = SOLVER.repairs(_chosen_values(config), changes)
     options = []
@@ -1047,16 +925,10 @@ def _label(var: str, val: str) -> str:
 
 
 def _format_co2(kg: int) -> str:
-    """kg CO₂e → "12.4 t CO₂e", or "540 kg CO₂e" below a tonne.
-
-    Tenths round half away from zero, in integer arithmetic, because that is
-    what `formatCO2` in `src/lib/configurator.ts` does — the canvas and the
-    agent's prose quote the same lifetime total, and Python's own `:.1f`
-    rounds half to even, so 1250 kg read 1.2 t in chat beside 1.3 t on the
-    sheet. Reimplementing rather than sharing is unavoidable across the two
-    runtimes; agreeing on the rule is not. The two still part above 1000 t,
-    where the frontend's locale formatter groups thousands and this does not —
-    a figure one elevator cannot reach.
+    """Tenths round half away from zero, in integer arithmetic, because that is what
+    `formatCO2` in `src/lib/configurator.ts` does. Python's `:.1f` rounds half to
+    even, so 1250 kg read 1.2 t in chat beside 1.3 t on the sheet. The two still
+    part above 1000 t, which one elevator cannot reach.
     """
     if abs(kg) < 1000:
         return f"{kg} kg CO₂e"
@@ -1070,10 +942,9 @@ def _signed_co2(kg: int) -> str:
 
 def completion_message(candidate: Candidate, objective: Objective,
                        other_assignment: dict[str, str], other_price: int) -> str:
-    """Tool message for propose_completion: the candidate under its objective,
-    plus — whenever the two objectives disagree — a one-line teaser for the
-    other completion, so the trade-off is disclosed at the moment of proposal
-    (docs/specs/environmental-footprint design)."""
+    """Whenever the two objectives disagree, a one-line teaser for the other
+    completion, so the trade-off is disclosed at the moment of proposal.
+    """
     term = _label(TERM_VAR, candidate["assignment"][TERM_VAR])
     objective_name = ("cheapest monthly completion" if objective == "price"
                       else "lowest-footprint completion")
@@ -1116,21 +987,11 @@ def _conflict_payload(e: ConflictError) -> str:
 
 
 def _get_config(runtime: ToolRuntime) -> Configuration:
-    """The configuration this tool acts on, read from the thread checkpoint and
-    brought up to shape on the way in.
+    """The configuration this tool acts on, brought up to shape on the way in.
 
-    A conversation resumed on a thread written before
-    docs/specs/document-clauses arrives with the document held as two lists,
-    which the store's read-time adapter never saw. Lifting it here must not
-    mint identity, though: the workspace record has already minted these
-    clauses once and persisted them, and a Clause's identity is persistent
-    (docs/specs/document-clauses, decision 3). Minting a second set would hand
-    the store a document it does not recognise, and the next ordinary edit
-    would log a phantom rewrite of the whole thing. So the block is taken from
-    the record, which is the durable locus of state (constitution #7).
-
-    A conversation with no workspace behind it has nothing to disagree with, so
-    there minting is both safe and the only way to read the block at all.
+    Lifting must not mint identity: the workspace record has already minted these
+    clauses once, and a second set would hand the store a document it does not
+    recognise (docs/specs/document-clauses/design.md decision 3).
     """
     config = runtime.state.get("configuration") or empty_configuration()
     rfq = config.get("rfq")
@@ -1161,12 +1022,10 @@ def _current_thread_id() -> str | None:
 
 
 def _mirrors(record: dict) -> dict:
-    """The chrome the canvas renders from, read off the record that was just
-    written: how far the current draft's history reaches, which draft is
-    current, and what other drafts exist with their prices
-    (docs/specs/parallel-drafts). Every path that moves the workspace goes
-    through here, structural moves included — a switch that left the history
-    depths behind would offer an undo belonging to the other document."""
+    """Every path that moves the workspace goes through here, structural moves
+    included: a switch that left the history depths behind would offer an undo
+    belonging to the other document.
+    """
     return {
         "history": workspace_store.history_depths(record),
         "current_draft_id": workspace_store.current_draft(record)["id"],
@@ -1181,12 +1040,8 @@ def _mirrors(record: dict) -> dict:
     }
 
 
-# Every name an entry of a draft\'s log may carry (docs/specs/action-log). The
-# runtime carries the state, the config and the tool-call id and no tool name,
-# so the name is an argument each tool passes for itself; this set is what makes
-# it checkable rather than trusted. `tests/couplings.test.ts` asserts every
-# member is a tool the agent builds and a name the ontology enumerates, and
-# `test_tools.py` that each tool commits under its own.
+# The runtime carries no tool name, so the name is an argument each tool passes
+# for itself; this set is what makes it checkable rather than trusted.
 CONTENT_ACTIONS = frozenset({
     "set_choices", "revise_choices", "clear_choices", "propose_completion",
     "ingest_rfq", "reconcile_requirement", "keep_as_is",
@@ -1204,15 +1059,12 @@ def _logged(action: str) -> str:
 def _commit(
     runtime: ToolRuntime, config: Configuration, action: str, source: str
 ) -> dict | None:
-    """Write-through to the durable workspace (docs/specs/agreement-workspace):
-    the thread checkpoint keeps its own copy as the historical record of what
-    this conversation saw. The write lands on the current draft
-    (docs/specs/parallel-drafts) and no other, and logs the action under its own
-    name (docs/specs/action-log). A missing workspace must not break the
-    conversation.
+    """Write-through to the durable workspace. `action` and `source` are not
+    defaulted: a call site that omits one raises rather than logging anonymously.
+    The source is not always who the facts are attributed to.
 
-    Returns the state mirrors after the write — None when there is no workspace
-    and so nothing to mirror."""
+    Returns the state mirrors after the write, or None when there is no workspace.
+    """
     workspace_id = runtime.state.get("workspace_id")
     if not workspace_id:
         return None  # legacy thread — nothing durable to update
@@ -1236,11 +1088,9 @@ def _undecided(config: Configuration) -> list[str]:
 
 # -- tool returns ---------------------------------------------------------
 #
-# Every tool answers with a ToolMessage the agent reads, optionally alongside
-# the state it changed. The wording of those messages is what the LLM acts on
-# and no automated check sees it (the default suite exercises the transitions
-# above, and the conversation checks assert on tool calls, never prose), so these
-# helpers carry the shapes and leave every sentence to the call site.
+# The wording of a tool message is what the LLM acts on and no automated check
+# sees it, so these helpers carry the shapes and leave every sentence to the
+# call site.
 
 
 def _reply(runtime: ToolRuntime, content: str, **update) -> Command:
@@ -1254,17 +1104,12 @@ def _error(runtime: ToolRuntime, e: Exception) -> Command:
     return _reply(runtime, f"ERROR: {e}")
 
 
-# The card grammar as the agent's third copy of it
-# (docs/specs/one-gesture-one-action). `src/lib/configurator.ts` mints the
-# sentences, `agent/main.py` teaches them, and this is what makes the routing a
-# fact about the message rather than a request to the model. The coupling check
-# asserts all three agree, by comparing which sentences this matches.
+# The agent's copy of the card grammar. `src/lib/configurator.ts` mints the
+# sentences and `agent/main.py` teaches them, so routing is a fact about the
+# message rather than a request to the model.
 #
-# The `Set` form is matched on its shape rather than its first word: "Set up an
-# elevator for a hospital" is ordinary English opening a prose turn, and
-# refusing it would send a batch the agent translated out of prose to a total
-# action, losing the partial application it is entitled to. The parenthesised
-# code is what no customer types. "Canvas edit: " needs no such care.
+# The `Set` form is matched on shape, not on its first word: "Set up an elevator
+# for a hospital" opens a prose turn. "Canvas edit: " needs no such care.
 CANVAS_EDIT_PREFIX = "Canvas edit: "
 _SET_LINE = re.compile(r"^Set .+ to .+ \([a-z][a-z0-9_]*=[a-z0-9_]+\)$")
 
@@ -1280,13 +1125,9 @@ def is_gesture(content: str) -> bool:
 
 
 def _is_gesture(runtime: ToolRuntime) -> bool:
-    """Whether the turn was opened by a gesture.
-
-    Read from the last human message, because that is the whole of what a
-    gesture is: a structured sentence a card or the sheet dispatched. Nothing
-    else in the run distinguishes it from prose, and the prompt asking the
-    model to notice was measurably not enough — on the opening turn of a fresh
-    conversation it reached for `set_choices` on four runs across three
+    """Read from the last human message, because that is the whole of what a gesture
+    is. Asking the model to notice was measurably not enough: on the opening turn
+    of a fresh conversation it reached for `set_choices` on four runs across three
     strengthenings of the rule.
     """
     for message in reversed((runtime.state or {}).get("messages") or []):
@@ -1314,16 +1155,8 @@ def _committed(
     action: str,
     source: Source,
 ) -> Command:
-    """A tool that moved the agreement: write through to the workspace, then
-    report. The write-through precedes the reply everywhere, so a message the
-    agent has read always describes a durable agreement.
-
-    `action` is the name this tool commits under and `source` is whose move it
-    is, and neither is defaulted: a call site that omits one raises rather than
-    logging anonymously (docs/specs/action-log). The source is not always who
-    the facts are attributed to — the two content tools pass their own
-    argument, so the agent recording what the customer just said logs a
-    customer\'s move.
+    """The write-through precedes the reply everywhere, so a message the agent has
+    read always describes a durable agreement.
     """
     mirrors = _commit(runtime, config, action, source)
     return _reply(runtime, "\n".join(lines), configuration=config, **(mirrors or {}))
@@ -1332,10 +1165,9 @@ def _committed(
 def _repair_options(
     runtime: ToolRuntime, config: Configuration, changes: dict[str, str]
 ) -> Command:
-    """A revision that collides with recorded choices comes back as
-    solver-computed repair options, rendered as clickable cards. When the
-    requested changes are contradictory on their own, no repair to the *other*
-    choices can help, so the conflict itself is what the agent gets."""
+    """When the requested changes are contradictory on their own, no repair to the
+    other choices can help, so the conflict itself is what the agent gets.
+    """
     try:
         payload = build_repair_payload(config, changes)
     except ConflictError as e:
@@ -1349,10 +1181,7 @@ def _consequence_lines(
     newly_forced: dict[str, str],
     discarded: str = "The previous candidate no longer fits and was discarded.",
 ) -> list[str]:
-    """What a transition did beyond what was asked: the values the rules now
-    force, and what happened to the standing candidate — repriced, in the
-    ordinary case, since a priced agreement stays priced across a change
-    (`_repriced`)."""
+    """What a transition did beyond what was asked."""
     lines = []
     if newly_forced:
         lines.append(
@@ -1363,9 +1192,8 @@ def _consequence_lines(
     if after is None and before is not None:
         lines.append(discarded)
     elif before is not None and after is not None and after["price"] != before["price"]:
-        # Stated, not narrated: the consideration line on the sheet carries the
-        # new fee, so a canvas edit that only moved the price has nothing the
-        # sheet cannot explain by itself and ends in silence.
+        # The consideration line on the sheet carries the new fee, so a canvas
+        # edit that only moved the price ends in silence.
         lines.append(
             f"Repriced: {after['price']} EUR/month (was {before['price']}). "
             "The sheet shows this."
@@ -1496,10 +1324,8 @@ def propose_completion(runtime: ToolRuntime, objective: Objective = "price") -> 
 
 # -- draft tools (docs/specs/parallel-drafts) -----------------------------
 #
-# Structural moves over whole documents. None of them writes a configuration
-# through `_committed`: forking copies one, switching moves a pointer, and
-# discarding removes one, so none of the three is a change to a document and
-# none of them lands in a document's history.
+# None of these writes a configuration through `_committed`, so none of them is
+# a change to a document and none lands in a document's history.
 
 
 def _no_drafts(runtime: ToolRuntime) -> Command:
@@ -1617,9 +1443,8 @@ def compare_drafts(a: str, runtime: ToolRuntime, b: str | None = None) -> str:
                 f"{side_a['name']!r} is one draft, not two — name the other one"
             )
 
-        # The current side comes from the run's own state rather than the
-        # record, so the column labelled current is the sheet the customer is
-        # looking at; the other side can only come from the store.
+    # The current side comes from the run's own state, so the column labelled
+    # current is the sheet the customer is looking at.
         def _config(draft: dict) -> Configuration:
             return (_get_config(runtime) if draft["id"] == current["id"]
                     else draft["configuration"])
@@ -1637,15 +1462,9 @@ def compare_drafts(a: str, runtime: ToolRuntime, b: str | None = None) -> str:
 
 
 def _restore_step(runtime: ToolRuntime, direction: str) -> Command:
-    """One step of the cursor through the current draft's log, in either
-    direction.
-
-    The log belongs to the agreement, not to this transcript: the store is read
-    fresh, so the action reversed is the last one taken on this draft whoever
-    took it and from whichever conversation — and never one taken on another
-    draft (docs/specs/parallel-drafts). The prior state is rebuilt by running
-    the entry's delta backwards, and nothing is written until the solver has
-    re-validated it.
+    """The log belongs to the agreement, not to this transcript: the store is read
+    fresh, so the action reversed is the last one taken on this draft whoever took
+    it. Nothing is written until the solver has re-validated it.
     """
     workspace_id = runtime.state.get("workspace_id")
     if not workspace_id:
@@ -1721,13 +1540,9 @@ def keep_as_is(runtime: ToolRuntime) -> Command:
     everything as it is", "leave it", "forget that one"). It is not undo:
     undo_change reverses a change that was applied, while this one answers a
     change that never was. The agreement does not move."""
-    # Deliberately routed through `append_action` rather than `_committed`:
-    # this tool holds no `configuration` in its update and reaches no door that
-    # could write one, so declining a change cannot move the agreement whatever
-    # the model intends by calling it (docs/specs/nonlinear-interaction). What
-    # it does record is that the change was declined — an action whose whole
-    # content is that it occurred, with no facts and so no reversal
-    # (docs/specs/action-log).
+    # Routed through `append_action` rather than `_committed`: this tool holds no
+    # `configuration` in its update, so declining a change cannot move the
+    # agreement whatever the model intends by calling it.
     workspace_id = runtime.state.get("workspace_id")
     mirrors = None
     if workspace_id:
@@ -1745,9 +1560,7 @@ def keep_as_is(runtime: ToolRuntime) -> Command:
 
 
 def _register_lines(config: Configuration) -> list[str]:
-    """The register as the agent should read it: pending deviations first,
-    then what was reconciled and how — so "where do we stand" answers from
-    state, with waived requirements still named."""
+    """Pending deviations first, then what was reconciled and how."""
     entries = register(config)
     if not entries:
         return []
@@ -1930,15 +1743,14 @@ def reconcile_requirement(
     except ValueError as e:
         return _error(runtime, e)
     except ConflictError as conflict:
-        # Only "revise" can collide — "accept" pins a value the agreement
-        # already holds — so only it has a revision to build repairs for.
+        # Only "revise" can collide — "accept" pins a value the agreement already
+        # holds.
         if value is None:
             return _rejected(runtime, conflict)
         return _repair_options(runtime, config, {variable: value})
 
-    # The clauses this move answered, which on a document asking two values of
-    # one term is not every clause on it: one of them is now met
-    # (docs/specs/document-clauses).
+    # On a document asking two values of one term this is not every clause on
+    # it: one of them is now met.
     on_variable = [c for c in requirements(new_config) if c["variable"] == variable]
     answered = [c["clause"] for c in on_variable if c["value"] != applied]
     met = [c["clause"] for c in on_variable if c["value"] == applied]
@@ -1946,12 +1758,8 @@ def reconcile_requirement(
         every = ", ".join(c["clause"] for c in on_variable)
         lines = [f"Clause {every} left open — still an unreconciled deviation."]
     elif not answered:
-        # Every clause on the variable asked for the value just applied, so no
-        # clause was waived or revised: the agreement came into line with the
-        # document rather than answering a deviation. Saying "clause revised"
-        # here would name a move that did not happen — and with nothing to
-        # cite, would name it with an empty citation
-        # (docs/specs/document-clauses, decision 4).
+        # Every clause asked for the value just applied, so nothing was waived or
+        # revised, and "clause revised" would name a move that did not happen.
         lines = [f"Clause {', '.join(met)} is now met: "
                  f"{MODEL.variables[variable].label} is "
                  f"{_label(variable, applied)}. Nothing was waived or revised."]
@@ -2017,9 +1825,7 @@ def get_configuration(runtime: ToolRuntime) -> str:
                          else "Elevator: unnamed — call name_workspace once you "
                               "know which installation this is.")
             current = workspace_store.current_draft(record)
-            # Which document this state belongs to, and what else exists beside
-            # it (docs/specs/parallel-drafts) — everything below describes the
-            # current draft and no other.
+            # Everything below describes the current draft and no other.
             if len(record["drafts"]) > 1:
                 drafts_line = "Drafts: " + ", ".join(
                     f"{d['name']}"
@@ -2038,8 +1844,8 @@ def get_configuration(runtime: ToolRuntime) -> str:
         lines.append(f"- {var} = {c['value']} (source: {c['source']})")
     if forced:
         lines.append("Forced by rules: " + ", ".join(f"{v}={val}" for v, val in forced.items()))
-        # With the rules that force them, so "why is this here?" is answered by
-        # quoting the model rather than by reasoning about it (constitution #6).
+            # With the rules that force them, so "why is this here?" is answered
+            # by quoting the model (constitution #6).
         for var, val in forced.items():
             named = dict.fromkeys(
                 f"{r['id']}: {r['label']}"
@@ -2087,8 +1893,7 @@ def describe_product() -> str:
     the footprint assessment assumptions — the only source for a footprint
     figure or an assumption behind one. Call this before you first record or
     change anything."""
-    # All prices shown are EUR/month — the LLM never sees a capex figure it
-    # could leak (docs/specs/service-agreement).
+    # All prices are EUR/month: the LLM never sees a capex figure it could leak.
     default_months = MODEL.months_of(None)
     default_label = _label(TERM_VAR, MODEL.pricing.default_term)
     fb = MODEL.footprint_block
@@ -2102,8 +1907,8 @@ def describe_product() -> str:
         return ""
 
     def _co2_note(o) -> str:
-        # Quoted after the fabrication multiplier so per-option figures
-        # reconcile with candidate totals (docs/specs/environmental-footprint).
+        # Quoted after the fabrication multiplier so per-option figures reconcile
+        # with candidate totals.
         if not o.co2:
             return ""
         kg = round(o.co2 * fb.fabrication_multiplier)
