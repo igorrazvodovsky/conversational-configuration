@@ -22,7 +22,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { UploadIcon, XIcon } from "lucide-react";
+import { Building2Icon, UploadIcon, XIcon } from "lucide-react";
 import {
   CopilotChat,
   CopilotChatSuggestionPill,
@@ -31,7 +31,13 @@ import {
 
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import {
@@ -189,8 +195,20 @@ function WelcomeScreen({
     <div className="flex h-full flex-col">
       <Empty className="flex-1">
         <EmptyHeader>
-          <EmptyDescription>
-            Describe the building and what it has to carry.
+          {/* The size is a class, not lucide's `size` prop: the icon variant
+              sets `size-4` on any svg without a `size-*` class of its own, and
+              a utility beats the width/height attributes the prop renders. The
+              muted box is `size-8` for the same reason, so both are set here —
+              the glyph at 64px inside a box that leaves it 16px of margin. */}
+          <EmptyMedia variant="icon" className="size-24">
+            <Building2Icon className="size-16 text-muted-foreground" />
+          </EmptyMedia>
+          <EmptyTitle>Say what the building needs</EmptyTitle>
+          {/* Reading matter, so 14px rather than the primitive's 12
+              (constitution #16 — the same correction decision 5 records for
+              the transcript's prose). */}
+          <EmptyDescription className="text-sm">
+            Describe the elevator and what it has to carry.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
