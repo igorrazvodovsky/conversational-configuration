@@ -3,7 +3,7 @@
 // docs/specs/chat-pane/design.md
 
 import { forwardRef, type ComponentProps } from "react";
-import { ArrowUpIcon, MicIcon, PaperclipIcon } from "lucide-react";
+import { ArrowUpIcon, MicIcon, PaperclipIcon, XIcon } from "lucide-react";
 import { CopilotChatInput } from "@copilotkit/react-core/v2";
 
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ const ComposerTextArea = forwardRef<
 });
 
 /**
- * The one library prop this composer intercepts
+ * The two library props this composer intercepts
  * (docs/specs/chat-pane/design.md decision 10).
  *
  * `CopilotChatInput` computes `disabled: isProcessing ? !canStop : !canSend`,
@@ -44,6 +44,15 @@ const ComposerTextArea = forwardRef<
  * `onClick` returns before calling through, so the library's `send()` is never
  * reached. No `aria-disabled` either: announcing it would put the button back
  * out of reach of somebody who wants to press it and find out why.
+ *
+ * `children` is the run in flight: the library fills the slot with its own stop
+ * icon while the agent is answering and leaves it empty otherwise. The icon it
+ * sends carries `cpk:size-[18px]`, which this button's
+ * `[&_svg:not([class*='size-'])]` rule cannot reach, so it drew at 18px in a
+ * 24px button and left a 3px rim. The slot is read as the state it stands for
+ * and redrawn — icon and label together, because a control that stops a run
+ * may not announce itself as send. The square the convention would use is the
+ * button's own silhouette at this size, so the run is called off with an X.
  */
 function ComposerSendButton({
   children,
@@ -51,10 +60,11 @@ function ComposerSendButton({
   onClick,
   ...props
 }: ComponentProps<typeof CopilotChatInput.SendButton>) {
+  const stops = children != null;
   return (
     <Button
       size="icon-xs"
-      aria-label="Send"
+      aria-label={stops ? "Stop" : "Send"}
       onClick={(event) => {
         if (disabled) {
           sayWhy("nothing-to-send", "Nothing to send yet — type a message first.");
@@ -64,7 +74,7 @@ function ComposerSendButton({
       }}
       {...props}
     >
-      {children ?? <ArrowUpIcon />}
+      {stops ? <XIcon /> : <ArrowUpIcon />}
     </Button>
   );
 }
