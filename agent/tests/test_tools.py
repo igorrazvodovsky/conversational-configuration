@@ -937,7 +937,7 @@ def test_ask_choices_carries_the_controls_the_card_renders():
     assert payload["prompt"] == "How big?"
     variable = payload["variables"][0]
     assert variable["name"] == "rated_load" and variable["control"]
-    assert any(o["cheapest"] for o in variable["options"])
+    assert all(o["label"] and "price" in o for o in variable["options"])
     assert {o["status"] for o in variable["options"]} <= {"valid", "invalid", "chosen",
                                                           "forced"}
 

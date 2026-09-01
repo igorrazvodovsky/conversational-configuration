@@ -92,9 +92,9 @@ const payload = JSON.stringify({
       group: "performance",
       control: "scale",
       options: [
-        { value: "low_0_15", label: "Up to 15 m", price: 0, status: "valid", cheapest: true },
-        { value: "mid_15_30", label: "15–30 m", price: 40, status: "valid", cheapest: false },
-        { value: "high_30_50", label: "30–50 m", price: 90, status: "invalid", cheapest: false, rules: [{ id: "R12", label: "Travel above 30 m needs the higher-speed drive" }] },
+        { value: "low_0_15", label: "Up to 15 m", price: 0, status: "valid" },
+        { value: "mid_15_30", label: "15–30 m", price: 40, status: "valid" },
+        { value: "high_30_50", label: "30–50 m", price: 90, status: "invalid", rules: [{ id: "R12", label: "Travel above 30 m needs the higher-speed drive" }] },
       ],
     },
   ],

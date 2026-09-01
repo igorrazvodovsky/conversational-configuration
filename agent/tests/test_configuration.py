@@ -293,7 +293,7 @@ def test_payload_prices_are_monthly_deltas_at_term_in_effect(empty):
     assert by_var["service_level"]["premium"]["price"] == 550
 
 
-def test_payload_statuses_and_cheapest(empty):
+def test_payload_statuses(empty):
     from src.configuration import apply_choices, build_ask_payload
     config, _ = apply_choices(empty, {"building_type": "hospital", "rated_load": "kg2000"}, "user")
     payload = build_ask_payload(config, ["car_size", "rated_load"])
@@ -301,17 +301,19 @@ def test_payload_statuses_and_cheapest(empty):
     by_value = {o["value"]: o for o in car["options"]}
     assert by_value["c1500x2700"]["status"] == "forced"
     assert all(o["status"] == "invalid" for v, o in by_value.items() if v != "c1500x2700")
-    # cheapest marker appears exactly once per variable and never on an invalid option
-    for var in payload["variables"]:
-        marked = [o for o in var["options"] if o["cheapest"]]
-        assert len(marked) == 1
-        assert marked[0]["status"] != "invalid"
 
 
 def test_payload_unknown_variable(empty):
     from src.configuration import build_ask_payload
     with pytest.raises(ValueError, match="unknown variables"):
         build_ask_payload(empty, ["colour"])
+
+
+def test_payload_refuses_more_than_one_card_asks(empty):
+    from src.configuration import build_ask_payload
+    with pytest.raises(ValueError, match="more than one card asks"):
+        build_ask_payload(empty, ["building_type", "region", "installation",
+                                  "travel", "stops"])
 
 
 # -- revision (docs/specs/nonlinear-interaction) --------------------------------------------------

@@ -820,6 +820,9 @@ def describe_delta(change: dict, variables: dict[str, str] | None = None) -> str
 _ORDERED_GROUPS = {"performance", "dimensions"}
 _FORCE_LIST = {"car_size", "wall_finish", "floor"}
 _CHIP_MAX_OPTIONS = 6
+# The docstring's "1-4 related ones" is a contract, not advice: a card of eight
+# rows is a form, and asking is one move.
+_ASK_MAX_VARIABLES = 4
 
 
 def _control_for(var_name: str) -> str:
@@ -844,14 +847,21 @@ def _months_in_effect(config: Configuration) -> int:
 
 
 def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
-    """Per variable: its control type, every option with solver validity, its monthly
-    delta at the term in effect, and a marker on the cheapest-completion value.
+    """Per variable: its control type, every option with solver validity, and its
+    monthly delta at the term in effect.
     """
     unknown = [v for v in variables if v not in MODEL.variables]
     if unknown:
-        raise ValueError(f"unknown variables: {unknown}; valid: {sorted(MODEL.variables)}")
+        raise ValueError(
+            f"unknown variables: {unknown}; valid: {sorted(MODEL.variables)}. "
+            "Ask again with names from that list.")
+    if len(variables) > _ASK_MAX_VARIABLES:
+        raise ValueError(
+            f"{len(variables)} variables is more than one card asks: at most "
+            f"{_ASK_MAX_VARIABLES} related ones. Ask the ones that decide the "
+            "most now and leave the rest for a later turn. Ask again with "
+            "those.")
 
-    cheapest, _ = SOLVER.complete(_chosen_values(config))
     months = _months_in_effect(config)
     payload = []
     for var_name in variables:
@@ -865,7 +875,6 @@ def build_ask_payload(config: Configuration, variables: list[str]) -> dict:
                 "label": o.label,
                 "price": MODEL.monthly_option_delta(var_name, o.value, months),
                 "status": "valid" if statuses[o.value] == "open" else statuses[o.value],
-                "cheapest": cheapest[var_name] == o.value,
                 "rules": unavailable.get(o.value, []),
             }
             for o in var.options
@@ -1215,10 +1224,13 @@ def set_choices(choices: dict[str, str], source: Source, runtime: ToolRuntime) -
     `choices` maps variable names to option value codes (from describe_product),
     e.g. {"building_type": "hospital", "rated_load": "kg2000"}.
     Use source="user" for things the customer stated, source="agent" for values
-    you derived or proposed. Everything in the batch that can hold is recorded;
-    anything that cannot comes back as NOT RECORDED with the rules that
-    separate it, for you to put to the customer — so the rest of what they
-    said survives a collision between two of the values.
+    you derived or proposed. Having recorded what they told you, raise
+    ask_choices in the same turn over the terms you need next: a turn that ends
+    in prose asks them to type what a control would have taken. Everything in
+    the batch that can hold is recorded; anything that cannot comes back as NOT
+    RECORDED with the rules that separate it, for you to put to the customer —
+    so the rest of what they said survives a collision between two of the
+    values.
     """
     if _is_gesture(runtime):
         return _reply(
@@ -1874,8 +1886,12 @@ def get_configuration(runtime: ToolRuntime) -> str:
 @tool
 def ask_choices(variables: list[str], runtime: ToolRuntime, prompt: str = "") -> str:
     """Show the customer clickable controls in chat for the given variables
-    (1-4 related ones at a time). The customer sees each variable's currently
+    (1-4 related ones at a time, and the tool refuses a fifth), named as
+    describe_product names them. The customer sees each variable's currently
     valid options as chips, a scale, or a detail list, and can pick directly.
+    Ask about terms that are open and stated in the building's language; a term
+    the rules have already forced is not a question, and hardware belongs in an
+    ask only once a decision turns on it.
     `prompt` is an optional short caption."""
     config = _get_config(runtime)
     try:
@@ -1891,8 +1907,9 @@ def describe_product() -> str:
     """The service catalog: every variable, its option value codes, labels,
     monthly prices and modelled embodied CO2e deltas, the product rules, and
     the footprint assessment assumptions — the only source for a footprint
-    figure or an assumption behind one. Call this before you first record or
-    change anything."""
+    figure or an assumption behind one. Call this before you first record,
+    change or ask about anything: the variable names and value codes the other
+    tools take are all here, and a name you did not read here does not exist."""
     # All prices are EUR/month: the LLM never sees a capex figure it could leak.
     default_months = MODEL.months_of(None)
     default_label = _label(TERM_VAR, MODEL.pricing.default_term)

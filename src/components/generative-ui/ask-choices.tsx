@@ -3,7 +3,6 @@
 // docs/specs/agreement-document/design.md
 
 import { useState } from "react";
-import { BadgePercent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Item,
@@ -33,7 +32,6 @@ interface PayloadOption {
   label: string;
   price: number;
   status: "valid" | "invalid" | "chosen" | "forced";
-  cheapest: boolean;
   /** Absent on cards rendered from older tool results. */
   rules?: Rule[];
 }
@@ -183,16 +181,6 @@ function refusalsOf(variable: PayloadVariable, selected?: string): Refusal[] {
  * (constitution #16). */
 const UNAVAILABLE = "text-muted-foreground line-through";
 
-function CheapestMark() {
-  return (
-    <BadgePercent
-      role="img"
-      className="inline size-3 text-emerald-600"
-      aria-label="cheapest valid option"
-    />
-  );
-}
-
 function ChipRow({ variable, selected, inert, onSelect, scope }: ControlProps) {
   return (
     <div>
@@ -216,7 +204,7 @@ function ChipRow({ variable, selected, inert, onSelect, scope }: ControlProps) {
                 refused ? UNAVAILABLE : active ? "" : "hover:border-primary"
               }`}
             >
-              {o.label} {o.cheapest && <CheapestMark />}
+              {o.label}
               {o.price > 0 && (
                 <span className="text-xs text-muted-foreground">
                   +{formatMonthly(o.price)}
@@ -279,7 +267,7 @@ function ScaleControl({
                 refused ? `border-dashed ${UNAVAILABLE}` : ""
               }`}
             >
-              {o.label} {o.cheapest && <CheapestMark />}
+              {o.label}
             </ToggleGroupItem>
           );
         })}
@@ -336,7 +324,7 @@ function OptionList({
                   <ItemTitle
                     className={`font-[inherit] ${refused ? "line-through" : ""}`}
                   >
-                    {o.label} {o.cheapest && <CheapestMark />}
+                    {o.label}
                   </ItemTitle>
                 </ItemContent>
                 <ItemActions className="text-xs text-muted-foreground">

@@ -36,8 +36,8 @@ const payload = (control: "chips" | "scale" | "list") =>
         group: "service",
         control,
         options: [
-          { value: "light", label: "A few trips an hour", price: 50, status: "invalid", cheapest: false, rules: [RULE] },
-          { value: "steady", label: "Steady traffic through the day", price: 120, status: "chosen", cheapest: true },
+          { value: "light", label: "A few trips an hour", price: 50, status: "invalid", rules: [RULE] },
+          { value: "steady", label: "Steady traffic through the day", price: 120, status: "chosen" },
         ],
       },
     ],
@@ -120,7 +120,7 @@ describe("a refusal with no product rule to cite", () => {
                 group: "service",
                 control: "chips",
                 options: [
-                  { value: "light", label: "A few trips an hour", price: 50, status: "invalid", cheapest: false, rules: [] },
+                  { value: "light", label: "A few trips an hour", price: 50, status: "invalid", rules: [] },
                 ],
               },
             ],
