@@ -1,0 +1,36 @@
+{
+	"nodes":[
+		{"id":"a052792ed331f740","type":"group","x":-30,"y":-30,"width":1620,"height":290,"label":"Until handover — the supplier is in the room, and the decisions get locked"},
+		{"id":"98e8d44dd32c864b","type":"group","x":1850,"y":-30,"width":980,"height":290,"color":"1","label":"After handover — the cost and the frustration, carried alone"},
+		{"id":"8c8b52fef118d8df","type":"text","text":"## Define\n\nEstablish what the building needs: traffic, accessibility, code regime. Triggered by a new build, a conversion, or an aging installation.\n\n*The project lead performs it; the architect specifies.*","x":0,"y":0,"width":280,"height":230},
+		{"id":"70d55910528b1a38","type":"text","text":"## Locate\n\nGather building data, a budget frame, candidate suppliers and delivery models.\n\n*The project lead performs it.*","x":320,"y":0,"width":280,"height":230},
+		{"id":"36a469b7d0b112c9","type":"text","text":"## Prepare\n\nTranslate needs into something feasible, and align architect, contractor, tenants and board.\n\n*The project lead performs it; the architect specifies.*","x":640,"y":0,"width":280,"height":230},
+		{"id":"560acc2ee0c05fd4","type":"text","text":"## Confirm\n\nValidate feasibility, compliance and cost. Secure approval and financing.\n\n*The project lead performs it; a board approves and pays.*","x":960,"y":0,"width":280,"height":230},
+		{"id":"b918b213a21c8a21","type":"text","text":"## Execute\n\nContract, install, commission, hand over.\n\n*The project lead performs it, and then leaves.*","x":1280,"y":0,"width":280,"height":230},
+		{"id":"b6b74a7476b0b21b","type":"text","text":"*The vocabulary is not theirs.* The person knows beds, floors, lobbies and stretcher access. What they are asked for is rated load, door type and dispatch control ([design specifier](persona-design-specifier.md)).","x":0,"y":500,"width":280,"height":230,"color":"2"},
+		{"id":"3ce585340f657a57","type":"text","text":"*Two offers with no common unit.* A machine you buy and a service you rent cannot be compared on price, and at this stage both are on the table.","x":320,"y":500,"width":280,"height":230,"color":"2"},
+		{"id":"0e95d13567b18ace","type":"text","text":"*Certainty beats the better answer.* The shaft is poured in concrete long before the traffic is settled, so the early decision has to be defensible rather than optimal ([delivery lead](persona-delivery-lead.md)).","x":960,"y":500,"width":280,"height":230,"color":"2"},
+		{"id":"3b072d6738a7c364","type":"text","text":"## Handover\n\nThe performer changes. The project lead leaves with the finished building, and the owner or facility manager picks up a job that runs for the equipment's life.","x":1610,"y":-30,"width":220,"height":290,"color":"1"},
+		{"id":"a953ae216dd711aa","type":"text","text":"## Monitor\n\nTrack uptime, ride quality, complaints and the cost of ownership.\n\n*The owner or facility manager performs it, for the next twenty years.*","x":1880,"y":0,"width":280,"height":230},
+		{"id":"a0c7aef8ae9895d1","type":"text","text":"## Modify\n\nAdapt to changed use: traffic growth, repurposing, modernization, upgrades.\n\n*The owner or facility manager performs it.*","x":2200,"y":0,"width":280,"height":230},
+		{"id":"e7d5d6707815ae0a","type":"text","text":"## Conclude\n\nRenew, replace or exit at the end of the contract or the equipment's life.\n\n*The owner or facility manager performs it.*","x":2520,"y":0,"width":280,"height":230},
+		{"id":"7519f205571aa87b","type":"text","text":"*What breaks here.* The terms that govern these three stages are carried by a separate maintenance contract, negotiated by someone who never saw what drives its price. Cost of ownership is opaque, downtime is disputed, and modernization has to be fought for as capital ([building operator](persona-building-operator.md)).","x":1880,"y":300,"width":920,"height":170,"color":"1"},
+		{"id":"87e8a9de54e3e5b8","type":"text","text":"*The bill arrives without its drivers.* Uptime, response time and cost of ownership are all experienced directly. What determines them is not visible from here.","x":1880,"y":500,"width":280,"height":230,"color":"2"},
+		{"id":"d9be218435b22bbc","type":"text","text":"*Asking what a change costs is itself exposure.* Opaque change pricing is this model's version of lock-in, and it makes the ordinary adaptation feel like reopening the deal.","x":2200,"y":500,"width":280,"height":230,"color":"2"}
+	],
+	"edges":[
+		{"id":"009db4ddc3534310","fromNode":"8c8b52fef118d8df","fromSide":"right","toNode":"70d55910528b1a38","toSide":"left"},
+		{"id":"16634b264646b723","fromNode":"70d55910528b1a38","fromSide":"right","toNode":"36a469b7d0b112c9","toSide":"left"},
+		{"id":"5fc7c97da25d11d6","fromNode":"36a469b7d0b112c9","fromSide":"right","toNode":"560acc2ee0c05fd4","toSide":"left"},
+		{"id":"cc73d49217b8a67f","fromNode":"560acc2ee0c05fd4","fromSide":"right","toNode":"b918b213a21c8a21","toSide":"left"},
+		{"id":"211e337807db5c9c","fromNode":"b918b213a21c8a21","fromSide":"right","toNode":"3b072d6738a7c364","toSide":"left"},
+		{"id":"51ea7597ed604232","fromNode":"3b072d6738a7c364","fromSide":"right","toNode":"a953ae216dd711aa","toSide":"left"},
+		{"id":"c38d951438705df3","fromNode":"a953ae216dd711aa","fromSide":"right","toNode":"a0c7aef8ae9895d1","toSide":"left"},
+		{"id":"935ccee3660a987c","fromNode":"a0c7aef8ae9895d1","fromSide":"right","toNode":"e7d5d6707815ae0a","toSide":"left"},
+		{"id":"1d466e46918152f4","fromNode":"8c8b52fef118d8df","fromSide":"bottom","toNode":"b6b74a7476b0b21b","toSide":"top","toEnd":"none","color":"2"},
+		{"id":"845e766685d31f32","fromNode":"70d55910528b1a38","fromSide":"bottom","toNode":"3ce585340f657a57","toSide":"top","toEnd":"none","color":"2"},
+		{"id":"8b6e39fad1dde37f","fromNode":"560acc2ee0c05fd4","fromSide":"bottom","toNode":"0e95d13567b18ace","toSide":"top","toEnd":"none","color":"2"},
+		{"id":"467b41a4b0884530","fromNode":"3b072d6738a7c364","fromSide":"bottom","toNode":"87e8a9de54e3e5b8","toSide":"top","toEnd":"none","color":"2"},
+		{"id":"70a3f143cbbd6869","fromNode":"a953ae216dd711aa","fromSide":"bottom","toNode":"d9be218435b22bbc","toSide":"top","toEnd":"none","color":"2"}
+	]
+}

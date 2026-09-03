@@ -19,7 +19,10 @@ A *product* configurator serves Define through Confirm and then exits. Monitor, 
 
 This is a map of the job rather than of the buying experience, which is the [consumption journey](consumption-journey.md).
 
+[job-map.canvas](job-map.canvas) draws the map with that break marked on it, together with the friction each stage carries and the questions the map leaves open.
+
 ## Related
 
 - [Why the map spans the building's life rather than the purchase](job-ladder.md)
 - [Whose struggle sits in Monitor, Modify and Conclude](persona-building-operator.md)
+- [The same map drawn, with its friction and its open questions](job-map.canvas)

@@ -11,14 +11,17 @@
             "id": "a89680baa27c5dca",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "canvas",
               "state": {
-                "file": "discovery/problem-framing.md",
-                "mode": "source",
-                "source": false
+                "file": "discovery/jtbd/job-map.canvas",
+                "viewState": {
+                  "x": 661.0327160747481,
+                  "y": 233.52983988491167,
+                  "zoom": -0.7099120192779851
+                }
               },
-              "icon": "lucide-file",
-              "title": "problem-framing"
+              "icon": "lucide-layout-dashboard",
+              "title": "job-map"
             }
           }
         ]
@@ -188,43 +191,43 @@
       "bases:Create new base": false
     }
   },
-  "active": "37f3c7ab25b8ece4",
+  "active": "a89680baa27c5dca",
   "lastOpenFiles": [
-    "discovery/jtbd/README.md",
     "discovery/problem-framing.md",
-    "discovery/phase-plan.md",
-    "discovery/assertions/open-points-carried-by-the-document.md",
-    "discovery/direction.md",
-    "discovery/principles/canvas-holds-state-chat-explains.md",
-    "discovery/models/Readings over time.md",
-    "discovery/assertions/sets-cannot-be-settled-in-the-transcript.md",
-    "discovery/dialogue-and-manipulation.md",
-    "specs/interface-checks/design.md",
-    "specs/interface-checks/tasks.md",
-    "specs/interface-checks/requirements.md",
-    "specs/interface-checks",
+    "discovery/jtbd/job-map.canvas",
     "discovery/jtbd/job-stories.md",
-    "specs/offline-checks/requirements.md",
-    "specs/offline-checks/design.md",
-    "specs/offline-checks",
-    "discovery/models/Comparison view.md",
-    "specs/conversation-checks/requirements.md",
-    "specs/conversation-checks/design.md",
-    "specs/conversation-checks",
-    "discovery/scenarios/tender-as-entrance.md",
-    "discovery/scenarios/renewal-as-revision.md",
-    "discovery/scenarios/needs-not-nomenclature.md",
-    "discovery/scenarios/mid-contract-revision.md",
-    "discovery/scenarios/comparing-agreements.md",
-    "discovery/scenarios",
-    "specs/demo-scenarios/requirements.md",
-    "specs/scenario-harness/requirements.md",
-    "specs/scenario-harness/design.md",
-    "specs/scenario-harness",
-    "discovery/docs/discovery/scenarios",
-    "discovery/docs/discovery",
-    "discovery/docs",
-    "specs/visual-configuration",
-    "specs/open-points"
+    "specs/remembered-split/design.md",
+    "specs/remembered-split/tasks.md",
+    "specs/remembered-split/requirements.md",
+    "specs/remembered-split",
+    "research/disabled-controls.md",
+    "specs/accessible-surface/tasks.md",
+    "specs/accessible-surface/design.md",
+    "specs/accessible-surface/requirements.md",
+    "specs/accessible-surface",
+    "specs/agreement-workspace/tasks.md",
+    "research/suggestion-dispatch.md",
+    "specs/document-clauses/tasks.md",
+    "specs/document-clauses/design.md",
+    "specs/document-clauses/requirements.md",
+    "specs/document-clauses",
+    "specs/code-of-conduct/requirements.md",
+    "specs/code-of-conduct",
+    "specs/action-log/tasks.md",
+    "specs/action-log/design.md",
+    "specs/one-gesture-one-action/design.md",
+    "specs/one-gesture-one-action/tasks.md",
+    "specs/action-log/requirements.md",
+    "specs/action-log",
+    "specs/one-gesture-one-action/requirements.md",
+    "specs/one-gesture-one-action",
+    "specs/gesture-names-its-action/requirements.md",
+    "specs/gesture-names-its-action",
+    "specs/ontology-of-phenomena/design.md",
+    "specs/ontology-of-phenomena/ontology.md",
+    "specs/ontology-of-phenomena/requirements.md",
+    "specs/ontology-of-phenomena",
+    "specs/interface-checks",
+    "specs/offline-checks"
   ]
 }

@@ -11,6 +11,7 @@ Method: plays from the JTBD Playbook set — *Scope the JTBD Domain*, *Expand Ma
 | [domain.md](domain.md) | Main job statement, job performer, buyers and influencers |
 | [job-ladder.md](job-ladder.md) | The why-ladder upward from "configure an elevator", which is the argument the service frame rests on |
 | [job-map.md](job-map.md) | The main job as eight stages, and where a product configurator exits |
+| [job-map.canvas](job-map.canvas) | The same map drawn: the stages, the seam where the performer changes, the friction at each stage, and the questions the map leaves open |
 | [persona-delivery-lead.md](persona-delivery-lead.md) | The developer's or general contractor's project lead on a new build |
 | [persona-design-specifier.md](persona-design-specifier.md) | The architect, who embodies the articulation barrier |
 | [persona-building-operator.md](persona-building-operator.md) | The owner or facility manager, and the primary persona under the service frame |
